@@ -29,6 +29,9 @@ trabajo previo está en `contexto/` y es de solo lectura.
 - Scripts en LF (lo garantiza `.gitattributes`).
 - Despliegue en Vercel: `api/` (funciones Python, solo NumPy) + `public/` (interfaz web
   estática). Streamlit (`app.py`) es para uso local; Vercel no puede ejecutarlo.
+- Diseño de la web: seguir la skill `.claude/skills/frontend-design` y la identidad ya definida en
+  `public/estilos.css` (ficha de seguimiento con sello, semáforo de riesgo, tinta azul, Literata +
+  Atkinson Hyperlegible). Las gráficas se dibujan en SVG con los datos reales de `public/reportes/`.
 
 ## Flujo de trabajo
 - Se trabaja en ramas; no se hace push directo a `main`.

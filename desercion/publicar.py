@@ -22,6 +22,11 @@ def publicar_para_web():
     for archivo in (RAIZ / "pruebas" / "resultados").glob("resultados_ronda*.json"):
         shutil.copy2(archivo, DESTINO / archivo.name)
         n += 1
+    # pesos de los modelos: la web dibuja la neurona y la red con los pesos reales
+    (DESTINO / "modelos").mkdir(exist_ok=True)
+    for archivo in (RAIZ / "modelos_entrenados").glob("*.json"):
+        shutil.copy2(archivo, DESTINO / "modelos" / archivo.name)
+        n += 1
     esquema = {campo: {"tipo": tipo, "obligatorio": ob,
                        "valores": sorted(regla) if tipo == "enum" else None,
                        "rango": list(regla) if tipo in ("int", "num") else None}
