@@ -1,0 +1,817 @@
+{
+  "ronda1": {
+    "pasan": 6,
+    "filas": [
+      {
+        "id": "R01",
+        "origen": "real",
+        "categoria": "típico – riesgo bajo",
+        "esperado": "resultado: bajo (0)",
+        "obtenido": "resultado: bajo (0)",
+        "traza": {
+          "S1": "valido (sin validar)",
+          "S2": 0,
+          "S3": "bajo"
+        },
+        "resultado": "PASA",
+        "salida": {
+          "decision": "resultado",
+          "nivel": "bajo",
+          "puntaje": 0,
+          "accion": "seguimiento_rutinario",
+          "datos_no_informados": []
+        }
+      },
+      {
+        "id": "R02",
+        "origen": "real",
+        "categoria": "típico – riesgo medio",
+        "esperado": "resultado: medio (50)",
+        "obtenido": "resultado: medio (50)",
+        "traza": {
+          "S1": "valido (sin validar)",
+          "S2": 50,
+          "S3": "medio"
+        },
+        "resultado": "PASA",
+        "salida": {
+          "decision": "resultado",
+          "nivel": "medio",
+          "puntaje": 50,
+          "accion": "tutoria_academica",
+          "datos_no_informados": []
+        }
+      },
+      {
+        "id": "R03",
+        "origen": "real",
+        "categoria": "típico – riesgo alto",
+        "esperado": "resultado: alto (100)",
+        "obtenido": "resultado: alto (100)",
+        "traza": {
+          "S1": "valido (sin validar)",
+          "S2": 100,
+          "S3": "alto"
+        },
+        "resultado": "PASA",
+        "salida": {
+          "decision": "resultado",
+          "nivel": "alto",
+          "puntaje": 100,
+          "accion": "remision_bienestar_y_tutoria",
+          "datos_no_informados": []
+        }
+      },
+      {
+        "id": "R04",
+        "origen": "real",
+        "categoria": "típico – opcional no informado",
+        "esperado": "resultado: bajo (15) [no inf: deuda_matricula]",
+        "obtenido": "EXCEPCIÓN KeyError",
+        "traza": {
+          "S1": "-",
+          "S2": "excepción",
+          "S3": "-"
+        },
+        "resultado": "FALLA",
+        "salida": {
+          "decision": "excepcion",
+          "detalle": "KeyError"
+        }
+      },
+      {
+        "id": "R05",
+        "origen": "real",
+        "categoria": "típico – riesgo medio",
+        "esperado": "resultado: medio (45)",
+        "obtenido": "resultado: medio (45)",
+        "traza": {
+          "S1": "valido (sin validar)",
+          "S2": 45,
+          "S3": "medio"
+        },
+        "resultado": "PASA",
+        "salida": {
+          "decision": "resultado",
+          "nivel": "medio",
+          "puntaje": 45,
+          "accion": "tutoria_academica",
+          "datos_no_informados": []
+        }
+      },
+      {
+        "id": "S01",
+        "origen": "simulado",
+        "categoria": "campo faltante",
+        "esperado": "abstener(campo_faltante)",
+        "obtenido": "EXCEPCIÓN KeyError",
+        "traza": {
+          "S1": "-",
+          "S2": "excepción",
+          "S3": "-"
+        },
+        "resultado": "FALLA",
+        "salida": {
+          "decision": "excepcion",
+          "detalle": "KeyError"
+        }
+      },
+      {
+        "id": "S02",
+        "origen": "simulado",
+        "categoria": "campo faltante (null)",
+        "esperado": "abstener(campo_faltante)",
+        "obtenido": "EXCEPCIÓN TypeError",
+        "traza": {
+          "S1": "-",
+          "S2": "excepción",
+          "S3": "-"
+        },
+        "resultado": "FALLA",
+        "salida": {
+          "decision": "excepcion",
+          "detalle": "TypeError"
+        }
+      },
+      {
+        "id": "S03",
+        "origen": "simulado",
+        "categoria": "contradictorio",
+        "esperado": "abstener(datos_contradictorios)",
+        "obtenido": "resultado: bajo (25)",
+        "traza": {
+          "S1": "valido (sin validar)",
+          "S2": 25,
+          "S3": "bajo"
+        },
+        "resultado": "FALLA",
+        "salida": {
+          "decision": "resultado",
+          "nivel": "bajo",
+          "puntaje": 25,
+          "accion": "seguimiento_rutinario",
+          "datos_no_informados": []
+        }
+      },
+      {
+        "id": "S04",
+        "origen": "simulado",
+        "categoria": "contradictorio",
+        "esperado": "abstener(datos_contradictorios)",
+        "obtenido": "resultado: bajo (0)",
+        "traza": {
+          "S1": "valido (sin validar)",
+          "S2": 0,
+          "S3": "bajo"
+        },
+        "resultado": "FALLA",
+        "salida": {
+          "decision": "resultado",
+          "nivel": "bajo",
+          "puntaje": 0,
+          "accion": "seguimiento_rutinario",
+          "datos_no_informados": []
+        }
+      },
+      {
+        "id": "S05",
+        "origen": "simulado",
+        "categoria": "otra población",
+        "esperado": "abstener(fuera_de_poblacion)",
+        "obtenido": "resultado: bajo (0)",
+        "traza": {
+          "S1": "valido (sin validar)",
+          "S2": 0,
+          "S3": "bajo"
+        },
+        "resultado": "FALLA",
+        "salida": {
+          "decision": "resultado",
+          "nivel": "bajo",
+          "puntaje": 0,
+          "accion": "seguimiento_rutinario",
+          "datos_no_informados": []
+        }
+      },
+      {
+        "id": "S06",
+        "origen": "simulado",
+        "categoria": "otra población",
+        "esperado": "abstener(fuera_de_poblacion)",
+        "obtenido": "resultado: bajo (0)",
+        "traza": {
+          "S1": "valido (sin validar)",
+          "S2": 0,
+          "S3": "bajo"
+        },
+        "resultado": "FALLA",
+        "salida": {
+          "decision": "resultado",
+          "nivel": "bajo",
+          "puntaje": 0,
+          "accion": "seguimiento_rutinario",
+          "datos_no_informados": []
+        }
+      },
+      {
+        "id": "S07",
+        "origen": "simulado",
+        "categoria": "otra población + faltante",
+        "esperado": "abstener(fuera_de_poblacion)",
+        "obtenido": "EXCEPCIÓN KeyError",
+        "traza": {
+          "S1": "-",
+          "S2": "excepción",
+          "S3": "-"
+        },
+        "resultado": "FALLA",
+        "salida": {
+          "decision": "excepcion",
+          "detalle": "KeyError"
+        }
+      },
+      {
+        "id": "S08",
+        "origen": "simulado",
+        "categoria": "otra escala / fuera de rango",
+        "esperado": "error(fuera_de_rango)",
+        "obtenido": "resultado: bajo (0)",
+        "traza": {
+          "S1": "valido (sin validar)",
+          "S2": 0,
+          "S3": "bajo"
+        },
+        "resultado": "FALLA",
+        "salida": {
+          "decision": "resultado",
+          "nivel": "bajo",
+          "puntaje": 0,
+          "accion": "seguimiento_rutinario",
+          "datos_no_informados": []
+        }
+      },
+      {
+        "id": "S09",
+        "origen": "simulado",
+        "categoria": "otro tipo",
+        "esperado": "error(tipo_invalido)",
+        "obtenido": "resultado: bajo (0)",
+        "traza": {
+          "S1": "valido (sin validar)",
+          "S2": 0,
+          "S3": "bajo"
+        },
+        "resultado": "FALLA",
+        "salida": {
+          "decision": "resultado",
+          "nivel": "bajo",
+          "puntaje": 0,
+          "accion": "seguimiento_rutinario",
+          "datos_no_informados": []
+        }
+      },
+      {
+        "id": "S10",
+        "origen": "simulado",
+        "categoria": "otro tipo",
+        "esperado": "error(tipo_invalido)",
+        "obtenido": "resultado: bajo (5)",
+        "traza": {
+          "S1": "valido (sin validar)",
+          "S2": 5,
+          "S3": "bajo"
+        },
+        "resultado": "FALLA",
+        "salida": {
+          "decision": "resultado",
+          "nivel": "bajo",
+          "puntaje": 5,
+          "accion": "seguimiento_rutinario",
+          "datos_no_informados": []
+        }
+      },
+      {
+        "id": "S11",
+        "origen": "simulado",
+        "categoria": "valor no permitido",
+        "esperado": "error(valor_no_permitido)",
+        "obtenido": "resultado: bajo (0)",
+        "traza": {
+          "S1": "valido (sin validar)",
+          "S2": 0,
+          "S3": "bajo"
+        },
+        "resultado": "FALLA",
+        "salida": {
+          "decision": "resultado",
+          "nivel": "bajo",
+          "puntaje": 0,
+          "accion": "seguimiento_rutinario",
+          "datos_no_informados": []
+        }
+      },
+      {
+        "id": "S12",
+        "origen": "simulado",
+        "categoria": "frontera",
+        "esperado": "resultado: medio (35)",
+        "obtenido": "resultado: medio (35)",
+        "traza": {
+          "S1": "valido (sin validar)",
+          "S2": 35,
+          "S3": "medio"
+        },
+        "resultado": "PASA",
+        "salida": {
+          "decision": "resultado",
+          "nivel": "medio",
+          "puntaje": 35,
+          "accion": "tutoria_academica",
+          "datos_no_informados": []
+        }
+      },
+      {
+        "id": "S13",
+        "origen": "simulado",
+        "categoria": "frontera",
+        "esperado": "resultado: alto (60)",
+        "obtenido": "resultado: alto (60)",
+        "traza": {
+          "S1": "valido (sin validar)",
+          "S2": 60,
+          "S3": "alto"
+        },
+        "resultado": "PASA",
+        "salida": {
+          "decision": "resultado",
+          "nivel": "alto",
+          "puntaje": 60,
+          "accion": "remision_bienestar_y_tutoria",
+          "datos_no_informados": []
+        }
+      },
+      {
+        "id": "S14",
+        "origen": "simulado",
+        "categoria": "frontera + regla de excepción",
+        "esperado": "resultado: alto (50)",
+        "obtenido": "resultado: medio (50)",
+        "traza": {
+          "S1": "valido (sin validar)",
+          "S2": 50,
+          "S3": "medio"
+        },
+        "resultado": "FALLA",
+        "salida": {
+          "decision": "resultado",
+          "nivel": "medio",
+          "puntaje": 50,
+          "accion": "tutoria_academica",
+          "datos_no_informados": []
+        }
+      },
+      {
+        "id": "S15",
+        "origen": "simulado",
+        "categoria": "otro tipo (trampa de lenguaje)",
+        "esperado": "error(tipo_invalido)",
+        "obtenido": "resultado: bajo (0)",
+        "traza": {
+          "S1": "valido (sin validar)",
+          "S2": 0,
+          "S3": "bajo"
+        },
+        "resultado": "FALLA",
+        "salida": {
+          "decision": "resultado",
+          "nivel": "bajo",
+          "puntaje": 0,
+          "accion": "seguimiento_rutinario",
+          "datos_no_informados": []
+        }
+      }
+    ]
+  },
+  "ronda2": {
+    "pasan": 20,
+    "filas": [
+      {
+        "id": "R01",
+        "origen": "real",
+        "categoria": "típico – riesgo bajo",
+        "esperado": "resultado: bajo (0)",
+        "obtenido": "resultado: bajo (0)",
+        "traza": {
+          "S1": "valido",
+          "S2": 0,
+          "S3": "bajo"
+        },
+        "resultado": "PASA",
+        "salida": {
+          "decision": "resultado",
+          "nivel": "bajo",
+          "puntaje": 0,
+          "accion": "seguimiento_rutinario",
+          "factores": [],
+          "datos_no_informados": []
+        }
+      },
+      {
+        "id": "R02",
+        "origen": "real",
+        "categoria": "típico – riesgo medio",
+        "esperado": "resultado: medio (50)",
+        "obtenido": "resultado: medio (50)",
+        "traza": {
+          "S1": "valido",
+          "S2": 50,
+          "S3": "medio"
+        },
+        "resultado": "PASA",
+        "salida": {
+          "decision": "resultado",
+          "nivel": "medio",
+          "puntaje": 50,
+          "accion": "tutoria_academica",
+          "factores": [
+            "3.0<=promedio<3.5",
+            "reprobadas=1",
+            "70<=asistencia<85",
+            "estrato<=2",
+            "trabaja"
+          ],
+          "datos_no_informados": []
+        }
+      },
+      {
+        "id": "R03",
+        "origen": "real",
+        "categoria": "típico – riesgo alto",
+        "esperado": "resultado: alto (100)",
+        "obtenido": "resultado: alto (100)",
+        "traza": {
+          "S1": "valido",
+          "S2": 100,
+          "S3": "alto"
+        },
+        "resultado": "PASA",
+        "salida": {
+          "decision": "resultado",
+          "nivel": "alto",
+          "puntaje": 100,
+          "accion": "remision_bienestar_y_tutoria",
+          "factores": [
+            "promedio<3.0",
+            "reprobadas>=2",
+            "asistencia<70",
+            "estrato<=2",
+            "trabaja",
+            "deuda_matricula"
+          ],
+          "datos_no_informados": []
+        }
+      },
+      {
+        "id": "R04",
+        "origen": "real",
+        "categoria": "típico – opcional no informado",
+        "esperado": "resultado: bajo (15) [no inf: deuda_matricula]",
+        "obtenido": "resultado: bajo (15) [no inf: deuda_matricula]",
+        "traza": {
+          "S1": "valido",
+          "S2": 15,
+          "S3": "bajo"
+        },
+        "resultado": "PASA",
+        "salida": {
+          "decision": "resultado",
+          "nivel": "bajo",
+          "puntaje": 15,
+          "accion": "seguimiento_rutinario",
+          "factores": [
+            "estrato<=2",
+            "trabaja"
+          ],
+          "datos_no_informados": [
+            "deuda_matricula"
+          ]
+        }
+      },
+      {
+        "id": "R05",
+        "origen": "real",
+        "categoria": "típico – riesgo medio",
+        "esperado": "resultado: medio (45)",
+        "obtenido": "resultado: medio (45)",
+        "traza": {
+          "S1": "valido",
+          "S2": 45,
+          "S3": "medio"
+        },
+        "resultado": "PASA",
+        "salida": {
+          "decision": "resultado",
+          "nivel": "medio",
+          "puntaje": 45,
+          "accion": "tutoria_academica",
+          "factores": [
+            "reprobadas>=2",
+            "70<=asistencia<85",
+            "deuda_matricula"
+          ],
+          "datos_no_informados": []
+        }
+      },
+      {
+        "id": "S01",
+        "origen": "simulado",
+        "categoria": "campo faltante",
+        "esperado": "abstener(campo_faltante)",
+        "obtenido": "abstener(campo_faltante)",
+        "traza": {
+          "S1": "abstener(campo_faltante)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA",
+        "salida": {
+          "decision": "abstener",
+          "motivo": "campo_faltante",
+          "campos": [
+            "promedio_acumulado"
+          ]
+        }
+      },
+      {
+        "id": "S02",
+        "origen": "simulado",
+        "categoria": "campo faltante (null)",
+        "esperado": "abstener(campo_faltante)",
+        "obtenido": "abstener(campo_faltante)",
+        "traza": {
+          "S1": "abstener(campo_faltante)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA",
+        "salida": {
+          "decision": "abstener",
+          "motivo": "campo_faltante",
+          "campos": [
+            "porcentaje_asistencia"
+          ]
+        }
+      },
+      {
+        "id": "S03",
+        "origen": "simulado",
+        "categoria": "contradictorio",
+        "esperado": "abstener(datos_contradictorios)",
+        "obtenido": "abstener(datos_contradictorios)",
+        "traza": {
+          "S1": "abstener(datos_contradictorios)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA",
+        "salida": {
+          "decision": "abstener",
+          "motivo": "datos_contradictorios"
+        }
+      },
+      {
+        "id": "S04",
+        "origen": "simulado",
+        "categoria": "contradictorio",
+        "esperado": "abstener(datos_contradictorios)",
+        "obtenido": "abstener(datos_contradictorios)",
+        "traza": {
+          "S1": "abstener(datos_contradictorios)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA",
+        "salida": {
+          "decision": "abstener",
+          "motivo": "datos_contradictorios"
+        }
+      },
+      {
+        "id": "S05",
+        "origen": "simulado",
+        "categoria": "otra población",
+        "esperado": "abstener(fuera_de_poblacion)",
+        "obtenido": "abstener(fuera_de_poblacion)",
+        "traza": {
+          "S1": "abstener(fuera_de_poblacion)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA",
+        "salida": {
+          "decision": "abstener",
+          "motivo": "fuera_de_poblacion"
+        }
+      },
+      {
+        "id": "S06",
+        "origen": "simulado",
+        "categoria": "otra población",
+        "esperado": "abstener(fuera_de_poblacion)",
+        "obtenido": "abstener(fuera_de_poblacion)",
+        "traza": {
+          "S1": "abstener(fuera_de_poblacion)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA",
+        "salida": {
+          "decision": "abstener",
+          "motivo": "fuera_de_poblacion"
+        }
+      },
+      {
+        "id": "S07",
+        "origen": "simulado",
+        "categoria": "otra población + faltante",
+        "esperado": "abstener(fuera_de_poblacion)",
+        "obtenido": "abstener(fuera_de_poblacion)",
+        "traza": {
+          "S1": "abstener(fuera_de_poblacion)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA",
+        "salida": {
+          "decision": "abstener",
+          "motivo": "fuera_de_poblacion"
+        }
+      },
+      {
+        "id": "S08",
+        "origen": "simulado",
+        "categoria": "otra escala / fuera de rango",
+        "esperado": "error(fuera_de_rango)",
+        "obtenido": "error(fuera_de_rango)",
+        "traza": {
+          "S1": "error(fuera_de_rango)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA",
+        "salida": {
+          "decision": "error",
+          "motivo": "fuera_de_rango",
+          "campo": "promedio_acumulado"
+        }
+      },
+      {
+        "id": "S09",
+        "origen": "simulado",
+        "categoria": "otro tipo",
+        "esperado": "error(tipo_invalido)",
+        "obtenido": "error(tipo_invalido)",
+        "traza": {
+          "S1": "error(tipo_invalido)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA",
+        "salida": {
+          "decision": "error",
+          "motivo": "tipo_invalido",
+          "campo": "semestre"
+        }
+      },
+      {
+        "id": "S10",
+        "origen": "simulado",
+        "categoria": "otro tipo",
+        "esperado": "error(tipo_invalido)",
+        "obtenido": "error(tipo_invalido)",
+        "traza": {
+          "S1": "error(tipo_invalido)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA",
+        "salida": {
+          "decision": "error",
+          "motivo": "tipo_invalido",
+          "campo": "trabaja"
+        }
+      },
+      {
+        "id": "S11",
+        "origen": "simulado",
+        "categoria": "valor no permitido",
+        "esperado": "error(valor_no_permitido)",
+        "obtenido": "error(valor_no_permitido)",
+        "traza": {
+          "S1": "error(valor_no_permitido)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA",
+        "salida": {
+          "decision": "error",
+          "motivo": "valor_no_permitido",
+          "campo": "nivel_formacion"
+        }
+      },
+      {
+        "id": "S12",
+        "origen": "simulado",
+        "categoria": "frontera",
+        "esperado": "resultado: medio (35)",
+        "obtenido": "resultado: medio (35)",
+        "traza": {
+          "S1": "valido",
+          "S2": 35,
+          "S3": "medio"
+        },
+        "resultado": "PASA",
+        "salida": {
+          "decision": "resultado",
+          "nivel": "medio",
+          "puntaje": 35,
+          "accion": "tutoria_academica",
+          "factores": [
+            "3.0<=promedio<3.5",
+            "reprobadas=1",
+            "70<=asistencia<85"
+          ],
+          "datos_no_informados": []
+        }
+      },
+      {
+        "id": "S13",
+        "origen": "simulado",
+        "categoria": "frontera",
+        "esperado": "resultado: alto (60)",
+        "obtenido": "resultado: alto (60)",
+        "traza": {
+          "S1": "valido",
+          "S2": 60,
+          "S3": "alto"
+        },
+        "resultado": "PASA",
+        "salida": {
+          "decision": "resultado",
+          "nivel": "alto",
+          "puntaje": 60,
+          "accion": "remision_bienestar_y_tutoria",
+          "factores": [
+            "promedio<3.0",
+            "reprobadas=1",
+            "estrato<=2",
+            "deuda_matricula"
+          ],
+          "datos_no_informados": []
+        }
+      },
+      {
+        "id": "S14",
+        "origen": "simulado",
+        "categoria": "frontera + regla de excepción",
+        "esperado": "resultado: alto (50)",
+        "obtenido": "resultado: alto (50)",
+        "traza": {
+          "S1": "valido",
+          "S2": 50,
+          "S3": "alto"
+        },
+        "resultado": "PASA",
+        "salida": {
+          "decision": "resultado",
+          "nivel": "alto",
+          "puntaje": 50,
+          "accion": "remision_bienestar_y_tutoria",
+          "factores": [
+            "promedio<3.0",
+            "asistencia<70"
+          ],
+          "datos_no_informados": []
+        }
+      },
+      {
+        "id": "S15",
+        "origen": "simulado",
+        "categoria": "otro tipo (trampa de lenguaje)",
+        "esperado": "error(tipo_invalido)",
+        "obtenido": "error(tipo_invalido)",
+        "traza": {
+          "S1": "error(tipo_invalido)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA",
+        "salida": {
+          "decision": "error",
+          "motivo": "tipo_invalido",
+          "campo": "semestre"
+        }
+      }
+    ]
+  }
+}

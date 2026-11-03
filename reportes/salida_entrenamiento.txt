@@ -1,0 +1,203 @@
+
+====================================================================================================
+FASE 2 – Datos sintéticos (NO son datos reales)
+====================================================================================================
+Registros generados: 20619 | válidos: 20000 | descartados por el Paso 1: 619
+Tasa de deserción en los válidos: 18.3 % (objetivo 18.0 %); intercepto b0 ajustado: -3.676
+Descartes por motivo: {'abstener(campo_faltante)': 156, 'abstener(datos_contradictorios)': 154, 'abstener(fuera_de_poblacion)': 77, 'error(fuera_de_rango)': 77, 'error(tipo_invalido)': 155}
+Registros defectuosos que el Paso 1 dejó pasar: 0
+Sin deuda informada (opcional, se conservan): 1624
+CSV guardado y recargado con cargar_datos_reales(): idéntico
+División estratificada: train 14000 (18.3 % desertan) | val 3000 (18.3 %) | test 3000 (18.3 %). El test no se usa hasta la Fase 6.
+Techo teórico: AUC de la probabilidad REAL en test = 0.846 (ningún modelo puede superarlo en promedio, porque el resto es ruido).
+
+====================================================================================================
+FASE 3 – Dependencia entre variables ANTES de entrenar (medida solo en train)
+====================================================================================================
+Variables candidatas: semestre, promedio_acumulado, creditos_inscritos, materias_cursadas_periodo_anterior, materias_reprobadas, tasa_reprobacion, porcentaje_asistencia, estrato, trabaja, deuda_matricula
+Pares con |correlación de Pearson| > 0.8:
+   materias_reprobadas ~ tasa_reprobacion: r = +0.965
+   creditos_inscritos ~ materias_cursadas_periodo_anterior: r = +0.804
+VIF antes:
+   semestre                                  1.00  ok
+   promedio_acumulado                        2.30  ok
+   creditos_inscritos                        3.60  ok
+   materias_cursadas_periodo_anterior        3.70  ok
+   materias_reprobadas                      21.16  grave
+   tasa_reprobacion                         20.79  grave
+   porcentaje_asistencia                     1.90  ok
+   estrato                                   1.21  ok
+   trabaja                                   1.30  ok
+   deuda_matricula                           1.07  ok
+Decisión: se quita 'materias_reprobadas', se queda 'tasa_reprobacion'. La tasa ya contiene al conteo (es reprobadas / cursadas) y es comparable entre estudiantes con distinta carga. Con las dos, el modelo reparte el peso de forma inestable y puede dar a una de ellas un signo contrario al real.
+Decisión: se quita 'materias_cursadas_periodo_anterior', se queda 'creditos_inscritos'. Las dos miden la carga académica. Los créditos son del periodo actual (lo que se quiere predecir); las materias cursadas son del anterior y ya están dentro de la tasa de reprobación.
+VIF después:
+   semestre                                  1.00  ok
+   promedio_acumulado                        2.24  ok
+   creditos_inscritos                        1.15  ok
+   tasa_reprobacion                          1.63  ok
+   porcentaje_asistencia                     1.90  ok
+   estrato                                   1.20  ok
+   trabaja                                   1.27  ok
+   deuda_matricula                           1.07  ok
+Pares > 0.8 después: 0
+Estandarización con media y desviación de TRAIN:
+   semestre                               media    3.000  desv.   0.814
+   promedio_acumulado                     media    3.536  desv.   0.497
+   creditos_inscritos                     media   13.720  desv.   3.882
+   tasa_reprobacion                       media    0.154  desv.   0.219
+   porcentaje_asistencia                  media   84.462  desv.   8.493
+   estrato                                media    2.454  desv.   1.175
+   trabaja                                media    0.348  desv.   0.476
+   deuda_matricula                        media    0.327  desv.   0.469
+
+====================================================================================================
+FASE 4 – Modelo A: regresión logística (una neurona sigmoide), desde cero en NumPy
+====================================================================================================
+Configuración: {'l2': 0.001, 'tasa_aprendizaje': 0.01, 'tam_lote': 256, 'max_epocas': 300, 'paciencia': 20} | pesos por clase: {'positivo': 2.727, 'negativo': 0.612}
+Época   1 | pérdida train 0.612 | pérdida val 0.615 | AUC val 0.810 | recall val 0.81 | norma pesos 0.21
+           Pesos: tasa_reprobacion +0.12 · promedio_acumulado -0.09 · porcentaje_asistencia -0.09 · creditos_inscritos -0.07 · estrato -0.06 · trabaja +0.06 · deuda_matricula +0.05 · semestre -0.02
+           Peso más grande: tasa_reprobacion (21.4 % de la suma de |pesos|) → dentro del tope (35 %; el tope oficial se mide con importancia por permutación)
+Época  10 | pérdida train 0.536 | pérdida val 0.541 | AUC val 0.809 | recall val 0.79 | norma pesos 0.69
+           Pesos: tasa_reprobacion +0.38 · promedio_acumulado -0.28 · porcentaje_asistencia -0.27 · trabaja +0.23 · estrato -0.22 · deuda_matricula +0.21 · creditos_inscritos -0.18 · semestre -0.05
+           Peso más grande: tasa_reprobacion (21.1 % de la suma de |pesos|) → dentro del tope (35 %; el tope oficial se mide con importancia por permutación)
+Época  20 | pérdida train 0.530 | pérdida val 0.537 | AUC val 0.808 | recall val 0.76 | norma pesos 0.78
+           Pesos: tasa_reprobacion +0.45 · promedio_acumulado -0.29 · porcentaje_asistencia -0.28 · estrato -0.26 · trabaja +0.26 · deuda_matricula +0.26 · creditos_inscritos -0.19 · semestre -0.06
+           Peso más grande: tasa_reprobacion (22.0 % de la suma de |pesos|) → dentro del tope (35 %; el tope oficial se mide con importancia por permutación)
+Época  30 | pérdida train 0.529 | pérdida val 0.537 | AUC val 0.807 | recall val 0.75 | norma pesos 0.81
+           Pesos: tasa_reprobacion +0.48 · promedio_acumulado -0.28 · estrato -0.28 · deuda_matricula +0.28 · trabaja +0.28 · porcentaje_asistencia -0.28 · creditos_inscritos -0.20 · semestre -0.06
+           Peso más grande: tasa_reprobacion (22.6 % de la suma de |pesos|) → dentro del tope (35 %; el tope oficial se mide con importancia por permutación)
+Época  40 | pérdida train 0.529 | pérdida val 0.537 | AUC val 0.807 | recall val 0.74 | norma pesos 0.83
+           Pesos: tasa_reprobacion +0.50 · estrato -0.29 · deuda_matricula +0.29 · trabaja +0.28 · promedio_acumulado -0.28 · porcentaje_asistencia -0.27 · creditos_inscritos -0.20 · semestre -0.07
+           Peso más grande: tasa_reprobacion (23.0 % de la suma de |pesos|) → dentro del tope (35 %; el tope oficial se mide con importancia por permutación)
+Época  44 | pérdida train 0.529 | pérdida val 0.537 | AUC val 0.807 | recall val 0.73 | norma pesos 0.83
+           Pesos: tasa_reprobacion +0.50 · estrato -0.29 · deuda_matricula +0.29 · trabaja +0.28 · promedio_acumulado -0.27 · porcentaje_asistencia -0.27 · creditos_inscritos -0.20 · semestre -0.07
+           Peso más grande: tasa_reprobacion (23.1 % de la suma de |pesos|) → dentro del tope (35 %; el tope oficial se mide con importancia por permutación)
+Early stopping: 20 épocas sin mejorar la pérdida de validación. Se recuperan los pesos de la época 24.
+
+====================================================================================================
+FASE 4 – Modelo B: red neuronal 8 → 16 → 8 → 1 (ReLU, dropout, Adam, He), desde cero en NumPy
+====================================================================================================
+Configuración: {'capas': [16, 8], 'l2': 0.0001, 'tasa_aprendizaje': 0.001, 'dropout': 0.2, 'tam_lote': 256, 'max_epocas': 300, 'paciencia': 20}
+Época   1 | pérdida train 0.781 | pérdida val 0.780 | AUC val 0.623 | recall val 0.89 | norma pesos 7.40
+Época  10 | pérdida train 0.540 | pérdida val 0.549 | AUC val 0.800 | recall val 0.72 | norma pesos 7.09
+Época  20 | pérdida train 0.527 | pérdida val 0.540 | AUC val 0.803 | recall val 0.71 | norma pesos 6.91
+Época  30 | pérdida train 0.524 | pérdida val 0.536 | AUC val 0.805 | recall val 0.71 | norma pesos 6.76
+Época  40 | pérdida train 0.523 | pérdida val 0.536 | AUC val 0.806 | recall val 0.71 | norma pesos 6.60
+Época  50 | pérdida train 0.521 | pérdida val 0.534 | AUC val 0.807 | recall val 0.71 | norma pesos 6.46
+Época  60 | pérdida train 0.520 | pérdida val 0.534 | AUC val 0.808 | recall val 0.71 | norma pesos 6.30
+Época  70 | pérdida train 0.519 | pérdida val 0.532 | AUC val 0.809 | recall val 0.70 | norma pesos 6.16
+Época  80 | pérdida train 0.518 | pérdida val 0.531 | AUC val 0.810 | recall val 0.70 | norma pesos 6.03
+Época  90 | pérdida train 0.518 | pérdida val 0.531 | AUC val 0.809 | recall val 0.70 | norma pesos 5.94
+Época 100 | pérdida train 0.517 | pérdida val 0.530 | AUC val 0.811 | recall val 0.70 | norma pesos 5.86
+Época 110 | pérdida train 0.517 | pérdida val 0.529 | AUC val 0.811 | recall val 0.70 | norma pesos 5.77
+Época 120 | pérdida train 0.517 | pérdida val 0.529 | AUC val 0.811 | recall val 0.70 | norma pesos 5.70
+Época 128 | pérdida train 0.516 | pérdida val 0.529 | AUC val 0.811 | recall val 0.70 | norma pesos 5.67
+Early stopping: 20 épocas sin mejorar la pérdida de validación. Se recuperan los pesos de la época 108.
+
+====================================================================================================
+FASE 4 – Tarjeta de puntaje (pesos de la logística → puntos 0–100)
+====================================================================================================
+variable                               peso estand.  β original puntos máx.  0 puntos en
+semestre                                     -0.062     -0.0760         1.3  4.0
+promedio_acumulado                           -0.284     -0.5722        24.0  5.0
+creditos_inscritos                           -0.196     -0.0505        10.2  25.0
+tasa_reprobacion                              0.466      2.1310        17.9  0.0
+porcentaje_asistencia                        -0.278     -0.0327        27.5  100.0
+estrato                                      -0.271     -0.2304         9.7  6.0
+trabaja                                       0.269      0.5648         4.7  0.0
+deuda_matricula                               0.270      0.5754         4.8  0.0
+Escala: 8.387 puntos por unidad de logit | logit con 0 puntos: -3.897
+Cortes logística (elegidos en validación): medio ≥ 26, alto ≥ 34 | alto captura 71.8 % de los desertores con 32.9 % de los estudiantes | en bajo quedan 9.8 % de los desertores. No se pueden cumplir las dos condiciones a la vez: se priorizó el recall (≥ 70 %).
+Cortes red neuronal (elegidos en validación): medio ≥ 7, alto ≥ 19 | alto captura 70.0 % de los desertores con 30.7 % de los estudiantes | en bajo quedan 8.5 % de los desertores. No se pueden cumplir las dos condiciones a la vez: se priorizó el recall (≥ 70 %).
+Deuda no informada: se imputa 1 (el peso aprendido de la deuda es positivo, así que 1 es el valor que NO reduce el riesgo).
+
+====================================================================================================
+FASE 5 – Controlar que ninguna variable domine
+====================================================================================================
+Tope de dominancia: 35 % de la importancia total [SUPUESTO]. Se decide con la importancia en TRAIN y se exige ≤ 33 % (margen por ruido de muestreo).
+Importancia por permutación en train (logística): tasa_reprobacion 36.7 % · deuda_matricula 12.2 % · estrato 12.0 % · trabaja 11.3 % · promedio_acumulado 10.6 % · porcentaje_asistencia 10.5 % · creditos_inscritos 6.0 % · semestre 0.6 %
+   tasa_reprobacion sobre el objetivo → L2 ×2 en esa variable (λ = 0.002) → peso +0.464 | máx. ahora tasa_reprobacion 36.5 % | AUC val 0.8075
+   tasa_reprobacion sobre el objetivo → L2 ×4 en esa variable (λ = 0.004) → peso +0.460 | máx. ahora tasa_reprobacion 36.1 % | AUC val 0.8075
+   tasa_reprobacion sobre el objetivo → L2 ×8 en esa variable (λ = 0.008) → peso +0.456 | máx. ahora tasa_reprobacion 35.7 % | AUC val 0.8076
+   tasa_reprobacion sobre el objetivo → L2 ×16 en esa variable (λ = 0.016) → peso +0.440 | máx. ahora tasa_reprobacion 34.2 % | AUC val 0.8078
+   tasa_reprobacion sobre el objetivo → L2 ×32 en esa variable (λ = 0.032) → peso +0.413 | máx. ahora tasa_reprobacion 31.5 % | AUC val 0.8080
+Se reemplaza la logística por la versión con el tope aplicado y se recalculan tarjeta y cortes (nuevos cortes: medio ≥ 26, alto ≥ 35).
+Costo de repartir el peso (medido en test al final): AUC 0.8166 → 0.8170 (+0.0004) | log-loss 0.3651 → 0.3653 (+0.0003)
+
+Importancia por permutación en TEST (caída de AUC, 5 permutaciones; AUC base logística 0.8170, red 0.8203):
+variable                                      logística     red neuronal
+tasa_reprobacion                        0.0407 (32.6 %)  0.0413 (29.3 %)
+promedio_acumulado                      0.0235 (18.8 %)  0.0260 (18.4 %)
+porcentaje_asistencia                   0.0207 (16.5 %)  0.0236 (16.8 %)
+deuda_matricula                         0.0134 (10.7 %)  0.0157 (11.2 %)
+trabaja                                 0.0096 ( 7.7 %)  0.0147 (10.4 %)
+creditos_inscritos                      0.0085 ( 6.8 %)  0.0081 ( 5.7 %)
+estrato                                 0.0079 ( 6.3 %)  0.0102 ( 7.3 %)
+semestre                                0.0007 ( 0.5 %)  0.0012 ( 0.9 %)
+   logística: variable más importante tasa_reprobacion con 32.6 % → dentro del tope
+   red neuronal: variable más importante tasa_reprobacion con 29.3 % → dentro del tope
+
+Ablación (se reentrena la logística sin una variable a la vez):
+   sin semestre                           AUC 0.8168 (Δ -0.0001) | log-loss 0.3654 (Δ +0.0001)
+   sin promedio_acumulado                 AUC 0.8104 (Δ -0.0065) | log-loss 0.3695 (Δ +0.0042)
+   sin creditos_inscritos                 AUC 0.8105 (Δ -0.0065) | log-loss 0.3689 (Δ +0.0036)
+   sin tasa_reprobacion                   AUC 0.8092 (Δ -0.0077) | log-loss 0.3755 (Δ +0.0101)
+   sin porcentaje_asistencia              AUC 0.8105 (Δ -0.0065) | log-loss 0.3698 (Δ +0.0045)
+   sin estrato                            AUC 0.8149 (Δ -0.0020) | log-loss 0.3668 (Δ +0.0015)
+   sin trabaja                            AUC 0.8161 (Δ -0.0008) | log-loss 0.3673 (Δ +0.0020)
+   sin deuda_matricula                    AUC 0.8094 (Δ -0.0076) | log-loss 0.3706 (Δ +0.0053)
+   Colapsos (Δ AUC < -0.1): 0
+
+Estabilidad (5 muestras bootstrap de train para la logística, 5 semillas para la red):
+variable                                  peso medio ± desv    import. logística        import. red
+semestre                                  -0.068 ± 0.026       0.3 % ±  0.1 %     0.2 % ±  0.2 %
+promedio_acumulado                        -0.302 ± 0.029      16.0 % ±  2.2 %    15.8 % ±  1.8 %
+creditos_inscritos                        -0.198 ± 0.018       7.9 % ±  0.8 %     8.0 % ±  0.7 %
+tasa_reprobacion                          +0.398 ± 0.006      34.5 % ±  1.3 %    32.2 % ±  1.3 %
+porcentaje_asistencia                     -0.297 ± 0.021      15.5 % ±  1.8 %    14.5 % ±  1.7 %
+estrato                                   -0.273 ± 0.012       9.0 % ±  0.5 %    10.9 % ±  1.0 %
+trabaja                                   +0.280 ± 0.010       8.3 % ±  0.3 %    10.4 % ±  0.7 %
+deuda_matricula                           +0.265 ± 0.018       8.5 % ±  0.6 %     8.0 % ±  0.7 %
+   Variables cuyo peso cambia de signo entre muestras: ninguna
+
+Variable sensible (estrato) – en test:
+estrato     n  deserción real  % alto con  % alto sin  recall con  recall sin  log-loss con  log-loss sin
+      1   656          32.2 %      63.7 %      55.0 %      87.7 %      83.4 %        0.4736        0.4773
+      2  1004          20.3 %      33.2 %      33.6 %      69.1 %      69.1 %        0.4068        0.4062
+      3   849          11.2 %      15.7 %      21.4 %      47.4 %      56.8 %        0.2985        0.3024
+      4   323           7.4 %       6.5 %      14.2 %      29.2 %      37.5 %        0.2394        0.2467
+      5   112           8.9 %       4.5 %      15.2 %      30.0 %      70.0 %        0.2457        0.2443
+      6    56          10.7 %       1.8 %       5.4 %      16.7 %      50.0 %        0.3295        0.2793
+Global: con estrato AUC 0.8170, log-loss 0.3653 | sin estrato AUC 0.8149, log-loss 0.3668. La decisión de dejarlo o quitarlo es del equipo.
+
+====================================================================================================
+FASE 6 – Evaluación final en TEST (primera vez que se usa el test). Datos SINTÉTICOS.
+====================================================================================================
+Métrica                          reglas (línea base)     regresión logística      red neuronal (MLP)
+Log-loss (↓)                                  0.4552                  0.3653                  0.3600
+Brier (↓)                                     0.1453                  0.1114                  0.1101
+AUC-ROC (↑)                                   0.7931                  0.8170                  0.8203
+Accuracy (alto = riesgo)                       82.1%                   76.8%                   78.2%
+Recall desertores (alto)                       51.1%                   69.6%                   67.3%
+Precisión (alto)                               51.1%                   42.0%                   43.9%
+Recall (medio + alto)                          82.5%                   92.2%                   93.1%
+Precisión (medio + alto)                       31.3%                   26.5%                   25.8%
+% de estudiantes en alto                       18.3%                   30.4%                   28.1%
+
+Techo teórico (AUC de la probabilidad real que generó los datos): 0.8459
+
+Matriz de confusión por nivel (desertó sí / no) y tasa real de deserción en cada nivel:
+  reglas (línea base)    bajo:   96 sí / 1452 no (6% desertan) | medio:  173 sí /  729 no (19% desertan) | alto:  281 sí /  269 no (51% desertan)
+  regresión logística    bajo:   43 sí / 1045 no (4% desertan) | medio:  124 sí /  876 no (12% desertan) | alto:  383 sí /  529 no (42% desertan)
+  red neuronal (MLP)     bajo:   38 sí /  979 no (4% desertan) | medio:  142 sí /  998 no (12% desertan) | alto:  370 sí /  473 no (44% desertan)
+
+Accuracy engaña con clases desbalanceadas: un modelo que dijera 'nadie deserta' acertaría ~82% sin detectar a ningún desertor.
+
+Conclusión: La red neuronal NO supera de forma relevante a la logística (AUC 0.820 vs 0.817); la logística es preferible porque es explicable. La línea base por reglas queda cerca (AUC 0.793, +0.024 frente a la logística) y su probabilidad (puntaje/100) está mal calibrada (Brier 0.145 vs 0.111). Ningún modelo puede pasar de ~0.846 de AUC porque el resto es ruido de la simulación. Todo se midió con datos SINTÉTICOS: no representa el desempeño con estudiantes reales.
+
+Modelos guardados en modelos_entrenados/ (logistica.json, red_neuronal.json)
+Reportes generados: reportes/datos_resumen.md, reportes/reporte_entrenamiento.md
+Web: 17 archivos copiados a public/reportes/
+
+Listo en 83 s. Resultados en reportes/resultados.json
