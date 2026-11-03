@@ -1,0 +1,898 @@
+
+####################################################################################################
+# Ronda 3a (v2)
+####################################################################################################
+----------------------------------------------------------------------------------------------------
+[PASA ] R01  (real)
+  Qué prueba:  Estudiante sin ningún factor de riesgo (caso típico de todos los días).
+  Esperado:    resultado: bajo (0)
+  Obtenido:    resultado: bajo (0)
+  Qué hizo:    El sistema dio riesgo BAJO (0 puntos) y recomienda seguimiento rutinario.
+  Significado: Correcto. No suma puntos en ningún factor, así que el riesgo es bajo y basta el
+               seguimiento normal.
+----------------------------------------------------------------------------------------------------
+[PASA ] R02  (real)
+  Qué prueba:  Estudiante con varios factores moderados: promedio 3.2, 1 materia perdida, 80% de
+               asistencia, estrato 2 y trabaja.
+  Esperado:    resultado: medio (50)
+  Obtenido:    resultado: medio (50)
+  Qué hizo:    El sistema dio riesgo MEDIO (50 puntos) y recomienda tutoría académica.
+  Significado: Correcto. 15 (promedio) + 10 (1 perdida) + 10 (asistencia) + 10 (estrato) + 5
+               (trabaja) = 50, que es riesgo medio: tutoría académica.
+----------------------------------------------------------------------------------------------------
+[PASA ] R03  (real)
+  Qué prueba:  Estudiante con todos los factores de riesgo a la vez.
+  Esperado:    resultado: alto (100)
+  Obtenido:    resultado: alto (100)
+  Qué hizo:    El sistema dio riesgo ALTO (100 puntos) y recomienda remisión a bienestar y tutoría.
+  Significado: Correcto. Suma 100, el máximo: riesgo alto, remisión a bienestar y tutoría.
+----------------------------------------------------------------------------------------------------
+[PASA ] R04  (real)
+  Qué prueba:  Caso típico, pero sin el dato opcional de deuda de matrícula.
+  Esperado:    resultado: bajo (15) [no inf: deuda_matricula]
+  Obtenido:    resultado: bajo (15) [no inf: deuda_matricula]
+  Qué hizo:    El sistema dio riesgo BAJO (15 puntos) y recomienda seguimiento rutinario. Avisa que
+               no llegó: deuda_matricula.
+  Significado: Correcto. Suma 15, riesgo bajo. La deuda no se inventa: se avisa que no llegó para
+               que el consejero lo tenga en cuenta.
+----------------------------------------------------------------------------------------------------
+[PASA ] R05  (real)
+  Qué prueba:  Estudiante con buen promedio, pero 2 materias perdidas y deuda de matrícula.
+  Esperado:    resultado: medio (45)
+  Obtenido:    resultado: medio (45)
+  Qué hizo:    El sistema dio riesgo MEDIO (45 puntos) y recomienda tutoría académica.
+  Significado: Correcto. 25 (2 perdidas) + 10 (asistencia) + 10 (deuda) = 45, riesgo medio.
+----------------------------------------------------------------------------------------------------
+[PASA ] S01  (simulado)
+  Qué prueba:  Falta el promedio acumulado, que es obligatorio.
+  Esperado:    abstener(campo_faltante)
+  Obtenido:    abstener(campo_faltante)
+  Qué hizo:    El sistema NO decidió y envía el caso a un humano, porque falta un dato obligatorio.
+  Significado: Correcto. Sin promedio no se puede calcular el riesgo sin inventar datos. Lo correcto
+               es abstenerse y pasar el caso a un humano.
+----------------------------------------------------------------------------------------------------
+[PASA ] S02  (simulado)
+  Qué prueba:  La asistencia llega vacía (null).
+  Esperado:    abstener(campo_faltante)
+  Obtenido:    abstener(campo_faltante)
+  Qué hizo:    El sistema NO decidió y envía el caso a un humano, porque falta un dato obligatorio.
+  Significado: Correcto. null significa 'no hay dato', no 0%. Se abstiene igual que si el campo
+               faltara.
+----------------------------------------------------------------------------------------------------
+[PASA ] S03  (simulado)
+  Qué prueba:  Dice que perdió 5 materias de 4 cursadas: imposible.
+  Esperado:    abstener(datos_contradictorios)
+  Obtenido:    abstener(datos_contradictorios)
+  Qué hizo:    El sistema NO decidió y envía el caso a un humano, porque los datos se contradicen.
+  Significado: Correcto. Los datos se contradicen; decidir con ellos sería adivinar. Se remite a un
+               humano.
+----------------------------------------------------------------------------------------------------
+[PASA ] S04  (simulado)
+  Qué prueba:  Estudiante 'activo' con 0 créditos inscritos.
+  Esperado:    abstener(datos_contradictorios)
+  Obtenido:    abstener(datos_contradictorios)
+  Qué hizo:    El sistema NO decidió y envía el caso a un humano, porque los datos se contradicen.
+  Significado: Correcto. Activo sin créditos indica un registro desactualizado o mal cargado. Se
+               remite a un humano.
+----------------------------------------------------------------------------------------------------
+[PASA ] S05  (simulado)
+  Qué prueba:  Estudiante de posgrado: el sistema no está hecho para él.
+  Esperado:    abstener(fuera_de_poblacion)
+  Obtenido:    abstener(fuera_de_poblacion)
+  Qué hizo:    El sistema NO decidió y envía el caso a un humano, porque el estudiante no pertenece
+               a la población del sistema.
+  Significado: Correcto. Darle un nivel de riesgo a alguien fuera de la población no tiene sentido.
+               Debe abstenerse.
+----------------------------------------------------------------------------------------------------
+[PASA ] S06  (simulado)
+  Qué prueba:  Estudiante de semestre 7: fuera de la ventana de deserción temprana (semestres 2 a
+               4).
+  Esperado:    abstener(fuera_de_poblacion)
+  Obtenido:    abstener(fuera_de_poblacion)
+  Qué hizo:    El sistema NO decidió y envía el caso a un humano, porque el estudiante no pertenece
+               a la población del sistema.
+  Significado: Correcto. El sistema solo atiende semestres 2 a 4, así que debe abstenerse.
+----------------------------------------------------------------------------------------------------
+[PASA ] S07  (simulado)
+  Qué prueba:  Estudiante graduado al que además le falta el promedio: dos problemas a la vez.
+  Esperado:    abstener(fuera_de_poblacion)
+  Obtenido:    abstener(fuera_de_poblacion)
+  Qué hizo:    El sistema NO decidió y envía el caso a un humano, porque el estudiante no pertenece
+               a la población del sistema.
+  Significado: Correcto. El contrato revisa la población antes que los faltantes: si es graduado, no
+               importa qué dato le falte.
+----------------------------------------------------------------------------------------------------
+[PASA ] S08  (simulado)
+  Qué prueba:  Promedio 38: viene en escala 0-100 en vez de 0-5.
+  Esperado:    error(fuera_de_rango)
+  Obtenido:    error(fuera_de_rango)
+  Qué hizo:    El sistema rechazó la entrada con un error controlado: un dato está fuera del rango
+               permitido (campo: promedio_acumulado).
+  Significado: Correcto. El dato está mal formado: error controlado para que se corrija en el
+               sistema de origen.
+----------------------------------------------------------------------------------------------------
+[PASA ] S09  (simulado)
+  Qué prueba:  Semestre escrito como texto "3" en vez de número.
+  Esperado:    error(tipo_invalido)
+  Obtenido:    error(tipo_invalido)
+  Qué hizo:    El sistema rechazó la entrada con un error controlado: un dato tiene el tipo
+               equivocado (campo: semestre).
+  Significado: Correcto. Tipo incorrecto: error controlado. El sistema no adivina conversiones.
+----------------------------------------------------------------------------------------------------
+[PASA ] S10  (simulado)
+  Qué prueba:  Trabaja = "no" (texto) en vez de false.
+  Esperado:    error(tipo_invalido)
+  Obtenido:    error(tipo_invalido)
+  Qué hizo:    El sistema rechazó la entrada con un error controlado: un dato tiene el tipo
+               equivocado (campo: trabaja).
+  Significado: Correcto. Tipo incorrecto. Si se aceptara, el texto "no" contaría como que sí
+               trabaja.
+----------------------------------------------------------------------------------------------------
+[PASA ] S11  (simulado)
+  Qué prueba:  "Pregrado" con mayúscula; el valor permitido es "pregrado".
+  Esperado:    error(valor_no_permitido)
+  Obtenido:    error(valor_no_permitido)
+  Qué hizo:    El sistema rechazó la entrada con un error controlado: un dato no está en la lista de
+               valores permitidos (campo: nivel_formacion).
+  Significado: Correcto. No coincide exactamente con los valores permitidos: se rechaza para que se
+               corrija en el origen.
+----------------------------------------------------------------------------------------------------
+[PASA ] S12  (simulado)
+  Qué prueba:  Promedio 3.0 y asistencia 70 exactos: justo en los umbrales.
+  Esperado:    resultado: medio (35)
+  Obtenido:    resultado: medio (35)
+  Qué hizo:    El sistema dio riesgo MEDIO (35 puntos) y recomienda tutoría académica.
+  Significado: Correcto. 3.0 cae en 3.0 <= p < 3.5 (+15), 70 cae en 70 <= a < 85 (+10) y la materia
+               perdida suma +10: 35, riesgo medio.
+----------------------------------------------------------------------------------------------------
+[PASA ] S13  (simulado)
+  Qué prueba:  Puntaje exactamente 60: la frontera entre riesgo medio y alto.
+  Esperado:    resultado: alto (60)
+  Obtenido:    resultado: alto (60)
+  Qué hizo:    El sistema dio riesgo ALTO (60 puntos) y recomienda remisión a bienestar y tutoría.
+  Significado: Correcto. El corte '>= 60' es inclusivo: 60 ya es riesgo alto.
+----------------------------------------------------------------------------------------------------
+[PASA ] S14  (simulado)
+  Qué prueba:  Promedio 2.99 y asistencia 69.9: suma 50 (medio), pero activa la regla especial R3.4.
+  Esperado:    resultado: alto (50)
+  Obtenido:    resultado: alto (50)
+  Qué hizo:    El sistema dio riesgo ALTO (50 puntos) y recomienda remisión a bienestar y tutoría.
+  Significado: Correcto. La regla R3.4 (promedio < 3.0 Y asistencia < 70) sube el caso a alto aunque
+               el puntaje sea 50.
+----------------------------------------------------------------------------------------------------
+[PASA ] S15  (simulado)
+  Qué prueba:  Semestre = true (booleano). En Python, True vale 1.
+  Esperado:    error(tipo_invalido)
+  Obtenido:    error(tipo_invalido)
+  Qué hizo:    El sistema rechazó la entrada con un error controlado: un dato tiene el tipo
+               equivocado (campo: semestre).
+  Significado: Correcto. Un booleano no es un semestre válido: error de tipo.
+----------------------------------------------------------------------------------------------------
+[FALLA] T01  (nuevo)
+  Qué prueba:  Asistencia 0.92: parece venir como proporción (92%) y no como porcentaje.
+  Esperado:    abstener(datos_contradictorios)
+  Obtenido:    resultado: bajo (20)
+  Qué hizo:    El sistema dio riesgo BAJO (20 puntos) y recomienda seguimiento rutinario.
+  Significado: Incorrecto. v2 acepta 0.92 porque está dentro de 0-100 y lo cuenta como asistencia
+               bajísima. Es un hueco del contrato, no del código. FALLA SILENCIOSA.
+  Lo correcto: Una asistencia real de 0.92% es casi imposible en alguien activo; lo prudente es que
+               un humano revise la escala.
+----------------------------------------------------------------------------------------------------
+[PASA ] T02  (nuevo)
+  Qué prueba:  Promedio "3,8" con coma decimal, como sale de Excel en español.
+  Esperado:    error(tipo_invalido)
+  Obtenido:    error(tipo_invalido)
+  Qué hizo:    El sistema rechazó la entrada con un error controlado: un dato tiene el tipo
+               equivocado (campo: promedio_acumulado).
+  Significado: Correcto. "3,8" es texto, no número: error para que se corrija en el origen.
+----------------------------------------------------------------------------------------------------
+[PASA ] T03  (nuevo)
+  Qué prueba:  Semestre 3.0 (decimal) en vez de 3 (entero).
+  Esperado:    error(tipo_invalido)
+  Obtenido:    error(tipo_invalido)
+  Qué hizo:    El sistema rechazó la entrada con un error controlado: un dato tiene el tipo
+               equivocado (campo: semestre).
+  Significado: Correcto. El semestre debe ser un entero: error de tipo.
+----------------------------------------------------------------------------------------------------
+[PASA ] T04  (nuevo)
+  Qué prueba:  Trabaja = 1 (número) en vez de true.
+  Esperado:    error(tipo_invalido)
+  Obtenido:    error(tipo_invalido)
+  Qué hizo:    El sistema rechazó la entrada con un error controlado: un dato tiene el tipo
+               equivocado (campo: trabaja).
+  Significado: Correcto. El campo debe ser booleano (true/false): error de tipo.
+----------------------------------------------------------------------------------------------------
+[PASA ] T05  (nuevo)
+  Qué prueba:  "pregrado " con un espacio invisible al final.
+  Esperado:    error(valor_no_permitido)
+  Obtenido:    error(valor_no_permitido)
+  Qué hizo:    El sistema rechazó la entrada con un error controlado: un dato no está en la lista de
+               valores permitidos (campo: nivel_formacion).
+  Significado: Correcto. No coincide exactamente con la lista de valores: valor no permitido.
+----------------------------------------------------------------------------------------------------
+[FALLA] T06  (nuevo)
+  Qué prueba:  El id del estudiante son solo espacios: la clave existe pero está vacía.
+  Esperado:    abstener(campo_faltante)
+  Obtenido:    error(tipo_invalido)
+  Qué hizo:    El sistema rechazó la entrada con un error controlado: un dato tiene el tipo
+               equivocado (campo: id_estudiante).
+  Significado: Incorrecto. v2 lo trata como error de tipo en vez de dato faltante: el contrato no
+               definía qué hacer con un texto vacío.
+  Lo correcto: Un texto vacío equivale a un dato faltante: el sistema se abstiene y lo pide.
+----------------------------------------------------------------------------------------------------
+[PASA ] T07  (nuevo)
+  Qué prueba:  El promedio llega con la clave mal escrita ("Promedio_acumulado").
+  Esperado:    abstener(campo_faltante)
+  Obtenido:    abstener(campo_faltante)
+  Qué hizo:    El sistema NO decidió y envía el caso a un humano, porque falta un dato obligatorio.
+  Significado: Correcto. El sistema no adivina nombres de campos: el promedio falta, así que se
+               abstiene.
+----------------------------------------------------------------------------------------------------
+[PASA ] T08  (nuevo)
+  Qué prueba:  Dos errores de formato a la vez: semestre como texto y promedio 38.
+  Esperado:    error(tipo_invalido)
+  Obtenido:    error(tipo_invalido)
+  Qué hizo:    El sistema rechazó la entrada con un error controlado: un dato tiene el tipo
+               equivocado (campo: semestre).
+  Significado: Correcto. Se reporta el primer error según el orden del contrato (semestre va antes
+               que promedio).
+----------------------------------------------------------------------------------------------------
+[PASA ] T09  (nuevo)
+  Qué prueba:  Estudiante de posgrado y además estrato 9 (fuera de rango).
+  Esperado:    error(fuera_de_rango)
+  Obtenido:    error(fuera_de_rango)
+  Qué hizo:    El sistema rechazó la entrada con un error controlado: un dato está fuera del rango
+               permitido (campo: estrato).
+  Significado: Correcto. El formato se valida antes que la población: primero hay que corregir el
+               dato roto.
+----------------------------------------------------------------------------------------------------
+[PASA ] T10  (nuevo)
+  Qué prueba:  Estudiante retirado y con 0 créditos.
+  Esperado:    abstener(fuera_de_poblacion)
+  Obtenido:    abstener(fuera_de_poblacion)
+  Qué hizo:    El sistema NO decidió y envía el caso a un humano, porque el estudiante no pertenece
+               a la población del sistema.
+  Significado: Correcto. La población se revisa antes que las contradicciones: un retirado no se
+               evalúa.
+----------------------------------------------------------------------------------------------------
+[PASA ] T11  (nuevo)
+  Qué prueba:  Perdió 6 de 6 materias: el límite exacto de la regla de contradicción.
+  Esperado:    resultado: bajo (25)
+  Obtenido:    resultado: bajo (25)
+  Qué hizo:    El sistema dio riesgo BAJO (25 puntos) y recomienda seguimiento rutinario.
+  Significado: Correcto. 6 de 6 es posible (no es 'mayor que'): resultado normal, 25 puntos, riesgo
+               bajo.
+----------------------------------------------------------------------------------------------------
+[FALLA] T12  (nuevo)
+  Qué prueba:  Semestre 3 pero 0 materias cursadas el periodo anterior: no hay evidencia.
+  Esperado:    abstener(datos_contradictorios)
+  Obtenido:    resultado: bajo (0)
+  Qué hizo:    El sistema dio riesgo BAJO (0 puntos) y recomienda seguimiento rutinario.
+  Significado: Incorrecto. v2 interpreta '0 perdidas' como algo bueno y dice 'bajo' sin evidencia.
+               Es un hueco del contrato. FALLA SILENCIOSA.
+  Lo correcto: Sin materias cursadas no hay evidencia; '0 perdidas' no significa que le vaya bien.
+               Revisa un humano.
+----------------------------------------------------------------------------------------------------
+[PASA ] T13  (nuevo)
+  Qué prueba:  Semestre 4, promedio 3.5 y asistencia 84.99: tres bordes a la vez.
+  Esperado:    resultado: bajo (10)
+  Obtenido:    resultado: bajo (10)
+  Qué hizo:    El sistema dio riesgo BAJO (10 puntos) y recomienda seguimiento rutinario.
+  Significado: Correcto. Semestre 4 sí entra; promedio 3.5 suma 0; asistencia 84.99 suma 10. Total
+               10, riesgo bajo.
+----------------------------------------------------------------------------------------------------
+[PASA ] T14  (nuevo)
+  Qué prueba:  Promedio 2.99 pero asistencia exactamente 70: la regla R3.4 se cumple solo a medias.
+  Esperado:    resultado: medio (40)
+  Obtenido:    resultado: medio (40)
+  Qué hizo:    El sistema dio riesgo MEDIO (40 puntos) y recomienda tutoría académica.
+  Significado: Correcto. 70 no es menor que 70, así que R3.4 no aplica: 30 + 10 = 40, riesgo medio.
+----------------------------------------------------------------------------------------------------
+[PASA ] T15  (nuevo)
+  Qué prueba:  Solo promedio 2.9: puntaje exactamente 30, frontera entre bajo y medio.
+  Esperado:    resultado: medio (30)
+  Obtenido:    resultado: medio (30)
+  Qué hizo:    El sistema dio riesgo MEDIO (30 puntos) y recomienda tutoría académica.
+  Significado: Correcto. El corte '>= 30' es inclusivo: 30 ya es riesgo medio.
+====================================================================================================
+RESULTADO Ronda 3a (v2): 32/35 pasan | fallas: 0 caídas, 2 silenciosas, 1 mal clasificadas
+Interpretación: Con 15 casos nuevos, v2 sin cambios resiste todos los ataques técnicos (tipos,
+orden, fronteras) y no tiene regresiones. Sus 3 fallas vienen de reglas que el contrato no tenía:
+huecos del contrato, no del código.
+====================================================================================================
+Por grupo: {'real': 5, 'simulado': 15, 'nuevo': 12}
+
+####################################################################################################
+# Ronda 3b (v3)
+####################################################################################################
+----------------------------------------------------------------------------------------------------
+[PASA ] R01  (real)
+  Qué prueba:  Estudiante sin ningún factor de riesgo (caso típico de todos los días).
+  Esperado:    resultado: bajo (0)
+  Obtenido:    resultado: bajo (0)
+  Qué hizo:    El sistema dio riesgo BAJO (0 puntos) y recomienda seguimiento rutinario.
+  Significado: Correcto. No suma puntos en ningún factor, así que el riesgo es bajo y basta el
+               seguimiento normal.
+----------------------------------------------------------------------------------------------------
+[PASA ] R02  (real)
+  Qué prueba:  Estudiante con varios factores moderados: promedio 3.2, 1 materia perdida, 80% de
+               asistencia, estrato 2 y trabaja.
+  Esperado:    resultado: medio (50)
+  Obtenido:    resultado: medio (50)
+  Qué hizo:    El sistema dio riesgo MEDIO (50 puntos) y recomienda tutoría académica.
+  Significado: Correcto. 15 (promedio) + 10 (1 perdida) + 10 (asistencia) + 10 (estrato) + 5
+               (trabaja) = 50, que es riesgo medio: tutoría académica.
+----------------------------------------------------------------------------------------------------
+[PASA ] R03  (real)
+  Qué prueba:  Estudiante con todos los factores de riesgo a la vez.
+  Esperado:    resultado: alto (100)
+  Obtenido:    resultado: alto (100)
+  Qué hizo:    El sistema dio riesgo ALTO (100 puntos) y recomienda remisión a bienestar y tutoría.
+  Significado: Correcto. Suma 100, el máximo: riesgo alto, remisión a bienestar y tutoría.
+----------------------------------------------------------------------------------------------------
+[PASA ] R04  (real)
+  Qué prueba:  Caso típico, pero sin el dato opcional de deuda de matrícula.
+  Esperado:    resultado: bajo (15) [no inf: deuda_matricula]
+  Obtenido:    resultado: bajo (15) [no inf: deuda_matricula]
+  Qué hizo:    El sistema dio riesgo BAJO (15 puntos) y recomienda seguimiento rutinario. Avisa que
+               no llegó: deuda_matricula.
+  Significado: Correcto. Suma 15, riesgo bajo. La deuda no se inventa: se avisa que no llegó para
+               que el consejero lo tenga en cuenta.
+----------------------------------------------------------------------------------------------------
+[PASA ] R05  (real)
+  Qué prueba:  Estudiante con buen promedio, pero 2 materias perdidas y deuda de matrícula.
+  Esperado:    resultado: medio (45)
+  Obtenido:    resultado: medio (45)
+  Qué hizo:    El sistema dio riesgo MEDIO (45 puntos) y recomienda tutoría académica.
+  Significado: Correcto. 25 (2 perdidas) + 10 (asistencia) + 10 (deuda) = 45, riesgo medio.
+----------------------------------------------------------------------------------------------------
+[PASA ] S01  (simulado)
+  Qué prueba:  Falta el promedio acumulado, que es obligatorio.
+  Esperado:    abstener(campo_faltante)
+  Obtenido:    abstener(campo_faltante)
+  Qué hizo:    El sistema NO decidió y envía el caso a un humano, porque falta un dato obligatorio.
+  Significado: Correcto. Sin promedio no se puede calcular el riesgo sin inventar datos. Lo correcto
+               es abstenerse y pasar el caso a un humano.
+----------------------------------------------------------------------------------------------------
+[PASA ] S02  (simulado)
+  Qué prueba:  La asistencia llega vacía (null).
+  Esperado:    abstener(campo_faltante)
+  Obtenido:    abstener(campo_faltante)
+  Qué hizo:    El sistema NO decidió y envía el caso a un humano, porque falta un dato obligatorio.
+  Significado: Correcto. null significa 'no hay dato', no 0%. Se abstiene igual que si el campo
+               faltara.
+----------------------------------------------------------------------------------------------------
+[PASA ] S03  (simulado)
+  Qué prueba:  Dice que perdió 5 materias de 4 cursadas: imposible.
+  Esperado:    abstener(datos_contradictorios)
+  Obtenido:    abstener(datos_contradictorios)
+  Qué hizo:    El sistema NO decidió y envía el caso a un humano, porque los datos se contradicen.
+  Significado: Correcto. Los datos se contradicen; decidir con ellos sería adivinar. Se remite a un
+               humano.
+----------------------------------------------------------------------------------------------------
+[PASA ] S04  (simulado)
+  Qué prueba:  Estudiante 'activo' con 0 créditos inscritos.
+  Esperado:    abstener(datos_contradictorios)
+  Obtenido:    abstener(datos_contradictorios)
+  Qué hizo:    El sistema NO decidió y envía el caso a un humano, porque los datos se contradicen.
+  Significado: Correcto. Activo sin créditos indica un registro desactualizado o mal cargado. Se
+               remite a un humano.
+----------------------------------------------------------------------------------------------------
+[PASA ] S05  (simulado)
+  Qué prueba:  Estudiante de posgrado: el sistema no está hecho para él.
+  Esperado:    abstener(fuera_de_poblacion)
+  Obtenido:    abstener(fuera_de_poblacion)
+  Qué hizo:    El sistema NO decidió y envía el caso a un humano, porque el estudiante no pertenece
+               a la población del sistema.
+  Significado: Correcto. Darle un nivel de riesgo a alguien fuera de la población no tiene sentido.
+               Debe abstenerse.
+----------------------------------------------------------------------------------------------------
+[PASA ] S06  (simulado)
+  Qué prueba:  Estudiante de semestre 7: fuera de la ventana de deserción temprana (semestres 2 a
+               4).
+  Esperado:    abstener(fuera_de_poblacion)
+  Obtenido:    abstener(fuera_de_poblacion)
+  Qué hizo:    El sistema NO decidió y envía el caso a un humano, porque el estudiante no pertenece
+               a la población del sistema.
+  Significado: Correcto. El sistema solo atiende semestres 2 a 4, así que debe abstenerse.
+----------------------------------------------------------------------------------------------------
+[PASA ] S07  (simulado)
+  Qué prueba:  Estudiante graduado al que además le falta el promedio: dos problemas a la vez.
+  Esperado:    abstener(fuera_de_poblacion)
+  Obtenido:    abstener(fuera_de_poblacion)
+  Qué hizo:    El sistema NO decidió y envía el caso a un humano, porque el estudiante no pertenece
+               a la población del sistema.
+  Significado: Correcto. El contrato revisa la población antes que los faltantes: si es graduado, no
+               importa qué dato le falte.
+----------------------------------------------------------------------------------------------------
+[PASA ] S08  (simulado)
+  Qué prueba:  Promedio 38: viene en escala 0-100 en vez de 0-5.
+  Esperado:    error(fuera_de_rango)
+  Obtenido:    error(fuera_de_rango)
+  Qué hizo:    El sistema rechazó la entrada con un error controlado: un dato está fuera del rango
+               permitido (campo: promedio_acumulado).
+  Significado: Correcto. El dato está mal formado: error controlado para que se corrija en el
+               sistema de origen.
+----------------------------------------------------------------------------------------------------
+[PASA ] S09  (simulado)
+  Qué prueba:  Semestre escrito como texto "3" en vez de número.
+  Esperado:    error(tipo_invalido)
+  Obtenido:    error(tipo_invalido)
+  Qué hizo:    El sistema rechazó la entrada con un error controlado: un dato tiene el tipo
+               equivocado (campo: semestre).
+  Significado: Correcto. Tipo incorrecto: error controlado. El sistema no adivina conversiones.
+----------------------------------------------------------------------------------------------------
+[PASA ] S10  (simulado)
+  Qué prueba:  Trabaja = "no" (texto) en vez de false.
+  Esperado:    error(tipo_invalido)
+  Obtenido:    error(tipo_invalido)
+  Qué hizo:    El sistema rechazó la entrada con un error controlado: un dato tiene el tipo
+               equivocado (campo: trabaja).
+  Significado: Correcto. Tipo incorrecto. Si se aceptara, el texto "no" contaría como que sí
+               trabaja.
+----------------------------------------------------------------------------------------------------
+[PASA ] S11  (simulado)
+  Qué prueba:  "Pregrado" con mayúscula; el valor permitido es "pregrado".
+  Esperado:    error(valor_no_permitido)
+  Obtenido:    error(valor_no_permitido)
+  Qué hizo:    El sistema rechazó la entrada con un error controlado: un dato no está en la lista de
+               valores permitidos (campo: nivel_formacion).
+  Significado: Correcto. No coincide exactamente con los valores permitidos: se rechaza para que se
+               corrija en el origen.
+----------------------------------------------------------------------------------------------------
+[PASA ] S12  (simulado)
+  Qué prueba:  Promedio 3.0 y asistencia 70 exactos: justo en los umbrales.
+  Esperado:    resultado: medio (35)
+  Obtenido:    resultado: medio (35)
+  Qué hizo:    El sistema dio riesgo MEDIO (35 puntos) y recomienda tutoría académica.
+  Significado: Correcto. 3.0 cae en 3.0 <= p < 3.5 (+15), 70 cae en 70 <= a < 85 (+10) y la materia
+               perdida suma +10: 35, riesgo medio.
+----------------------------------------------------------------------------------------------------
+[PASA ] S13  (simulado)
+  Qué prueba:  Puntaje exactamente 60: la frontera entre riesgo medio y alto.
+  Esperado:    resultado: alto (60)
+  Obtenido:    resultado: alto (60)
+  Qué hizo:    El sistema dio riesgo ALTO (60 puntos) y recomienda remisión a bienestar y tutoría.
+  Significado: Correcto. El corte '>= 60' es inclusivo: 60 ya es riesgo alto.
+----------------------------------------------------------------------------------------------------
+[PASA ] S14  (simulado)
+  Qué prueba:  Promedio 2.99 y asistencia 69.9: suma 50 (medio), pero activa la regla especial R3.4.
+  Esperado:    resultado: alto (50)
+  Obtenido:    resultado: alto (50)
+  Qué hizo:    El sistema dio riesgo ALTO (50 puntos) y recomienda remisión a bienestar y tutoría.
+  Significado: Correcto. La regla R3.4 (promedio < 3.0 Y asistencia < 70) sube el caso a alto aunque
+               el puntaje sea 50.
+----------------------------------------------------------------------------------------------------
+[PASA ] S15  (simulado)
+  Qué prueba:  Semestre = true (booleano). En Python, True vale 1.
+  Esperado:    error(tipo_invalido)
+  Obtenido:    error(tipo_invalido)
+  Qué hizo:    El sistema rechazó la entrada con un error controlado: un dato tiene el tipo
+               equivocado (campo: semestre).
+  Significado: Correcto. Un booleano no es un semestre válido: error de tipo.
+----------------------------------------------------------------------------------------------------
+[PASA ] T01  (nuevo)
+  Qué prueba:  Asistencia 0.92: parece venir como proporción (92%) y no como porcentaje.
+  Esperado:    abstener(datos_contradictorios)
+  Obtenido:    abstener(datos_contradictorios)
+  Qué hizo:    El sistema NO decidió y envía el caso a un humano, porque los datos se contradicen.
+  Significado: Correcto. Una asistencia real de 0.92% es casi imposible en alguien activo; lo
+               prudente es que un humano revise la escala.
+----------------------------------------------------------------------------------------------------
+[PASA ] T02  (nuevo)
+  Qué prueba:  Promedio "3,8" con coma decimal, como sale de Excel en español.
+  Esperado:    error(tipo_invalido)
+  Obtenido:    error(tipo_invalido)
+  Qué hizo:    El sistema rechazó la entrada con un error controlado: un dato tiene el tipo
+               equivocado (campo: promedio_acumulado).
+  Significado: Correcto. "3,8" es texto, no número: error para que se corrija en el origen.
+----------------------------------------------------------------------------------------------------
+[PASA ] T03  (nuevo)
+  Qué prueba:  Semestre 3.0 (decimal) en vez de 3 (entero).
+  Esperado:    error(tipo_invalido)
+  Obtenido:    error(tipo_invalido)
+  Qué hizo:    El sistema rechazó la entrada con un error controlado: un dato tiene el tipo
+               equivocado (campo: semestre).
+  Significado: Correcto. El semestre debe ser un entero: error de tipo.
+----------------------------------------------------------------------------------------------------
+[PASA ] T04  (nuevo)
+  Qué prueba:  Trabaja = 1 (número) en vez de true.
+  Esperado:    error(tipo_invalido)
+  Obtenido:    error(tipo_invalido)
+  Qué hizo:    El sistema rechazó la entrada con un error controlado: un dato tiene el tipo
+               equivocado (campo: trabaja).
+  Significado: Correcto. El campo debe ser booleano (true/false): error de tipo.
+----------------------------------------------------------------------------------------------------
+[PASA ] T05  (nuevo)
+  Qué prueba:  "pregrado " con un espacio invisible al final.
+  Esperado:    error(valor_no_permitido)
+  Obtenido:    error(valor_no_permitido)
+  Qué hizo:    El sistema rechazó la entrada con un error controlado: un dato no está en la lista de
+               valores permitidos (campo: nivel_formacion).
+  Significado: Correcto. No coincide exactamente con la lista de valores: valor no permitido.
+----------------------------------------------------------------------------------------------------
+[PASA ] T06  (nuevo)
+  Qué prueba:  El id del estudiante son solo espacios: la clave existe pero está vacía.
+  Esperado:    abstener(campo_faltante)
+  Obtenido:    abstener(campo_faltante)
+  Qué hizo:    El sistema NO decidió y envía el caso a un humano, porque falta un dato obligatorio.
+  Significado: Correcto. Un texto vacío equivale a un dato faltante: el sistema se abstiene y lo
+               pide.
+----------------------------------------------------------------------------------------------------
+[PASA ] T07  (nuevo)
+  Qué prueba:  El promedio llega con la clave mal escrita ("Promedio_acumulado").
+  Esperado:    abstener(campo_faltante)
+  Obtenido:    abstener(campo_faltante)
+  Qué hizo:    El sistema NO decidió y envía el caso a un humano, porque falta un dato obligatorio.
+  Significado: Correcto. El sistema no adivina nombres de campos: el promedio falta, así que se
+               abstiene.
+----------------------------------------------------------------------------------------------------
+[PASA ] T08  (nuevo)
+  Qué prueba:  Dos errores de formato a la vez: semestre como texto y promedio 38.
+  Esperado:    error(tipo_invalido)
+  Obtenido:    error(tipo_invalido)
+  Qué hizo:    El sistema rechazó la entrada con un error controlado: un dato tiene el tipo
+               equivocado (campo: semestre).
+  Significado: Correcto. Se reporta el primer error según el orden del contrato (semestre va antes
+               que promedio).
+----------------------------------------------------------------------------------------------------
+[PASA ] T09  (nuevo)
+  Qué prueba:  Estudiante de posgrado y además estrato 9 (fuera de rango).
+  Esperado:    error(fuera_de_rango)
+  Obtenido:    error(fuera_de_rango)
+  Qué hizo:    El sistema rechazó la entrada con un error controlado: un dato está fuera del rango
+               permitido (campo: estrato).
+  Significado: Correcto. El formato se valida antes que la población: primero hay que corregir el
+               dato roto.
+----------------------------------------------------------------------------------------------------
+[PASA ] T10  (nuevo)
+  Qué prueba:  Estudiante retirado y con 0 créditos.
+  Esperado:    abstener(fuera_de_poblacion)
+  Obtenido:    abstener(fuera_de_poblacion)
+  Qué hizo:    El sistema NO decidió y envía el caso a un humano, porque el estudiante no pertenece
+               a la población del sistema.
+  Significado: Correcto. La población se revisa antes que las contradicciones: un retirado no se
+               evalúa.
+----------------------------------------------------------------------------------------------------
+[PASA ] T11  (nuevo)
+  Qué prueba:  Perdió 6 de 6 materias: el límite exacto de la regla de contradicción.
+  Esperado:    resultado: bajo (25)
+  Obtenido:    resultado: bajo (25)
+  Qué hizo:    El sistema dio riesgo BAJO (25 puntos) y recomienda seguimiento rutinario.
+  Significado: Correcto. 6 de 6 es posible (no es 'mayor que'): resultado normal, 25 puntos, riesgo
+               bajo.
+----------------------------------------------------------------------------------------------------
+[PASA ] T12  (nuevo)
+  Qué prueba:  Semestre 3 pero 0 materias cursadas el periodo anterior: no hay evidencia.
+  Esperado:    abstener(datos_contradictorios)
+  Obtenido:    abstener(datos_contradictorios)
+  Qué hizo:    El sistema NO decidió y envía el caso a un humano, porque los datos se contradicen.
+  Significado: Correcto. Sin materias cursadas no hay evidencia; '0 perdidas' no significa que le
+               vaya bien. Revisa un humano.
+----------------------------------------------------------------------------------------------------
+[PASA ] T13  (nuevo)
+  Qué prueba:  Semestre 4, promedio 3.5 y asistencia 84.99: tres bordes a la vez.
+  Esperado:    resultado: bajo (10)
+  Obtenido:    resultado: bajo (10)
+  Qué hizo:    El sistema dio riesgo BAJO (10 puntos) y recomienda seguimiento rutinario.
+  Significado: Correcto. Semestre 4 sí entra; promedio 3.5 suma 0; asistencia 84.99 suma 10. Total
+               10, riesgo bajo.
+----------------------------------------------------------------------------------------------------
+[PASA ] T14  (nuevo)
+  Qué prueba:  Promedio 2.99 pero asistencia exactamente 70: la regla R3.4 se cumple solo a medias.
+  Esperado:    resultado: medio (40)
+  Obtenido:    resultado: medio (40)
+  Qué hizo:    El sistema dio riesgo MEDIO (40 puntos) y recomienda tutoría académica.
+  Significado: Correcto. 70 no es menor que 70, así que R3.4 no aplica: 30 + 10 = 40, riesgo medio.
+----------------------------------------------------------------------------------------------------
+[PASA ] T15  (nuevo)
+  Qué prueba:  Solo promedio 2.9: puntaje exactamente 30, frontera entre bajo y medio.
+  Esperado:    resultado: medio (30)
+  Obtenido:    resultado: medio (30)
+  Qué hizo:    El sistema dio riesgo MEDIO (30 puntos) y recomienda tutoría académica.
+  Significado: Correcto. El corte '>= 30' es inclusivo: 30 ya es riesgo medio.
+====================================================================================================
+RESULTADO Ronda 3b (v3): 35/35 pasan 
+Interpretación: v3 agrega las tres reglas que faltaban (texto vacío = faltante, asistencia en escala
+0-1, falta de evidencia) y pasa los 35 casos. Sigue siendo sobre casos conocidos: el siguiente paso
+sería otra ronda con casos nuevos.
+====================================================================================================
+Por grupo: {'real': 5, 'simulado': 15, 'nuevo': 15}
+
+####################################################################################################
+# Ronda 3c (sistema, modo reglas)
+####################################################################################################
+----------------------------------------------------------------------------------------------------
+[PASA ] R01  (real)
+  Qué prueba:  Estudiante sin ningún factor de riesgo (caso típico de todos los días).
+  Esperado:    resultado: bajo (0)
+  Obtenido:    resultado: bajo (0)
+  Qué hizo:    El sistema dio riesgo BAJO (0 puntos) y recomienda seguimiento rutinario.
+  Significado: Correcto. No suma puntos en ningún factor, así que el riesgo es bajo y basta el
+               seguimiento normal.
+----------------------------------------------------------------------------------------------------
+[PASA ] R02  (real)
+  Qué prueba:  Estudiante con varios factores moderados: promedio 3.2, 1 materia perdida, 80% de
+               asistencia, estrato 2 y trabaja.
+  Esperado:    resultado: medio (50)
+  Obtenido:    resultado: medio (50)
+  Qué hizo:    El sistema dio riesgo MEDIO (50 puntos) y recomienda tutoría académica.
+  Significado: Correcto. 15 (promedio) + 10 (1 perdida) + 10 (asistencia) + 10 (estrato) + 5
+               (trabaja) = 50, que es riesgo medio: tutoría académica.
+----------------------------------------------------------------------------------------------------
+[PASA ] R03  (real)
+  Qué prueba:  Estudiante con todos los factores de riesgo a la vez.
+  Esperado:    resultado: alto (100)
+  Obtenido:    resultado: alto (100)
+  Qué hizo:    El sistema dio riesgo ALTO (100 puntos) y recomienda remisión a bienestar y tutoría.
+  Significado: Correcto. Suma 100, el máximo: riesgo alto, remisión a bienestar y tutoría.
+----------------------------------------------------------------------------------------------------
+[PASA ] R04  (real)
+  Qué prueba:  Caso típico, pero sin el dato opcional de deuda de matrícula.
+  Esperado:    resultado: bajo (15) [no inf: deuda_matricula]
+  Obtenido:    resultado: bajo (15) [no inf: deuda_matricula]
+  Qué hizo:    El sistema dio riesgo BAJO (15 puntos) y recomienda seguimiento rutinario. Avisa que
+               no llegó: deuda_matricula.
+  Significado: Correcto. Suma 15, riesgo bajo. La deuda no se inventa: se avisa que no llegó para
+               que el consejero lo tenga en cuenta.
+----------------------------------------------------------------------------------------------------
+[PASA ] R05  (real)
+  Qué prueba:  Estudiante con buen promedio, pero 2 materias perdidas y deuda de matrícula.
+  Esperado:    resultado: medio (45)
+  Obtenido:    resultado: medio (45)
+  Qué hizo:    El sistema dio riesgo MEDIO (45 puntos) y recomienda tutoría académica.
+  Significado: Correcto. 25 (2 perdidas) + 10 (asistencia) + 10 (deuda) = 45, riesgo medio.
+----------------------------------------------------------------------------------------------------
+[PASA ] S01  (simulado)
+  Qué prueba:  Falta el promedio acumulado, que es obligatorio.
+  Esperado:    abstener(campo_faltante)
+  Obtenido:    abstener(campo_faltante)
+  Qué hizo:    El sistema NO decidió y envía el caso a un humano, porque falta un dato obligatorio.
+  Significado: Correcto. Sin promedio no se puede calcular el riesgo sin inventar datos. Lo correcto
+               es abstenerse y pasar el caso a un humano.
+----------------------------------------------------------------------------------------------------
+[PASA ] S02  (simulado)
+  Qué prueba:  La asistencia llega vacía (null).
+  Esperado:    abstener(campo_faltante)
+  Obtenido:    abstener(campo_faltante)
+  Qué hizo:    El sistema NO decidió y envía el caso a un humano, porque falta un dato obligatorio.
+  Significado: Correcto. null significa 'no hay dato', no 0%. Se abstiene igual que si el campo
+               faltara.
+----------------------------------------------------------------------------------------------------
+[PASA ] S03  (simulado)
+  Qué prueba:  Dice que perdió 5 materias de 4 cursadas: imposible.
+  Esperado:    abstener(datos_contradictorios)
+  Obtenido:    abstener(datos_contradictorios)
+  Qué hizo:    El sistema NO decidió y envía el caso a un humano, porque los datos se contradicen.
+  Significado: Correcto. Los datos se contradicen; decidir con ellos sería adivinar. Se remite a un
+               humano.
+----------------------------------------------------------------------------------------------------
+[PASA ] S04  (simulado)
+  Qué prueba:  Estudiante 'activo' con 0 créditos inscritos.
+  Esperado:    abstener(datos_contradictorios)
+  Obtenido:    abstener(datos_contradictorios)
+  Qué hizo:    El sistema NO decidió y envía el caso a un humano, porque los datos se contradicen.
+  Significado: Correcto. Activo sin créditos indica un registro desactualizado o mal cargado. Se
+               remite a un humano.
+----------------------------------------------------------------------------------------------------
+[PASA ] S05  (simulado)
+  Qué prueba:  Estudiante de posgrado: el sistema no está hecho para él.
+  Esperado:    abstener(fuera_de_poblacion)
+  Obtenido:    abstener(fuera_de_poblacion)
+  Qué hizo:    El sistema NO decidió y envía el caso a un humano, porque el estudiante no pertenece
+               a la población del sistema.
+  Significado: Correcto. Darle un nivel de riesgo a alguien fuera de la población no tiene sentido.
+               Debe abstenerse.
+----------------------------------------------------------------------------------------------------
+[PASA ] S06  (simulado)
+  Qué prueba:  Estudiante de semestre 7: fuera de la ventana de deserción temprana (semestres 2 a
+               4).
+  Esperado:    abstener(fuera_de_poblacion)
+  Obtenido:    abstener(fuera_de_poblacion)
+  Qué hizo:    El sistema NO decidió y envía el caso a un humano, porque el estudiante no pertenece
+               a la población del sistema.
+  Significado: Correcto. El sistema solo atiende semestres 2 a 4, así que debe abstenerse.
+----------------------------------------------------------------------------------------------------
+[PASA ] S07  (simulado)
+  Qué prueba:  Estudiante graduado al que además le falta el promedio: dos problemas a la vez.
+  Esperado:    abstener(fuera_de_poblacion)
+  Obtenido:    abstener(fuera_de_poblacion)
+  Qué hizo:    El sistema NO decidió y envía el caso a un humano, porque el estudiante no pertenece
+               a la población del sistema.
+  Significado: Correcto. El contrato revisa la población antes que los faltantes: si es graduado, no
+               importa qué dato le falte.
+----------------------------------------------------------------------------------------------------
+[PASA ] S08  (simulado)
+  Qué prueba:  Promedio 38: viene en escala 0-100 en vez de 0-5.
+  Esperado:    error(fuera_de_rango)
+  Obtenido:    error(fuera_de_rango)
+  Qué hizo:    El sistema rechazó la entrada con un error controlado: un dato está fuera del rango
+               permitido (campo: promedio_acumulado).
+  Significado: Correcto. El dato está mal formado: error controlado para que se corrija en el
+               sistema de origen.
+----------------------------------------------------------------------------------------------------
+[PASA ] S09  (simulado)
+  Qué prueba:  Semestre escrito como texto "3" en vez de número.
+  Esperado:    error(tipo_invalido)
+  Obtenido:    error(tipo_invalido)
+  Qué hizo:    El sistema rechazó la entrada con un error controlado: un dato tiene el tipo
+               equivocado (campo: semestre).
+  Significado: Correcto. Tipo incorrecto: error controlado. El sistema no adivina conversiones.
+----------------------------------------------------------------------------------------------------
+[PASA ] S10  (simulado)
+  Qué prueba:  Trabaja = "no" (texto) en vez de false.
+  Esperado:    error(tipo_invalido)
+  Obtenido:    error(tipo_invalido)
+  Qué hizo:    El sistema rechazó la entrada con un error controlado: un dato tiene el tipo
+               equivocado (campo: trabaja).
+  Significado: Correcto. Tipo incorrecto. Si se aceptara, el texto "no" contaría como que sí
+               trabaja.
+----------------------------------------------------------------------------------------------------
+[PASA ] S11  (simulado)
+  Qué prueba:  "Pregrado" con mayúscula; el valor permitido es "pregrado".
+  Esperado:    error(valor_no_permitido)
+  Obtenido:    error(valor_no_permitido)
+  Qué hizo:    El sistema rechazó la entrada con un error controlado: un dato no está en la lista de
+               valores permitidos (campo: nivel_formacion).
+  Significado: Correcto. No coincide exactamente con los valores permitidos: se rechaza para que se
+               corrija en el origen.
+----------------------------------------------------------------------------------------------------
+[PASA ] S12  (simulado)
+  Qué prueba:  Promedio 3.0 y asistencia 70 exactos: justo en los umbrales.
+  Esperado:    resultado: medio (35)
+  Obtenido:    resultado: medio (35)
+  Qué hizo:    El sistema dio riesgo MEDIO (35 puntos) y recomienda tutoría académica.
+  Significado: Correcto. 3.0 cae en 3.0 <= p < 3.5 (+15), 70 cae en 70 <= a < 85 (+10) y la materia
+               perdida suma +10: 35, riesgo medio.
+----------------------------------------------------------------------------------------------------
+[PASA ] S13  (simulado)
+  Qué prueba:  Puntaje exactamente 60: la frontera entre riesgo medio y alto.
+  Esperado:    resultado: alto (60)
+  Obtenido:    resultado: alto (60)
+  Qué hizo:    El sistema dio riesgo ALTO (60 puntos) y recomienda remisión a bienestar y tutoría.
+  Significado: Correcto. El corte '>= 60' es inclusivo: 60 ya es riesgo alto.
+----------------------------------------------------------------------------------------------------
+[PASA ] S14  (simulado)
+  Qué prueba:  Promedio 2.99 y asistencia 69.9: suma 50 (medio), pero activa la regla especial R3.4.
+  Esperado:    resultado: alto (50)
+  Obtenido:    resultado: alto (50)
+  Qué hizo:    El sistema dio riesgo ALTO (50 puntos) y recomienda remisión a bienestar y tutoría.
+  Significado: Correcto. La regla R3.4 (promedio < 3.0 Y asistencia < 70) sube el caso a alto aunque
+               el puntaje sea 50.
+----------------------------------------------------------------------------------------------------
+[PASA ] S15  (simulado)
+  Qué prueba:  Semestre = true (booleano). En Python, True vale 1.
+  Esperado:    error(tipo_invalido)
+  Obtenido:    error(tipo_invalido)
+  Qué hizo:    El sistema rechazó la entrada con un error controlado: un dato tiene el tipo
+               equivocado (campo: semestre).
+  Significado: Correcto. Un booleano no es un semestre válido: error de tipo.
+----------------------------------------------------------------------------------------------------
+[PASA ] T01  (nuevo)
+  Qué prueba:  Asistencia 0.92: parece venir como proporción (92%) y no como porcentaje.
+  Esperado:    abstener(datos_contradictorios)
+  Obtenido:    abstener(datos_contradictorios)
+  Qué hizo:    El sistema NO decidió y envía el caso a un humano, porque los datos se contradicen.
+  Significado: Correcto. Una asistencia real de 0.92% es casi imposible en alguien activo; lo
+               prudente es que un humano revise la escala.
+----------------------------------------------------------------------------------------------------
+[PASA ] T02  (nuevo)
+  Qué prueba:  Promedio "3,8" con coma decimal, como sale de Excel en español.
+  Esperado:    error(tipo_invalido)
+  Obtenido:    error(tipo_invalido)
+  Qué hizo:    El sistema rechazó la entrada con un error controlado: un dato tiene el tipo
+               equivocado (campo: promedio_acumulado).
+  Significado: Correcto. "3,8" es texto, no número: error para que se corrija en el origen.
+----------------------------------------------------------------------------------------------------
+[PASA ] T03  (nuevo)
+  Qué prueba:  Semestre 3.0 (decimal) en vez de 3 (entero).
+  Esperado:    error(tipo_invalido)
+  Obtenido:    error(tipo_invalido)
+  Qué hizo:    El sistema rechazó la entrada con un error controlado: un dato tiene el tipo
+               equivocado (campo: semestre).
+  Significado: Correcto. El semestre debe ser un entero: error de tipo.
+----------------------------------------------------------------------------------------------------
+[PASA ] T04  (nuevo)
+  Qué prueba:  Trabaja = 1 (número) en vez de true.
+  Esperado:    error(tipo_invalido)
+  Obtenido:    error(tipo_invalido)
+  Qué hizo:    El sistema rechazó la entrada con un error controlado: un dato tiene el tipo
+               equivocado (campo: trabaja).
+  Significado: Correcto. El campo debe ser booleano (true/false): error de tipo.
+----------------------------------------------------------------------------------------------------
+[PASA ] T05  (nuevo)
+  Qué prueba:  "pregrado " con un espacio invisible al final.
+  Esperado:    error(valor_no_permitido)
+  Obtenido:    error(valor_no_permitido)
+  Qué hizo:    El sistema rechazó la entrada con un error controlado: un dato no está en la lista de
+               valores permitidos (campo: nivel_formacion).
+  Significado: Correcto. No coincide exactamente con la lista de valores: valor no permitido.
+----------------------------------------------------------------------------------------------------
+[PASA ] T06  (nuevo)
+  Qué prueba:  El id del estudiante son solo espacios: la clave existe pero está vacía.
+  Esperado:    abstener(campo_faltante)
+  Obtenido:    abstener(campo_faltante)
+  Qué hizo:    El sistema NO decidió y envía el caso a un humano, porque falta un dato obligatorio.
+  Significado: Correcto. Un texto vacío equivale a un dato faltante: el sistema se abstiene y lo
+               pide.
+----------------------------------------------------------------------------------------------------
+[PASA ] T07  (nuevo)
+  Qué prueba:  El promedio llega con la clave mal escrita ("Promedio_acumulado").
+  Esperado:    abstener(campo_faltante)
+  Obtenido:    abstener(campo_faltante)
+  Qué hizo:    El sistema NO decidió y envía el caso a un humano, porque falta un dato obligatorio.
+  Significado: Correcto. El sistema no adivina nombres de campos: el promedio falta, así que se
+               abstiene.
+----------------------------------------------------------------------------------------------------
+[PASA ] T08  (nuevo)
+  Qué prueba:  Dos errores de formato a la vez: semestre como texto y promedio 38.
+  Esperado:    error(tipo_invalido)
+  Obtenido:    error(tipo_invalido)
+  Qué hizo:    El sistema rechazó la entrada con un error controlado: un dato tiene el tipo
+               equivocado (campo: semestre).
+  Significado: Correcto. Se reporta el primer error según el orden del contrato (semestre va antes
+               que promedio).
+----------------------------------------------------------------------------------------------------
+[PASA ] T09  (nuevo)
+  Qué prueba:  Estudiante de posgrado y además estrato 9 (fuera de rango).
+  Esperado:    error(fuera_de_rango)
+  Obtenido:    error(fuera_de_rango)
+  Qué hizo:    El sistema rechazó la entrada con un error controlado: un dato está fuera del rango
+               permitido (campo: estrato).
+  Significado: Correcto. El formato se valida antes que la población: primero hay que corregir el
+               dato roto.
+----------------------------------------------------------------------------------------------------
+[PASA ] T10  (nuevo)
+  Qué prueba:  Estudiante retirado y con 0 créditos.
+  Esperado:    abstener(fuera_de_poblacion)
+  Obtenido:    abstener(fuera_de_poblacion)
+  Qué hizo:    El sistema NO decidió y envía el caso a un humano, porque el estudiante no pertenece
+               a la población del sistema.
+  Significado: Correcto. La población se revisa antes que las contradicciones: un retirado no se
+               evalúa.
+----------------------------------------------------------------------------------------------------
+[PASA ] T11  (nuevo)
+  Qué prueba:  Perdió 6 de 6 materias: el límite exacto de la regla de contradicción.
+  Esperado:    resultado: bajo (25)
+  Obtenido:    resultado: bajo (25)
+  Qué hizo:    El sistema dio riesgo BAJO (25 puntos) y recomienda seguimiento rutinario.
+  Significado: Correcto. 6 de 6 es posible (no es 'mayor que'): resultado normal, 25 puntos, riesgo
+               bajo.
+----------------------------------------------------------------------------------------------------
+[PASA ] T12  (nuevo)
+  Qué prueba:  Semestre 3 pero 0 materias cursadas el periodo anterior: no hay evidencia.
+  Esperado:    abstener(datos_contradictorios)
+  Obtenido:    abstener(datos_contradictorios)
+  Qué hizo:    El sistema NO decidió y envía el caso a un humano, porque los datos se contradicen.
+  Significado: Correcto. Sin materias cursadas no hay evidencia; '0 perdidas' no significa que le
+               vaya bien. Revisa un humano.
+----------------------------------------------------------------------------------------------------
+[PASA ] T13  (nuevo)
+  Qué prueba:  Semestre 4, promedio 3.5 y asistencia 84.99: tres bordes a la vez.
+  Esperado:    resultado: bajo (10)
+  Obtenido:    resultado: bajo (10)
+  Qué hizo:    El sistema dio riesgo BAJO (10 puntos) y recomienda seguimiento rutinario.
+  Significado: Correcto. Semestre 4 sí entra; promedio 3.5 suma 0; asistencia 84.99 suma 10. Total
+               10, riesgo bajo.
+----------------------------------------------------------------------------------------------------
+[PASA ] T14  (nuevo)
+  Qué prueba:  Promedio 2.99 pero asistencia exactamente 70: la regla R3.4 se cumple solo a medias.
+  Esperado:    resultado: medio (40)
+  Obtenido:    resultado: medio (40)
+  Qué hizo:    El sistema dio riesgo MEDIO (40 puntos) y recomienda tutoría académica.
+  Significado: Correcto. 70 no es menor que 70, así que R3.4 no aplica: 30 + 10 = 40, riesgo medio.
+----------------------------------------------------------------------------------------------------
+[PASA ] T15  (nuevo)
+  Qué prueba:  Solo promedio 2.9: puntaje exactamente 30, frontera entre bajo y medio.
+  Esperado:    resultado: medio (30)
+  Obtenido:    resultado: medio (30)
+  Qué hizo:    El sistema dio riesgo MEDIO (30 puntos) y recomienda tutoría académica.
+  Significado: Correcto. El corte '>= 30' es inclusivo: 30 ya es riesgo medio.
+====================================================================================================
+RESULTADO Ronda 3c (sistema, modo reglas): 35/35 pasan 
+Interpretación: Es el código migrado al paquete desercion/ (contrato.py + reglas.py) con
+modo='reglas'. Debe dar exactamente lo mismo que v3 en los 35 casos: si algo cambia, la migración
+rompió el contrato.
+====================================================================================================
+Por grupo: {'real': 5, 'simulado': 15, 'nuevo': 15}
+Equivalencia con sistema_v3 (salida y traza completas): 35/35 idénticos
