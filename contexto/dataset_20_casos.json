@@ -1,0 +1,397 @@
+{
+  "nota": "Casos R01-R05 son [DATOS TÍPICOS INVENTADOS: reemplazar por reales]. Sin respuesta esperada.",
+  "casos": [
+    {
+      "id": "R01",
+      "categoria": "típico – riesgo bajo",
+      "entrada": {
+        "id_estudiante": "EST-101",
+        "nivel_formacion": "pregrado",
+        "estado_matricula": "activo",
+        "semestre": 3,
+        "promedio_acumulado": 3.8,
+        "creditos_inscritos": 16,
+        "materias_cursadas_periodo_anterior": 6,
+        "materias_reprobadas": 0,
+        "porcentaje_asistencia": 92.0,
+        "estrato": 3,
+        "trabaja": false,
+        "deuda_matricula": false
+      },
+      "origen": "real"
+    },
+    {
+      "id": "R02",
+      "categoria": "típico – riesgo medio",
+      "entrada": {
+        "id_estudiante": "EST-102",
+        "nivel_formacion": "pregrado",
+        "estado_matricula": "activo",
+        "semestre": 2,
+        "promedio_acumulado": 3.2,
+        "creditos_inscritos": 15,
+        "materias_cursadas_periodo_anterior": 6,
+        "materias_reprobadas": 1,
+        "porcentaje_asistencia": 80.0,
+        "estrato": 2,
+        "trabaja": true,
+        "deuda_matricula": false
+      },
+      "origen": "real"
+    },
+    {
+      "id": "R03",
+      "categoria": "típico – riesgo alto",
+      "entrada": {
+        "id_estudiante": "EST-103",
+        "nivel_formacion": "pregrado",
+        "estado_matricula": "activo",
+        "semestre": 4,
+        "promedio_acumulado": 2.7,
+        "creditos_inscritos": 12,
+        "materias_cursadas_periodo_anterior": 5,
+        "materias_reprobadas": 3,
+        "porcentaje_asistencia": 65.0,
+        "estrato": 1,
+        "trabaja": true,
+        "deuda_matricula": true
+      },
+      "origen": "real"
+    },
+    {
+      "id": "R04",
+      "categoria": "típico – opcional no informado",
+      "entrada": {
+        "id_estudiante": "EST-104",
+        "nivel_formacion": "pregrado",
+        "estado_matricula": "activo",
+        "semestre": 3,
+        "promedio_acumulado": 4.1,
+        "creditos_inscritos": 16,
+        "materias_cursadas_periodo_anterior": 6,
+        "materias_reprobadas": 0,
+        "porcentaje_asistencia": 88.0,
+        "estrato": 2,
+        "trabaja": true
+      },
+      "origen": "real"
+    },
+    {
+      "id": "R05",
+      "categoria": "típico – riesgo medio",
+      "entrada": {
+        "id_estudiante": "EST-105",
+        "nivel_formacion": "pregrado",
+        "estado_matricula": "activo",
+        "semestre": 2,
+        "promedio_acumulado": 3.6,
+        "creditos_inscritos": 18,
+        "materias_cursadas_periodo_anterior": 6,
+        "materias_reprobadas": 2,
+        "porcentaje_asistencia": 78.0,
+        "estrato": 4,
+        "trabaja": false,
+        "deuda_matricula": true
+      },
+      "origen": "real"
+    },
+    {
+      "id": "S01",
+      "categoria": "campo faltante",
+      "entrada": {
+        "id_estudiante": "EST-201",
+        "nivel_formacion": "pregrado",
+        "estado_matricula": "activo",
+        "semestre": 3,
+        "creditos_inscritos": 16,
+        "materias_cursadas_periodo_anterior": 6,
+        "materias_reprobadas": 0,
+        "porcentaje_asistencia": 92.0,
+        "estrato": 3,
+        "trabaja": false,
+        "deuda_matricula": false
+      },
+      "por_que": "Falta un dato obligatorio; una v1 suele hacer e['promedio'] y lanzar KeyError, o asumir 0 y marcar riesgo alto inventado.",
+      "origen": "simulado"
+    },
+    {
+      "id": "S02",
+      "categoria": "campo faltante (null)",
+      "entrada": {
+        "id_estudiante": "EST-202",
+        "nivel_formacion": "pregrado",
+        "estado_matricula": "activo",
+        "semestre": 3,
+        "promedio_acumulado": 3.8,
+        "creditos_inscritos": 16,
+        "materias_cursadas_periodo_anterior": 6,
+        "materias_reprobadas": 0,
+        "porcentaje_asistencia": null,
+        "estrato": 3,
+        "trabaja": false,
+        "deuda_matricula": false
+      },
+      "por_que": "La clave existe pero vale null; pasa un chequeo 'in' y revienta al comparar None < 70, o se trata como 0%.",
+      "origen": "simulado"
+    },
+    {
+      "id": "S03",
+      "categoria": "contradictorio",
+      "entrada": {
+        "id_estudiante": "EST-203",
+        "nivel_formacion": "pregrado",
+        "estado_matricula": "activo",
+        "semestre": 3,
+        "promedio_acumulado": 3.8,
+        "creditos_inscritos": 16,
+        "materias_cursadas_periodo_anterior": 4,
+        "materias_reprobadas": 5,
+        "porcentaje_asistencia": 92.0,
+        "estrato": 3,
+        "trabaja": false,
+        "deuda_matricula": false
+      },
+      "por_que": "Cada campo está en rango por separado; solo la relación entre ellos es imposible.",
+      "origen": "simulado"
+    },
+    {
+      "id": "S04",
+      "categoria": "contradictorio",
+      "entrada": {
+        "id_estudiante": "EST-204",
+        "nivel_formacion": "pregrado",
+        "estado_matricula": "activo",
+        "semestre": 3,
+        "promedio_acumulado": 3.8,
+        "creditos_inscritos": 0,
+        "materias_cursadas_periodo_anterior": 6,
+        "materias_reprobadas": 0,
+        "porcentaje_asistencia": 92.0,
+        "estrato": 3,
+        "trabaja": false,
+        "deuda_matricula": false
+      },
+      "por_que": "Matrícula 'activo' sin créditos: 0 está dentro del rango, la contradicción es semántica.",
+      "origen": "simulado"
+    },
+    {
+      "id": "S05",
+      "categoria": "otra población",
+      "entrada": {
+        "id_estudiante": "EST-205",
+        "nivel_formacion": "posgrado",
+        "estado_matricula": "activo",
+        "semestre": 3,
+        "promedio_acumulado": 3.8,
+        "creditos_inscritos": 16,
+        "materias_cursadas_periodo_anterior": 6,
+        "materias_reprobadas": 0,
+        "porcentaje_asistencia": 92.0,
+        "estrato": 3,
+        "trabaja": false,
+        "deuda_matricula": false
+      },
+      "por_que": "Datos perfectos de alguien a quien el sistema no debe calificar; el camino feliz le daría un nivel de riesgo.",
+      "origen": "simulado"
+    },
+    {
+      "id": "S06",
+      "categoria": "otra población",
+      "entrada": {
+        "id_estudiante": "EST-206",
+        "nivel_formacion": "pregrado",
+        "estado_matricula": "activo",
+        "semestre": 7,
+        "promedio_acumulado": 3.8,
+        "creditos_inscritos": 16,
+        "materias_cursadas_periodo_anterior": 6,
+        "materias_reprobadas": 0,
+        "porcentaje_asistencia": 92.0,
+        "estrato": 3,
+        "trabaja": false,
+        "deuda_matricula": false
+      },
+      "por_que": "Semestre válido (1–12) pero fuera del foco de deserción temprana (2–4).",
+      "origen": "simulado"
+    },
+    {
+      "id": "S07",
+      "categoria": "otra población + faltante",
+      "entrada": {
+        "id_estudiante": "EST-207",
+        "nivel_formacion": "pregrado",
+        "estado_matricula": "graduado",
+        "semestre": 3,
+        "creditos_inscritos": 16,
+        "materias_cursadas_periodo_anterior": 6,
+        "materias_reprobadas": 0,
+        "porcentaje_asistencia": 92.0,
+        "estrato": 3,
+        "trabaja": false,
+        "deuda_matricula": false
+      },
+      "por_que": "Dos motivos de abstención a la vez: prueba el orden de las reglas (población antes que faltantes).",
+      "origen": "simulado"
+    },
+    {
+      "id": "S08",
+      "categoria": "otra escala / fuera de rango",
+      "entrada": {
+        "id_estudiante": "EST-208",
+        "nivel_formacion": "pregrado",
+        "estado_matricula": "activo",
+        "semestre": 3,
+        "promedio_acumulado": 38.0,
+        "creditos_inscritos": 16,
+        "materias_cursadas_periodo_anterior": 6,
+        "materias_reprobadas": 0,
+        "porcentaje_asistencia": 92.0,
+        "estrato": 3,
+        "trabaja": false,
+        "deuda_matricula": false
+      },
+      "por_que": "Promedio en escala 0–100 en vez de 0–5; sin validación suma 0 puntos y el estudiante sale 'bajo' por error.",
+      "origen": "simulado"
+    },
+    {
+      "id": "S09",
+      "categoria": "otro tipo",
+      "entrada": {
+        "id_estudiante": "EST-209",
+        "nivel_formacion": "pregrado",
+        "estado_matricula": "activo",
+        "semestre": "3",
+        "promedio_acumulado": 3.8,
+        "creditos_inscritos": 16,
+        "materias_cursadas_periodo_anterior": 6,
+        "materias_reprobadas": 0,
+        "porcentaje_asistencia": 92.0,
+        "estrato": 3,
+        "trabaja": false,
+        "deuda_matricula": false
+      },
+      "por_que": "Número como texto (típico de CSV/formularios); comparar '3' con enteros falla o pasa silenciosamente.",
+      "origen": "simulado"
+    },
+    {
+      "id": "S10",
+      "categoria": "otro tipo",
+      "entrada": {
+        "id_estudiante": "EST-210",
+        "nivel_formacion": "pregrado",
+        "estado_matricula": "activo",
+        "semestre": 3,
+        "promedio_acumulado": 3.8,
+        "creditos_inscritos": 16,
+        "materias_cursadas_periodo_anterior": 6,
+        "materias_reprobadas": 0,
+        "porcentaje_asistencia": 92.0,
+        "estrato": 3,
+        "trabaja": "no",
+        "deuda_matricula": false
+      },
+      "por_que": "El texto 'no' es truthy en Python: una v1 suma +5 como si trabajara.",
+      "origen": "simulado"
+    },
+    {
+      "id": "S11",
+      "categoria": "valor no permitido",
+      "entrada": {
+        "id_estudiante": "EST-211",
+        "nivel_formacion": "Pregrado",
+        "estado_matricula": "activo",
+        "semestre": 3,
+        "promedio_acumulado": 3.8,
+        "creditos_inscritos": 16,
+        "materias_cursadas_periodo_anterior": 6,
+        "materias_reprobadas": 0,
+        "porcentaje_asistencia": 92.0,
+        "estrato": 3,
+        "trabaja": false,
+        "deuda_matricula": false
+      },
+      "por_que": "Diferencia solo de mayúsculas; ¿normalizar o rechazar? El contrato dice rechazar.",
+      "origen": "simulado"
+    },
+    {
+      "id": "S12",
+      "categoria": "frontera",
+      "entrada": {
+        "id_estudiante": "EST-212",
+        "nivel_formacion": "pregrado",
+        "estado_matricula": "activo",
+        "semestre": 3,
+        "promedio_acumulado": 3.0,
+        "creditos_inscritos": 16,
+        "materias_cursadas_periodo_anterior": 6,
+        "materias_reprobadas": 1,
+        "porcentaje_asistencia": 70.0,
+        "estrato": 3,
+        "trabaja": false,
+        "deuda_matricula": false
+      },
+      "por_que": "Promedio y asistencia justo en el umbral inclusivo; un < en vez de ≤ cambia el puntaje.",
+      "origen": "simulado"
+    },
+    {
+      "id": "S13",
+      "categoria": "frontera",
+      "entrada": {
+        "id_estudiante": "EST-213",
+        "nivel_formacion": "pregrado",
+        "estado_matricula": "activo",
+        "semestre": 3,
+        "promedio_acumulado": 2.9,
+        "creditos_inscritos": 16,
+        "materias_cursadas_periodo_anterior": 6,
+        "materias_reprobadas": 1,
+        "porcentaje_asistencia": 85.0,
+        "estrato": 2,
+        "trabaja": false,
+        "deuda_matricula": true
+      },
+      "por_que": "Puntaje exactamente 60 (corte alto/medio) y asistencia exactamente 85.",
+      "origen": "simulado"
+    },
+    {
+      "id": "S14",
+      "categoria": "frontera + regla de excepción",
+      "entrada": {
+        "id_estudiante": "EST-214",
+        "nivel_formacion": "pregrado",
+        "estado_matricula": "activo",
+        "semestre": 3,
+        "promedio_acumulado": 2.99,
+        "creditos_inscritos": 16,
+        "materias_cursadas_periodo_anterior": 6,
+        "materias_reprobadas": 0,
+        "porcentaje_asistencia": 69.9,
+        "estrato": 5,
+        "trabaja": false,
+        "deuda_matricula": false
+      },
+      "por_que": "Puntaje 50 (medio) pero activa la regla de anulación promedio<3.0 Y asistencia<70 → alto.",
+      "origen": "simulado"
+    },
+    {
+      "id": "S15",
+      "categoria": "otro tipo (trampa de lenguaje)",
+      "entrada": {
+        "id_estudiante": "EST-215",
+        "nivel_formacion": "pregrado",
+        "estado_matricula": "activo",
+        "semestre": true,
+        "promedio_acumulado": 3.8,
+        "creditos_inscritos": 16,
+        "materias_cursadas_periodo_anterior": 6,
+        "materias_reprobadas": 0,
+        "porcentaje_asistencia": 92.0,
+        "estrato": 3,
+        "trabaja": false,
+        "deuda_matricula": false
+      },
+      "por_que": "En Python bool es subclase de int: isinstance(True, int) es True y True vale 1, así que pasa un chequeo de tipo ingenuo.",
+      "origen": "simulado"
+    }
+  ]
+}

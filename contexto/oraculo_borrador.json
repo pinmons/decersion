@@ -1,0 +1,202 @@
+{
+  "nota": "BORRADOR – lo valida y firma el equipo, no el modelo.",
+  "oraculo": [
+    {
+      "id": "R01",
+      "esperado": {
+        "decision": "resultado",
+        "nivel": "bajo",
+        "puntaje": 0,
+        "accion": "seguimiento_rutinario",
+        "datos_no_informados": []
+      },
+      "regla": "R2.1–R2.6 suman 0 → R3.3"
+    },
+    {
+      "id": "R02",
+      "esperado": {
+        "decision": "resultado",
+        "nivel": "medio",
+        "puntaje": 50,
+        "accion": "tutoria_academica",
+        "datos_no_informados": []
+      },
+      "regla": "15+10+10+10+5=50 → R3.2"
+    },
+    {
+      "id": "R03",
+      "esperado": {
+        "decision": "resultado",
+        "nivel": "alto",
+        "puntaje": 100,
+        "accion": "remision_bienestar_y_tutoria",
+        "datos_no_informados": []
+      },
+      "regla": "30+25+20+10+5+10=100 → R3.1 (también R3.4)"
+    },
+    {
+      "id": "R04",
+      "esperado": {
+        "decision": "resultado",
+        "nivel": "bajo",
+        "puntaje": 15,
+        "accion": "seguimiento_rutinario",
+        "datos_no_informados": [
+          "deuda_matricula"
+        ]
+      },
+      "regla": "estrato 10 + trabaja 5 = 15 → R3.3; R2.6 no aplica y se reporta"
+    },
+    {
+      "id": "R05",
+      "esperado": {
+        "decision": "resultado",
+        "nivel": "medio",
+        "puntaje": 45,
+        "accion": "tutoria_academica",
+        "datos_no_informados": []
+      },
+      "regla": "0+25+10+0+0+10=45 → R3.2"
+    },
+    {
+      "id": "S01",
+      "esperado": {
+        "decision": "abstener",
+        "motivo": "campo_faltante",
+        "campos": [
+          "promedio_acumulado"
+        ]
+      },
+      "regla": "R1.3"
+    },
+    {
+      "id": "S02",
+      "esperado": {
+        "decision": "abstener",
+        "motivo": "campo_faltante",
+        "campos": [
+          "porcentaje_asistencia"
+        ]
+      },
+      "regla": "R1.3 (null = faltante)"
+    },
+    {
+      "id": "S03",
+      "esperado": {
+        "decision": "abstener",
+        "motivo": "datos_contradictorios"
+      },
+      "regla": "R1.4-C1"
+    },
+    {
+      "id": "S04",
+      "esperado": {
+        "decision": "abstener",
+        "motivo": "datos_contradictorios"
+      },
+      "regla": "R1.4-C2"
+    },
+    {
+      "id": "S05",
+      "esperado": {
+        "decision": "abstener",
+        "motivo": "fuera_de_poblacion"
+      },
+      "regla": "R1.2-P1"
+    },
+    {
+      "id": "S06",
+      "esperado": {
+        "decision": "abstener",
+        "motivo": "fuera_de_poblacion"
+      },
+      "regla": "R1.2-P3"
+    },
+    {
+      "id": "S07",
+      "esperado": {
+        "decision": "abstener",
+        "motivo": "fuera_de_poblacion"
+      },
+      "regla": "R1.2-P2 (población se evalúa antes que faltantes)"
+    },
+    {
+      "id": "S08",
+      "esperado": {
+        "decision": "error",
+        "motivo": "fuera_de_rango",
+        "campo": "promedio_acumulado"
+      },
+      "regla": "R1.1 rango 0.0–5.0"
+    },
+    {
+      "id": "S09",
+      "esperado": {
+        "decision": "error",
+        "motivo": "tipo_invalido",
+        "campo": "semestre"
+      },
+      "regla": "R1.1 tipo int"
+    },
+    {
+      "id": "S10",
+      "esperado": {
+        "decision": "error",
+        "motivo": "tipo_invalido",
+        "campo": "trabaja"
+      },
+      "regla": "R1.1 tipo bool"
+    },
+    {
+      "id": "S11",
+      "esperado": {
+        "decision": "error",
+        "motivo": "valor_no_permitido",
+        "campo": "nivel_formacion"
+      },
+      "regla": "R1.1 enumerado exacto"
+    },
+    {
+      "id": "S12",
+      "esperado": {
+        "decision": "resultado",
+        "nivel": "medio",
+        "puntaje": 35,
+        "accion": "tutoria_academica",
+        "datos_no_informados": []
+      },
+      "regla": "3.0 → +15 (3.0≤p<3.5); 70 → +10 (70≤a<85); 1 reprobada +10 = 35 → R3.2; R3.4 no aplica (3.0 no es <3.0)"
+    },
+    {
+      "id": "S13",
+      "esperado": {
+        "decision": "resultado",
+        "nivel": "alto",
+        "puntaje": 60,
+        "accion": "remision_bienestar_y_tutoria",
+        "datos_no_informados": []
+      },
+      "regla": "30+10+0+10+0+10=60 → R3.1 (≥60 inclusivo)"
+    },
+    {
+      "id": "S14",
+      "esperado": {
+        "decision": "resultado",
+        "nivel": "alto",
+        "puntaje": 50,
+        "accion": "remision_bienestar_y_tutoria",
+        "datos_no_informados": []
+      },
+      "regla": "puntaje 50 pero R3.4 (p<3.0 y a<70) fuerza alto"
+    },
+    {
+      "id": "S15",
+      "esperado": {
+        "decision": "error",
+        "motivo": "tipo_invalido",
+        "campo": "semestre"
+      },
+      "regla": "R1.1: bool no es int válido"
+    }
+  ]
+}

@@ -1,0 +1,149 @@
+{
+  "nota": "BORRADOR según contrato v2 – lo valida y firma el equipo, no el modelo.",
+  "oraculo": [
+    {
+      "id": "T01",
+      "esperado": {
+        "decision": "abstener",
+        "motivo": "datos_contradictorios"
+      },
+      "regla": "R1.4-C3 (nuevo): 0 < asistencia ≤ 1.0"
+    },
+    {
+      "id": "T02",
+      "esperado": {
+        "decision": "error",
+        "motivo": "tipo_invalido",
+        "campo": "promedio_acumulado"
+      },
+      "regla": "R1.1a: texto no es número"
+    },
+    {
+      "id": "T03",
+      "esperado": {
+        "decision": "error",
+        "motivo": "tipo_invalido",
+        "campo": "semestre"
+      },
+      "regla": "R1.1a: float no es int"
+    },
+    {
+      "id": "T04",
+      "esperado": {
+        "decision": "error",
+        "motivo": "tipo_invalido",
+        "campo": "trabaja"
+      },
+      "regla": "R1.1a: int no es bool"
+    },
+    {
+      "id": "T05",
+      "esperado": {
+        "decision": "error",
+        "motivo": "valor_no_permitido",
+        "campo": "nivel_formacion"
+      },
+      "regla": "R1.1b: enum exacto"
+    },
+    {
+      "id": "T06",
+      "esperado": {
+        "decision": "abstener",
+        "motivo": "campo_faltante",
+        "campos": [
+          "id_estudiante"
+        ]
+      },
+      "regla": "R1.3 (ampliada): texto vacío o solo espacios = faltante"
+    },
+    {
+      "id": "T07",
+      "esperado": {
+        "decision": "abstener",
+        "motivo": "campo_faltante",
+        "campos": [
+          "promedio_acumulado"
+        ]
+      },
+      "regla": "R1.3; R1.0 (nuevo): claves desconocidas se ignoran"
+    },
+    {
+      "id": "T08",
+      "esperado": {
+        "decision": "error",
+        "motivo": "tipo_invalido",
+        "campo": "semestre"
+      },
+      "regla": "R1.1: se reporta el primer error en el orden de la tabla E"
+    },
+    {
+      "id": "T09",
+      "esperado": {
+        "decision": "error",
+        "motivo": "fuera_de_rango",
+        "campo": "estrato"
+      },
+      "regla": "Orden: formato antes que población"
+    },
+    {
+      "id": "T10",
+      "esperado": {
+        "decision": "abstener",
+        "motivo": "fuera_de_poblacion"
+      },
+      "regla": "R1.2-P2 antes que R1.4"
+    },
+    {
+      "id": "T11",
+      "esperado": {
+        "decision": "resultado",
+        "nivel": "bajo",
+        "puntaje": 25,
+        "accion": "seguimiento_rutinario",
+        "datos_no_informados": []
+      },
+      "regla": "C1 no aplica (6 no es > 6); R2.2 +25 → R3.3"
+    },
+    {
+      "id": "T12",
+      "esperado": {
+        "decision": "abstener",
+        "motivo": "datos_contradictorios"
+      },
+      "regla": "R1.4-C4 (nuevo): semestre ≥ 2 y 0 materias cursadas"
+    },
+    {
+      "id": "T13",
+      "esperado": {
+        "decision": "resultado",
+        "nivel": "bajo",
+        "puntaje": 10,
+        "accion": "seguimiento_rutinario",
+        "datos_no_informados": []
+      },
+      "regla": "P3 incluye 4; 3.5 → 0; 84.99 → +10 → R3.3"
+    },
+    {
+      "id": "T14",
+      "esperado": {
+        "decision": "resultado",
+        "nivel": "medio",
+        "puntaje": 40,
+        "accion": "tutoria_academica",
+        "datos_no_informados": []
+      },
+      "regla": "30+10 = 40; R3.4 no aplica (70 no es < 70) → R3.2"
+    },
+    {
+      "id": "T15",
+      "esperado": {
+        "decision": "resultado",
+        "nivel": "medio",
+        "puntaje": 30,
+        "accion": "tutoria_academica",
+        "datos_no_informados": []
+      },
+      "regla": "+30 → R3.2 (≥ 30 inclusivo)"
+    }
+  ]
+}

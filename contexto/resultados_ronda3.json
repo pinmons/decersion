@@ -1,0 +1,932 @@
+{
+  "ronda3a_v2": {
+    "pasan": 32,
+    "por_origen": {
+      "real": 5,
+      "simulado": 15,
+      "nuevo": 12
+    },
+    "filas": [
+      {
+        "id": "R01",
+        "origen": "real",
+        "categoria": "típico – riesgo bajo",
+        "esperado": "resultado: bajo (0)",
+        "obtenido": "resultado: bajo (0)",
+        "traza": {
+          "S1": "valido",
+          "S2": 0,
+          "S3": "bajo"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "R02",
+        "origen": "real",
+        "categoria": "típico – riesgo medio",
+        "esperado": "resultado: medio (50)",
+        "obtenido": "resultado: medio (50)",
+        "traza": {
+          "S1": "valido",
+          "S2": 50,
+          "S3": "medio"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "R03",
+        "origen": "real",
+        "categoria": "típico – riesgo alto",
+        "esperado": "resultado: alto (100)",
+        "obtenido": "resultado: alto (100)",
+        "traza": {
+          "S1": "valido",
+          "S2": 100,
+          "S3": "alto"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "R04",
+        "origen": "real",
+        "categoria": "típico – opcional no informado",
+        "esperado": "resultado: bajo (15) [no inf: deuda_matricula]",
+        "obtenido": "resultado: bajo (15) [no inf: deuda_matricula]",
+        "traza": {
+          "S1": "valido",
+          "S2": 15,
+          "S3": "bajo"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "R05",
+        "origen": "real",
+        "categoria": "típico – riesgo medio",
+        "esperado": "resultado: medio (45)",
+        "obtenido": "resultado: medio (45)",
+        "traza": {
+          "S1": "valido",
+          "S2": 45,
+          "S3": "medio"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "S01",
+        "origen": "simulado",
+        "categoria": "campo faltante",
+        "esperado": "abstener(campo_faltante)",
+        "obtenido": "abstener(campo_faltante)",
+        "traza": {
+          "S1": "abstener(campo_faltante)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "S02",
+        "origen": "simulado",
+        "categoria": "campo faltante (null)",
+        "esperado": "abstener(campo_faltante)",
+        "obtenido": "abstener(campo_faltante)",
+        "traza": {
+          "S1": "abstener(campo_faltante)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "S03",
+        "origen": "simulado",
+        "categoria": "contradictorio",
+        "esperado": "abstener(datos_contradictorios)",
+        "obtenido": "abstener(datos_contradictorios)",
+        "traza": {
+          "S1": "abstener(datos_contradictorios)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "S04",
+        "origen": "simulado",
+        "categoria": "contradictorio",
+        "esperado": "abstener(datos_contradictorios)",
+        "obtenido": "abstener(datos_contradictorios)",
+        "traza": {
+          "S1": "abstener(datos_contradictorios)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "S05",
+        "origen": "simulado",
+        "categoria": "otra población",
+        "esperado": "abstener(fuera_de_poblacion)",
+        "obtenido": "abstener(fuera_de_poblacion)",
+        "traza": {
+          "S1": "abstener(fuera_de_poblacion)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "S06",
+        "origen": "simulado",
+        "categoria": "otra población",
+        "esperado": "abstener(fuera_de_poblacion)",
+        "obtenido": "abstener(fuera_de_poblacion)",
+        "traza": {
+          "S1": "abstener(fuera_de_poblacion)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "S07",
+        "origen": "simulado",
+        "categoria": "otra población + faltante",
+        "esperado": "abstener(fuera_de_poblacion)",
+        "obtenido": "abstener(fuera_de_poblacion)",
+        "traza": {
+          "S1": "abstener(fuera_de_poblacion)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "S08",
+        "origen": "simulado",
+        "categoria": "otra escala / fuera de rango",
+        "esperado": "error(fuera_de_rango)",
+        "obtenido": "error(fuera_de_rango)",
+        "traza": {
+          "S1": "error(fuera_de_rango)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "S09",
+        "origen": "simulado",
+        "categoria": "otro tipo",
+        "esperado": "error(tipo_invalido)",
+        "obtenido": "error(tipo_invalido)",
+        "traza": {
+          "S1": "error(tipo_invalido)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "S10",
+        "origen": "simulado",
+        "categoria": "otro tipo",
+        "esperado": "error(tipo_invalido)",
+        "obtenido": "error(tipo_invalido)",
+        "traza": {
+          "S1": "error(tipo_invalido)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "S11",
+        "origen": "simulado",
+        "categoria": "valor no permitido",
+        "esperado": "error(valor_no_permitido)",
+        "obtenido": "error(valor_no_permitido)",
+        "traza": {
+          "S1": "error(valor_no_permitido)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "S12",
+        "origen": "simulado",
+        "categoria": "frontera",
+        "esperado": "resultado: medio (35)",
+        "obtenido": "resultado: medio (35)",
+        "traza": {
+          "S1": "valido",
+          "S2": 35,
+          "S3": "medio"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "S13",
+        "origen": "simulado",
+        "categoria": "frontera",
+        "esperado": "resultado: alto (60)",
+        "obtenido": "resultado: alto (60)",
+        "traza": {
+          "S1": "valido",
+          "S2": 60,
+          "S3": "alto"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "S14",
+        "origen": "simulado",
+        "categoria": "frontera + regla de excepción",
+        "esperado": "resultado: alto (50)",
+        "obtenido": "resultado: alto (50)",
+        "traza": {
+          "S1": "valido",
+          "S2": 50,
+          "S3": "alto"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "S15",
+        "origen": "simulado",
+        "categoria": "otro tipo (trampa de lenguaje)",
+        "esperado": "error(tipo_invalido)",
+        "obtenido": "error(tipo_invalido)",
+        "traza": {
+          "S1": "error(tipo_invalido)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "T01",
+        "origen": "nuevo",
+        "categoria": "otra escala",
+        "esperado": "abstener(datos_contradictorios)",
+        "obtenido": "resultado: bajo (20)",
+        "traza": {
+          "S1": "valido",
+          "S2": 20,
+          "S3": "bajo"
+        },
+        "resultado": "FALLA"
+      },
+      {
+        "id": "T02",
+        "origen": "nuevo",
+        "categoria": "otro tipo",
+        "esperado": "error(tipo_invalido)",
+        "obtenido": "error(tipo_invalido)",
+        "traza": {
+          "S1": "error(tipo_invalido)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "T03",
+        "origen": "nuevo",
+        "categoria": "otro tipo",
+        "esperado": "error(tipo_invalido)",
+        "obtenido": "error(tipo_invalido)",
+        "traza": {
+          "S1": "error(tipo_invalido)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "T04",
+        "origen": "nuevo",
+        "categoria": "otro tipo",
+        "esperado": "error(tipo_invalido)",
+        "obtenido": "error(tipo_invalido)",
+        "traza": {
+          "S1": "error(tipo_invalido)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "T05",
+        "origen": "nuevo",
+        "categoria": "valor no permitido",
+        "esperado": "error(valor_no_permitido)",
+        "obtenido": "error(valor_no_permitido)",
+        "traza": {
+          "S1": "error(valor_no_permitido)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "T06",
+        "origen": "nuevo",
+        "categoria": "campo faltante",
+        "esperado": "abstener(campo_faltante)",
+        "obtenido": "error(tipo_invalido)",
+        "traza": {
+          "S1": "error(tipo_invalido)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "FALLA"
+      },
+      {
+        "id": "T07",
+        "origen": "nuevo",
+        "categoria": "campo faltante",
+        "esperado": "abstener(campo_faltante)",
+        "obtenido": "abstener(campo_faltante)",
+        "traza": {
+          "S1": "abstener(campo_faltante)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "T08",
+        "origen": "nuevo",
+        "categoria": "dos errores",
+        "esperado": "error(tipo_invalido)",
+        "obtenido": "error(tipo_invalido)",
+        "traza": {
+          "S1": "error(tipo_invalido)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "T09",
+        "origen": "nuevo",
+        "categoria": "error + otra población",
+        "esperado": "error(fuera_de_rango)",
+        "obtenido": "error(fuera_de_rango)",
+        "traza": {
+          "S1": "error(fuera_de_rango)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "T10",
+        "origen": "nuevo",
+        "categoria": "otra población + contradictorio",
+        "esperado": "abstener(fuera_de_poblacion)",
+        "obtenido": "abstener(fuera_de_poblacion)",
+        "traza": {
+          "S1": "abstener(fuera_de_poblacion)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "T11",
+        "origen": "nuevo",
+        "categoria": "frontera",
+        "esperado": "resultado: bajo (25)",
+        "obtenido": "resultado: bajo (25)",
+        "traza": {
+          "S1": "valido",
+          "S2": 25,
+          "S3": "bajo"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "T12",
+        "origen": "nuevo",
+        "categoria": "contradictorio / abstenerse",
+        "esperado": "abstener(datos_contradictorios)",
+        "obtenido": "resultado: bajo (0)",
+        "traza": {
+          "S1": "valido",
+          "S2": 0,
+          "S3": "bajo"
+        },
+        "resultado": "FALLA"
+      },
+      {
+        "id": "T13",
+        "origen": "nuevo",
+        "categoria": "frontera",
+        "esperado": "resultado: bajo (10)",
+        "obtenido": "resultado: bajo (10)",
+        "traza": {
+          "S1": "valido",
+          "S2": 10,
+          "S3": "bajo"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "T14",
+        "origen": "nuevo",
+        "categoria": "frontera + excepción",
+        "esperado": "resultado: medio (40)",
+        "obtenido": "resultado: medio (40)",
+        "traza": {
+          "S1": "valido",
+          "S2": 40,
+          "S3": "medio"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "T15",
+        "origen": "nuevo",
+        "categoria": "frontera",
+        "esperado": "resultado: medio (30)",
+        "obtenido": "resultado: medio (30)",
+        "traza": {
+          "S1": "valido",
+          "S2": 30,
+          "S3": "medio"
+        },
+        "resultado": "PASA"
+      }
+    ]
+  },
+  "ronda3b_v3": {
+    "pasan": 35,
+    "por_origen": {
+      "real": 5,
+      "simulado": 15,
+      "nuevo": 15
+    },
+    "filas": [
+      {
+        "id": "R01",
+        "origen": "real",
+        "categoria": "típico – riesgo bajo",
+        "esperado": "resultado: bajo (0)",
+        "obtenido": "resultado: bajo (0)",
+        "traza": {
+          "S1": "valido",
+          "S2": 0,
+          "S3": "bajo"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "R02",
+        "origen": "real",
+        "categoria": "típico – riesgo medio",
+        "esperado": "resultado: medio (50)",
+        "obtenido": "resultado: medio (50)",
+        "traza": {
+          "S1": "valido",
+          "S2": 50,
+          "S3": "medio"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "R03",
+        "origen": "real",
+        "categoria": "típico – riesgo alto",
+        "esperado": "resultado: alto (100)",
+        "obtenido": "resultado: alto (100)",
+        "traza": {
+          "S1": "valido",
+          "S2": 100,
+          "S3": "alto"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "R04",
+        "origen": "real",
+        "categoria": "típico – opcional no informado",
+        "esperado": "resultado: bajo (15) [no inf: deuda_matricula]",
+        "obtenido": "resultado: bajo (15) [no inf: deuda_matricula]",
+        "traza": {
+          "S1": "valido",
+          "S2": 15,
+          "S3": "bajo"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "R05",
+        "origen": "real",
+        "categoria": "típico – riesgo medio",
+        "esperado": "resultado: medio (45)",
+        "obtenido": "resultado: medio (45)",
+        "traza": {
+          "S1": "valido",
+          "S2": 45,
+          "S3": "medio"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "S01",
+        "origen": "simulado",
+        "categoria": "campo faltante",
+        "esperado": "abstener(campo_faltante)",
+        "obtenido": "abstener(campo_faltante)",
+        "traza": {
+          "S1": "abstener(campo_faltante)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "S02",
+        "origen": "simulado",
+        "categoria": "campo faltante (null)",
+        "esperado": "abstener(campo_faltante)",
+        "obtenido": "abstener(campo_faltante)",
+        "traza": {
+          "S1": "abstener(campo_faltante)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "S03",
+        "origen": "simulado",
+        "categoria": "contradictorio",
+        "esperado": "abstener(datos_contradictorios)",
+        "obtenido": "abstener(datos_contradictorios)",
+        "traza": {
+          "S1": "abstener(datos_contradictorios)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "S04",
+        "origen": "simulado",
+        "categoria": "contradictorio",
+        "esperado": "abstener(datos_contradictorios)",
+        "obtenido": "abstener(datos_contradictorios)",
+        "traza": {
+          "S1": "abstener(datos_contradictorios)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "S05",
+        "origen": "simulado",
+        "categoria": "otra población",
+        "esperado": "abstener(fuera_de_poblacion)",
+        "obtenido": "abstener(fuera_de_poblacion)",
+        "traza": {
+          "S1": "abstener(fuera_de_poblacion)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "S06",
+        "origen": "simulado",
+        "categoria": "otra población",
+        "esperado": "abstener(fuera_de_poblacion)",
+        "obtenido": "abstener(fuera_de_poblacion)",
+        "traza": {
+          "S1": "abstener(fuera_de_poblacion)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "S07",
+        "origen": "simulado",
+        "categoria": "otra población + faltante",
+        "esperado": "abstener(fuera_de_poblacion)",
+        "obtenido": "abstener(fuera_de_poblacion)",
+        "traza": {
+          "S1": "abstener(fuera_de_poblacion)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "S08",
+        "origen": "simulado",
+        "categoria": "otra escala / fuera de rango",
+        "esperado": "error(fuera_de_rango)",
+        "obtenido": "error(fuera_de_rango)",
+        "traza": {
+          "S1": "error(fuera_de_rango)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "S09",
+        "origen": "simulado",
+        "categoria": "otro tipo",
+        "esperado": "error(tipo_invalido)",
+        "obtenido": "error(tipo_invalido)",
+        "traza": {
+          "S1": "error(tipo_invalido)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "S10",
+        "origen": "simulado",
+        "categoria": "otro tipo",
+        "esperado": "error(tipo_invalido)",
+        "obtenido": "error(tipo_invalido)",
+        "traza": {
+          "S1": "error(tipo_invalido)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "S11",
+        "origen": "simulado",
+        "categoria": "valor no permitido",
+        "esperado": "error(valor_no_permitido)",
+        "obtenido": "error(valor_no_permitido)",
+        "traza": {
+          "S1": "error(valor_no_permitido)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "S12",
+        "origen": "simulado",
+        "categoria": "frontera",
+        "esperado": "resultado: medio (35)",
+        "obtenido": "resultado: medio (35)",
+        "traza": {
+          "S1": "valido",
+          "S2": 35,
+          "S3": "medio"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "S13",
+        "origen": "simulado",
+        "categoria": "frontera",
+        "esperado": "resultado: alto (60)",
+        "obtenido": "resultado: alto (60)",
+        "traza": {
+          "S1": "valido",
+          "S2": 60,
+          "S3": "alto"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "S14",
+        "origen": "simulado",
+        "categoria": "frontera + regla de excepción",
+        "esperado": "resultado: alto (50)",
+        "obtenido": "resultado: alto (50)",
+        "traza": {
+          "S1": "valido",
+          "S2": 50,
+          "S3": "alto"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "S15",
+        "origen": "simulado",
+        "categoria": "otro tipo (trampa de lenguaje)",
+        "esperado": "error(tipo_invalido)",
+        "obtenido": "error(tipo_invalido)",
+        "traza": {
+          "S1": "error(tipo_invalido)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "T01",
+        "origen": "nuevo",
+        "categoria": "otra escala",
+        "esperado": "abstener(datos_contradictorios)",
+        "obtenido": "abstener(datos_contradictorios)",
+        "traza": {
+          "S1": "abstener(datos_contradictorios)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "T02",
+        "origen": "nuevo",
+        "categoria": "otro tipo",
+        "esperado": "error(tipo_invalido)",
+        "obtenido": "error(tipo_invalido)",
+        "traza": {
+          "S1": "error(tipo_invalido)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "T03",
+        "origen": "nuevo",
+        "categoria": "otro tipo",
+        "esperado": "error(tipo_invalido)",
+        "obtenido": "error(tipo_invalido)",
+        "traza": {
+          "S1": "error(tipo_invalido)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "T04",
+        "origen": "nuevo",
+        "categoria": "otro tipo",
+        "esperado": "error(tipo_invalido)",
+        "obtenido": "error(tipo_invalido)",
+        "traza": {
+          "S1": "error(tipo_invalido)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "T05",
+        "origen": "nuevo",
+        "categoria": "valor no permitido",
+        "esperado": "error(valor_no_permitido)",
+        "obtenido": "error(valor_no_permitido)",
+        "traza": {
+          "S1": "error(valor_no_permitido)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "T06",
+        "origen": "nuevo",
+        "categoria": "campo faltante",
+        "esperado": "abstener(campo_faltante)",
+        "obtenido": "abstener(campo_faltante)",
+        "traza": {
+          "S1": "abstener(campo_faltante)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "T07",
+        "origen": "nuevo",
+        "categoria": "campo faltante",
+        "esperado": "abstener(campo_faltante)",
+        "obtenido": "abstener(campo_faltante)",
+        "traza": {
+          "S1": "abstener(campo_faltante)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "T08",
+        "origen": "nuevo",
+        "categoria": "dos errores",
+        "esperado": "error(tipo_invalido)",
+        "obtenido": "error(tipo_invalido)",
+        "traza": {
+          "S1": "error(tipo_invalido)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "T09",
+        "origen": "nuevo",
+        "categoria": "error + otra población",
+        "esperado": "error(fuera_de_rango)",
+        "obtenido": "error(fuera_de_rango)",
+        "traza": {
+          "S1": "error(fuera_de_rango)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "T10",
+        "origen": "nuevo",
+        "categoria": "otra población + contradictorio",
+        "esperado": "abstener(fuera_de_poblacion)",
+        "obtenido": "abstener(fuera_de_poblacion)",
+        "traza": {
+          "S1": "abstener(fuera_de_poblacion)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "T11",
+        "origen": "nuevo",
+        "categoria": "frontera",
+        "esperado": "resultado: bajo (25)",
+        "obtenido": "resultado: bajo (25)",
+        "traza": {
+          "S1": "valido",
+          "S2": 25,
+          "S3": "bajo"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "T12",
+        "origen": "nuevo",
+        "categoria": "contradictorio / abstenerse",
+        "esperado": "abstener(datos_contradictorios)",
+        "obtenido": "abstener(datos_contradictorios)",
+        "traza": {
+          "S1": "abstener(datos_contradictorios)",
+          "S2": "-",
+          "S3": "-"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "T13",
+        "origen": "nuevo",
+        "categoria": "frontera",
+        "esperado": "resultado: bajo (10)",
+        "obtenido": "resultado: bajo (10)",
+        "traza": {
+          "S1": "valido",
+          "S2": 10,
+          "S3": "bajo"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "T14",
+        "origen": "nuevo",
+        "categoria": "frontera + excepción",
+        "esperado": "resultado: medio (40)",
+        "obtenido": "resultado: medio (40)",
+        "traza": {
+          "S1": "valido",
+          "S2": 40,
+          "S3": "medio"
+        },
+        "resultado": "PASA"
+      },
+      {
+        "id": "T15",
+        "origen": "nuevo",
+        "categoria": "frontera",
+        "esperado": "resultado: medio (30)",
+        "obtenido": "resultado: medio (30)",
+        "traza": {
+          "S1": "valido",
+          "S2": 30,
+          "S3": "medio"
+        },
+        "resultado": "PASA"
+      }
+    ]
+  }
+}

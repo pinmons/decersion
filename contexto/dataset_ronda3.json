@@ -1,0 +1,305 @@
+{
+  "nota": "Casos nuevos ronda 3 (P2). Sin respuesta esperada.",
+  "casos": [
+    {
+      "id": "T01",
+      "ataca": "S08 (escala) – ahora DENTRO de rango",
+      "categoria": "otra escala",
+      "entrada": {
+        "id_estudiante": "EST-301",
+        "nivel_formacion": "pregrado",
+        "estado_matricula": "activo",
+        "semestre": 3,
+        "promedio_acumulado": 3.8,
+        "creditos_inscritos": 16,
+        "materias_cursadas_periodo_anterior": 6,
+        "materias_reprobadas": 0,
+        "porcentaje_asistencia": 0.92,
+        "estrato": 3,
+        "trabaja": false,
+        "deuda_matricula": false
+      },
+      "por_que": "Asistencia como proporción 0–1: pasa la validación de rango y se lee como 0,92 %."
+    },
+    {
+      "id": "T02",
+      "ataca": "S09 (tipo) – formato local",
+      "categoria": "otro tipo",
+      "entrada": {
+        "id_estudiante": "EST-302",
+        "nivel_formacion": "pregrado",
+        "estado_matricula": "activo",
+        "semestre": 3,
+        "promedio_acumulado": "3,8",
+        "creditos_inscritos": 16,
+        "materias_cursadas_periodo_anterior": 6,
+        "materias_reprobadas": 0,
+        "porcentaje_asistencia": 92.0,
+        "estrato": 3,
+        "trabaja": false,
+        "deuda_matricula": false
+      },
+      "por_que": "Decimal con coma (formato colombiano en Excel/formularios)."
+    },
+    {
+      "id": "T03",
+      "ataca": "S15 (tipo) – float entero",
+      "categoria": "otro tipo",
+      "entrada": {
+        "id_estudiante": "EST-303",
+        "nivel_formacion": "pregrado",
+        "estado_matricula": "activo",
+        "semestre": 3.0,
+        "promedio_acumulado": 3.8,
+        "creditos_inscritos": 16,
+        "materias_cursadas_periodo_anterior": 6,
+        "materias_reprobadas": 0,
+        "porcentaje_asistencia": 92.0,
+        "estrato": 3,
+        "trabaja": false,
+        "deuda_matricula": false
+      },
+      "por_que": "3.0 == 3 en Python; un chequeo por valor lo deja pasar."
+    },
+    {
+      "id": "T04",
+      "ataca": "S10 (bool) – entero 1",
+      "categoria": "otro tipo",
+      "entrada": {
+        "id_estudiante": "EST-304",
+        "nivel_formacion": "pregrado",
+        "estado_matricula": "activo",
+        "semestre": 3,
+        "promedio_acumulado": 3.8,
+        "creditos_inscritos": 16,
+        "materias_cursadas_periodo_anterior": 6,
+        "materias_reprobadas": 0,
+        "porcentaje_asistencia": 92.0,
+        "estrato": 3,
+        "trabaja": 1,
+        "deuda_matricula": false
+      },
+      "por_que": "1 es truthy y 1 == True en Python."
+    },
+    {
+      "id": "T05",
+      "ataca": "S11 (enum) – espacio final",
+      "categoria": "valor no permitido",
+      "entrada": {
+        "id_estudiante": "EST-305",
+        "nivel_formacion": "pregrado ",
+        "estado_matricula": "activo",
+        "semestre": 3,
+        "promedio_acumulado": 3.8,
+        "creditos_inscritos": 16,
+        "materias_cursadas_periodo_anterior": 6,
+        "materias_reprobadas": 0,
+        "porcentaje_asistencia": 92.0,
+        "estrato": 3,
+        "trabaja": false,
+        "deuda_matricula": false
+      },
+      "por_que": "Invisible al ojo; típico de copiar/pegar."
+    },
+    {
+      "id": "T06",
+      "ataca": "S01 (faltante) – disfrazado de texto",
+      "categoria": "campo faltante",
+      "entrada": {
+        "id_estudiante": "   ",
+        "nivel_formacion": "pregrado",
+        "estado_matricula": "activo",
+        "semestre": 3,
+        "promedio_acumulado": 3.8,
+        "creditos_inscritos": 16,
+        "materias_cursadas_periodo_anterior": 6,
+        "materias_reprobadas": 0,
+        "porcentaje_asistencia": 92.0,
+        "estrato": 3,
+        "trabaja": false,
+        "deuda_matricula": false
+      },
+      "por_que": "La clave existe y es str, pero no trae información."
+    },
+    {
+      "id": "T07",
+      "ataca": "S01 (faltante) – clave mal escrita",
+      "categoria": "campo faltante",
+      "entrada": {
+        "id_estudiante": "EST-307",
+        "nivel_formacion": "pregrado",
+        "estado_matricula": "activo",
+        "semestre": 3,
+        "creditos_inscritos": 16,
+        "materias_cursadas_periodo_anterior": 6,
+        "materias_reprobadas": 0,
+        "porcentaje_asistencia": 92.0,
+        "estrato": 3,
+        "trabaja": false,
+        "deuda_matricula": false,
+        "Promedio_acumulado": 3.8
+      },
+      "por_que": "El dato está, pero con otra clave; un sistema 'amable' podría usarlo."
+    },
+    {
+      "id": "T08",
+      "ataca": "orden de errores",
+      "categoria": "dos errores",
+      "entrada": {
+        "id_estudiante": "EST-308",
+        "nivel_formacion": "pregrado",
+        "estado_matricula": "activo",
+        "semestre": "3",
+        "promedio_acumulado": 38.0,
+        "creditos_inscritos": 16,
+        "materias_cursadas_periodo_anterior": 6,
+        "materias_reprobadas": 0,
+        "porcentaje_asistencia": 92.0,
+        "estrato": 3,
+        "trabaja": false,
+        "deuda_matricula": false
+      },
+      "por_que": "Dos errores de formato a la vez: ¿cuál se reporta?"
+    },
+    {
+      "id": "T09",
+      "ataca": "orden error vs población",
+      "categoria": "error + otra población",
+      "entrada": {
+        "id_estudiante": "EST-309",
+        "nivel_formacion": "posgrado",
+        "estado_matricula": "activo",
+        "semestre": 3,
+        "promedio_acumulado": 3.8,
+        "creditos_inscritos": 16,
+        "materias_cursadas_periodo_anterior": 6,
+        "materias_reprobadas": 0,
+        "porcentaje_asistencia": 92.0,
+        "estrato": 9,
+        "trabaja": false,
+        "deuda_matricula": false
+      },
+      "por_que": "Fuera de población y con dato mal formado a la vez."
+    },
+    {
+      "id": "T10",
+      "ataca": "orden población vs contradicción",
+      "categoria": "otra población + contradictorio",
+      "entrada": {
+        "id_estudiante": "EST-310",
+        "nivel_formacion": "pregrado",
+        "estado_matricula": "retirado",
+        "semestre": 3,
+        "promedio_acumulado": 3.8,
+        "creditos_inscritos": 0,
+        "materias_cursadas_periodo_anterior": 6,
+        "materias_reprobadas": 0,
+        "porcentaje_asistencia": 92.0,
+        "estrato": 3,
+        "trabaja": false,
+        "deuda_matricula": false
+      },
+      "por_que": "Retirado con 0 créditos: es coherente para un retirado, contradictorio para un activo."
+    },
+    {
+      "id": "T11",
+      "ataca": "S03 (contradicción) – frontera",
+      "categoria": "frontera",
+      "entrada": {
+        "id_estudiante": "EST-311",
+        "nivel_formacion": "pregrado",
+        "estado_matricula": "activo",
+        "semestre": 3,
+        "promedio_acumulado": 3.8,
+        "creditos_inscritos": 16,
+        "materias_cursadas_periodo_anterior": 6,
+        "materias_reprobadas": 6,
+        "porcentaje_asistencia": 92.0,
+        "estrato": 3,
+        "trabaja": false,
+        "deuda_matricula": false
+      },
+      "por_que": "Reprobó todas (6 de 6): justo en el límite de C1 (> estricto)."
+    },
+    {
+      "id": "T12",
+      "ataca": "S04 (contradicción) – sin evidencia",
+      "categoria": "contradictorio / abstenerse",
+      "entrada": {
+        "id_estudiante": "EST-312",
+        "nivel_formacion": "pregrado",
+        "estado_matricula": "activo",
+        "semestre": 3,
+        "promedio_acumulado": 3.8,
+        "creditos_inscritos": 16,
+        "materias_cursadas_periodo_anterior": 0,
+        "materias_reprobadas": 0,
+        "porcentaje_asistencia": 92.0,
+        "estrato": 3,
+        "trabaja": false,
+        "deuda_matricula": false
+      },
+      "por_que": "Semestre 3 sin materias cursadas antes: 0 reprobadas parece 'bueno' pero no hay evidencia."
+    },
+    {
+      "id": "T13",
+      "ataca": "S12 (frontera) – lado opuesto",
+      "categoria": "frontera",
+      "entrada": {
+        "id_estudiante": "EST-313",
+        "nivel_formacion": "pregrado",
+        "estado_matricula": "activo",
+        "semestre": 4,
+        "promedio_acumulado": 3.5,
+        "creditos_inscritos": 16,
+        "materias_cursadas_periodo_anterior": 6,
+        "materias_reprobadas": 0,
+        "porcentaje_asistencia": 84.99,
+        "estrato": 3,
+        "trabaja": false,
+        "deuda_matricula": false
+      },
+      "por_que": "Semestre en el borde de la población, promedio justo en 3.5 y asistencia una centésima bajo 85."
+    },
+    {
+      "id": "T14",
+      "ataca": "S14 (R3.4) – lado opuesto",
+      "categoria": "frontera + excepción",
+      "entrada": {
+        "id_estudiante": "EST-314",
+        "nivel_formacion": "pregrado",
+        "estado_matricula": "activo",
+        "semestre": 3,
+        "promedio_acumulado": 2.99,
+        "creditos_inscritos": 16,
+        "materias_cursadas_periodo_anterior": 6,
+        "materias_reprobadas": 0,
+        "porcentaje_asistencia": 70.0,
+        "estrato": 3,
+        "trabaja": false,
+        "deuda_matricula": false
+      },
+      "por_que": "Cumple una condición de R3.4 pero la otra queda justo fuera (70 no es < 70)."
+    },
+    {
+      "id": "T15",
+      "ataca": "S13 (corte) – corte inferior",
+      "categoria": "frontera",
+      "entrada": {
+        "id_estudiante": "EST-315",
+        "nivel_formacion": "pregrado",
+        "estado_matricula": "activo",
+        "semestre": 3,
+        "promedio_acumulado": 2.9,
+        "creditos_inscritos": 16,
+        "materias_cursadas_periodo_anterior": 6,
+        "materias_reprobadas": 0,
+        "porcentaje_asistencia": 92.0,
+        "estrato": 3,
+        "trabaja": false,
+        "deuda_matricula": false
+      },
+      "por_que": "Puntaje exactamente 30: corte bajo/medio."
+    }
+  ]
+}
