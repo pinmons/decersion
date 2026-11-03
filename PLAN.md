@@ -15,7 +15,7 @@ websockets, y Vercel solo corre funciones que arrancan, responden y se apagan.
 |---|---|---|
 | `desercion/` (paquete Python) | local y Vercel | contrato, reglas, modelos, evaluación |
 | `api/*.py` (funciones serverless) | Vercel | `POST /api/evaluar` y `GET /api/rondas` llaman al paquete |
-| `public/` (HTML + JS sin framework) | Vercel (estático) | las 5 secciones de la interfaz |
+| `public/` (HTML + JS sin framework) | Vercel (estático) | la página web (estructura en la sección 6) |
 | `app.py` (Streamlit) | local | las mismas 5 secciones, como pide el prompt |
 
 - El **entrenamiento no corre en Vercel**. Se ejecuta en local con semilla fija; los pesos
@@ -78,7 +78,7 @@ modificarlos (son la historia del proyecto).
 | 5 | Permutación, tope 35 %, ablación, 5 semillas, análisis por estrato | Ninguna variable > 35 % (o el antes/después si hubo que corregir) |
 | 6 | Métricas en test de reglas, logística y MLP | Tabla comparativa y conclusión honesta |
 | 7 | Ronda 4 (contrato + propiedades + U01–U15) | `X/Y pasan` real; rondas 1–3 siguen en 35/35 |
-| 8 | Web en Vercel, `app.py`, `reporte_entrenamiento.md`, `README.md` | `vercel dev` responde igual que el paquete; reporte generado automáticamente |
+| 8 | Web en Vercel (estructura de la sección 6), `app.py`, `reporte_entrenamiento.md`, `README.md` | `vercel dev` responde igual que el paquete; la marca en vivo coincide con `evaluar()`; reporte generado automáticamente |
 
 Cada fase va en uno o más commits en la rama `prototipo`. El merge a `main` se hace con un
 PR que revisa el equipo.
@@ -172,3 +172,56 @@ PR que revisa el equipo.
 - `requirements-dev.txt` (local): `numpy`, `pandas`, `matplotlib`, `streamlit`,
   `scikit-learn` (solo para verificar).
 - Python 3.12 (el que hay en local y el que usa Vercel).
+
+## 6. Estructura de la página web (Fase 8)
+
+Idea del equipo: una página de tres partes, en este orden.
+
+### 6.1 Portada: de qué trata el proyecto
+- Qué problema resuelve (alerta temprana de deserción en semestres 2 a 4), para quién es
+  (bienestar universitario, consejeros) y qué devuelve: nivel de riesgo, acción recomendada,
+  error controlado o abstención que remite el caso a una persona.
+- Aviso visible: **los datos de entrenamiento son sintéticos**; el prototipo no se usa para
+  decidir sobre estudiantes reales.
+- Botones que llevan a las otras dos partes.
+
+### 6.2 Formulario interactivo: cuánto influye cada variable
+- Los 12 campos del contrato, con los rangos del esquema E como límites de cada control
+  (deslizadores para números, selectores para categorías). Selector de modo
+  (reglas / aprendido).
+- **Marca en vivo** que se actualiza a medida que se llenan los campos:
+  - Mientras falten campos obligatorios: *"Faltan N datos"* (no se llama a la API).
+  - Con el registro completo: **"Se considera en riesgo de desertar"** o **"No se considera en
+    riesgo"**, con el nivel (bajo/medio/alto), el puntaje y la acción recomendada.
+  - Si el Paso 1 rechaza el registro o el sistema se abstiene, la marca lo dice con su motivo
+    (*"Error: …"* o *"Remitido a revisión humana: …"*), nunca un sí/no.
+- **Influencia de cada variable:** barras con los puntos que aporta cada variable al puntaje,
+  que cambian al mover un campo. Así se ve qué variable pesa más.
+- **Botón "Cargar ejemplo":** llena el formulario con un estudiante ficticio que tiene las 12
+  variables registradas, para ver el resultado sin escribir nada. También un botón "Limpiar".
+- [SUPUESTO] "Desertado / no desertado" = nivel **alto** / nivel bajo o medio (igual que el
+  supuesto 19). La marca muestra siempre el nivel para que no se pierda el matiz del *medio*.
+- [SUPUESTO] La marca llama a `POST /api/evaluar` con una espera de ~300 ms tras el último
+  cambio, en vez de recalcular el modelo en JavaScript. Así hay una sola implementación y la
+  página nunca contradice al paquete (garantías, Paso 1 y R3.4 incluidas).
+- [SUPUESTO] El ejemplo es un registro inventado y completo, válido en el contrato. No se
+  usa ningún caso con un identificador que parezca real.
+
+### 6.3 Cómo se hizo: el proceso y la lógica del modelo
+Explicación paso a paso, en lenguaje claro y con los números reales de la ejecución
+(salen de `reportes/`, no se escriben a mano):
+1. **El contrato:** validación (Paso 1), cálculo del riesgo (Pasos 2 y 3), regla R3.4 y
+   abstención.
+2. **Datos:** cómo se generaron los datos sintéticos, la tasa base y los registros
+   descartados.
+3. **Variables:** correlaciones, VIF y qué se decidió con las variables redundantes.
+4. **Modelos:** línea base por reglas, regresión logística y red neuronal; curvas de
+   entrenamiento y cómo se convierten los pesos en la tarjeta de puntaje de 0 a 100.
+5. **Cuánto pesa cada variable:** importancia por permutación con el tope del 35 %,
+   ablación, estabilidad entre semillas y análisis por estrato.
+6. **Resultados y pruebas:** tabla comparativa de los tres modelos, y las rondas 1 a 4 con la
+   tabla PASA/FALLA.
+
+[SUPUESTO] Las secciones 2 a 5 del prompt (Datos, Entrenamiento, Variables, Pruebas) se
+integran en esta parte de la web, en vez de ir como pestañas sueltas. En `app.py`
+(Streamlit, local) se mantienen las 5 secciones del prompt y se agrega la portada.
