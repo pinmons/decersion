@@ -24,6 +24,7 @@
         <a href="index.html" aria-current="page">Inicio</a>
         <a href="evaluar.html">Evaluar</a>
         <a href="proceso.html">Cómo se construyó</a>
+        <a href="reporte.html">Reporte</a>
         <a href="pruebas.html">Pruebas</a>
       </nav>
     </div>
@@ -58,18 +59,19 @@
     <section class="seccion">
       <div class="envoltura">
         <header class="seccion-encabezado">
-          <h2>Cómo se construyó, en ocho pasos</h2>
+          <h2>Cómo se construyó, paso a paso</h2>
           <p>Cada paso tiene su propia página, con las gráficas hechas a partir de la ejecución real del entrenamiento.</p>
         </header>
         <ol class="tarjetas-pasos">
-<li><a href="contrato.html"><b class="paso-n">1</b><span class="paso-texto"><strong>El contrato</strong><span>Qué datos entran, en qué orden se revisan y qué responde el sistema en cada caso.</span></span></a></li>
-<li><a href="datos.html"><b class="paso-n">2</b><span class="paso-texto"><strong>Los datos</strong><span>Cómo se simularon 20 000 estudiantes y qué registros descartó la validación.</span></span></a></li>
-<li><a href="variables.html"><b class="paso-n">3</b><span class="paso-texto"><strong>Las variables</strong><span>Correlaciones, VIF y qué variables redundantes se quitaron antes de entrenar.</span></span></a></li>
-<li><a href="aprendizaje.html"><b class="paso-n">4</b><span class="paso-texto"><strong>Cómo aprende</strong><span>Épocas, pérdida y gradiente: la neurona época por época y la red neuronal.</span></span></a></li>
-<li><a href="puntaje.html"><b class="paso-n">5</b><span class="paso-texto"><strong>De pesos a puntos</strong><span>La tarjeta de puntaje de 0 a 100 y cómo se eligieron los cortes de cada nivel.</span></span></a></li>
-<li><a href="pesos.html"><b class="paso-n">6</b><span class="paso-texto"><strong>Cuánto pesa cada variable</strong><span>Importancia, tope del 35 %, ablación, estabilidad y la variable sensible estrato.</span></span></a></li>
-<li><a href="resultados.html"><b class="paso-n">7</b><span class="paso-texto"><strong>Qué tan bien funciona</strong><span>Las métricas en prueba de los modelos aprendidos frente a las reglas del contrato.</span></span></a></li>
-<li><a href="pruebas.html"><b class="paso-n">8</b><span class="paso-texto"><strong>Pruebas de estrés</strong><span>Las rondas 1 a 4 caso por caso, y un botón para correrlas otra vez.</span></span></a></li>
+<li><a href="contrato.html"><b class="paso-n">1</b><span class="paso-texto"><strong>El contrato</strong><span>Las reglas fijas que dicen qué datos entran, en qué orden se revisan y qué puede responder el sistema.</span><span class="para-que">Para qué: Que toda respuesta sea un resultado confiable, un error que se corrige en el origen o una remisión a una persona.</span></span></a></li>
+<li><a href="datos.html"><b class="paso-n">2</b><span class="paso-texto"><strong>Los datos</strong><span>La generación de 20 000 estudiantes simulados, cada uno con la marca de si desertó o no.</span><span class="para-que">Para qué: Tener con qué entrenar y medir los modelos, y dejar listo el camino para cambiar a datos reales.</span></span></a></li>
+<li><a href="variables.html"><b class="paso-n">3</b><span class="paso-texto"><strong>Las variables</strong><span>Elegir y preparar las variables que entran al modelo.</span><span class="para-que">Para qué: Que cada variable aporte información propia y todas compitan en igualdad de condiciones.</span></span></a></li>
+<li><a href="aprendizaje.html"><b class="paso-n">4</b><span class="paso-texto"><strong>Cómo aprende una neurona</strong><span>El entrenamiento de una regresión logística: una sola neurona que aprende un peso por variable.</span><span class="para-que">Para qué: Obtener pesos medidos que después se convierten en una tarjeta de puntos que un consejero entiende.</span></span></a></li>
+<li><a href="red.html"><b class="paso-n">5</b><span class="paso-texto"><strong>La red neuronal</strong><span>Una red neuronal de tres capas, entrenada con las técnicas del aprendizaje profundo.</span><span class="para-que">Para qué: Comprobar si un modelo más complejo predice mejor, y a qué costo en explicabilidad.</span></span></a></li>
+<li><a href="puntaje.html"><b class="paso-n">6</b><span class="paso-texto"><strong>De pesos a puntos</strong><span>Convertir los pesos aprendidos en puntos de 0 a 100 y elegir dónde empieza cada nivel.</span><span class="para-que">Para qué: Mantener la forma de las reglas (puntos, niveles y acción) pero con pesos aprendidos de los datos.</span></span></a></li>
+<li><a href="pesos.html"><b class="paso-n">7</b><span class="paso-texto"><strong>Cuánto pesa cada variable</strong><span>Medir cuánto depende el modelo de cada variable y repartir el peso si una domina.</span><span class="para-que">Para qué: Un modelo robusto y estable, con el estrato revisado aparte por ser una variable sensible.</span></span></a></li>
+<li><a href="resultados.html"><b class="paso-n">8</b><span class="paso-texto"><strong>Qué tan bien funciona</strong><span>La evaluación final con 3 000 estudiantes que ningún modelo había visto.</span><span class="para-que">Para qué: Comparar con honestidad las reglas, la neurona y la red, y saber cuánto confiar en cada una.</span></span></a></li>
+<li><a href="pruebas.html"><b class="paso-n">9</b><span class="paso-texto"><strong>Pruebas de estrés</strong><span>Casos diseñados para romper el sistema, con la respuesta esperada escrita aparte.</span><span class="para-que">Para qué: Encontrar y corregir las fallas antes de que lleguen a un estudiante real.</span></span></a></li>
         </ol>
       </div>
     </section>
@@ -85,7 +87,9 @@
   <script src="js/util.js" defer></script>
   <script src="js/recorrido.js" defer></script>
   <script src="js/evaluador.js" defer></script>
+  <script src="js/aprendizaje.js" defer></script>
   <script src="js/proceso.js" defer></script>
+  <script src="js/reporte.js" defer></script>
   <script src="js/principal.js" defer></script>
 </body>
 </html>

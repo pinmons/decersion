@@ -24,6 +24,7 @@
         <a href="index.html">Inicio</a>
         <a href="evaluar.html">Evaluar</a>
         <a href="proceso.html" aria-current="page">Cómo se construyó</a>
+        <a href="reporte.html">Reporte</a>
         <a href="pruebas.html">Pruebas</a>
       </nav>
     </div>
@@ -38,19 +39,25 @@
 <li><a href="contrato.html" aria-current="page"><b class="paso-n">1</b><span class="paso-texto"><strong>El contrato</strong></span></a></li>
 <li><a href="datos.html"><b class="paso-n">2</b><span class="paso-texto"><strong>Los datos</strong></span></a></li>
 <li><a href="variables.html"><b class="paso-n">3</b><span class="paso-texto"><strong>Las variables</strong></span></a></li>
-<li><a href="aprendizaje.html"><b class="paso-n">4</b><span class="paso-texto"><strong>Cómo aprende</strong></span></a></li>
-<li><a href="puntaje.html"><b class="paso-n">5</b><span class="paso-texto"><strong>De pesos a puntos</strong></span></a></li>
-<li><a href="pesos.html"><b class="paso-n">6</b><span class="paso-texto"><strong>Cuánto pesa cada variable</strong></span></a></li>
-<li><a href="resultados.html"><b class="paso-n">7</b><span class="paso-texto"><strong>Qué tan bien funciona</strong></span></a></li>
-<li><a href="pruebas.html"><b class="paso-n">8</b><span class="paso-texto"><strong>Pruebas de estrés</strong></span></a></li>
+<li><a href="aprendizaje.html"><b class="paso-n">4</b><span class="paso-texto"><strong>Cómo aprende una neurona</strong></span></a></li>
+<li><a href="red.html"><b class="paso-n">5</b><span class="paso-texto"><strong>La red neuronal</strong></span></a></li>
+<li><a href="puntaje.html"><b class="paso-n">6</b><span class="paso-texto"><strong>De pesos a puntos</strong></span></a></li>
+<li><a href="pesos.html"><b class="paso-n">7</b><span class="paso-texto"><strong>Cuánto pesa cada variable</strong></span></a></li>
+<li><a href="resultados.html"><b class="paso-n">8</b><span class="paso-texto"><strong>Qué tan bien funciona</strong></span></a></li>
+<li><a href="pruebas.html"><b class="paso-n">9</b><span class="paso-texto"><strong>Pruebas de estrés</strong></span></a></li>
           </ol>
         </nav>
         <article class="paso" id="paso-contrato" data-paso="contrato">
           <header class="paso-cabecera">
-            <p class="nota">Paso 1 de 8</p>
+            <p class="nota">Paso 1 de 9</p>
             <h1>El contrato</h1>
             <p class="entrada">Qué datos entran, en qué orden se revisan y qué responde el sistema en cada caso.</p>
           </header>
+          <dl class="que-porque">
+            <div><dt>Qué es</dt><dd>Las reglas fijas que dicen qué datos entran, en qué orden se revisan y qué puede responder el sistema.</dd></div>
+            <div><dt>Por qué</dt><dd>Sin reglas claras, el sistema calificaría datos rotos o a estudiantes que no le corresponden, y se equivocaría sin avisar.</dd></div>
+            <div><dt>Para qué</dt><dd>Que toda respuesta sea un resultado confiable, un error que se corrige en el origen o una remisión a una persona.</dd></div>
+          </dl>
           <div class="cuerpo" id="contenido"><p class="nota">Cargando…</p></div>
           <nav class="paso-navegacion" aria-label="Pasos vecinos"><a class="boton" href="proceso.html">Todos los pasos</a><a class="boton boton-tinta" href="datos.html">Paso 2: Los datos</a></nav>
         </article>
@@ -68,7 +75,9 @@
   <script src="js/util.js" defer></script>
   <script src="js/recorrido.js" defer></script>
   <script src="js/evaluador.js" defer></script>
+  <script src="js/aprendizaje.js" defer></script>
   <script src="js/proceso.js" defer></script>
+  <script src="js/reporte.js" defer></script>
   <script src="js/principal.js" defer></script>
 </body>
 </html>

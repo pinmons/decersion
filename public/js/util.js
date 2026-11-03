@@ -206,5 +206,46 @@
     return svg;
   }
 
-  window.SAT = Object.assign(window.SAT || {}, { $, esc, pct, num, miles, json, NOMBRES, nombre, ACCIONES, MOTIVOS, mostrarGlobo, ocultarGlobo, conGlobo, s, lienzo, escala, marcasBonitas, figura, leyenda, grafLineas, grafBarras });
+  /* ---------------------------------------------------------------- recorrido lineal en cajas */
+  const reducido = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+  /* Llama a `fn` una sola vez, cuando `el` entra en pantalla (o enseguida si no hay IntersectionObserver). */
+  function alVerUnaVez(el, fn, margen = "0px 0px -20% 0px") {
+    if (!("IntersectionObserver" in window)) { fn(); return; }
+    const obs = new IntersectionObserver((entradas) => {
+      if (entradas.some((e) => e.isIntersecting)) { obs.disconnect(); fn(); }
+    }, { rootMargin: margen });
+    obs.observe(el);
+  }
+  /* Entrada escalonada (skill animate: ease-out fuerte, 40 ms entre elementos, solo transform y opacity).
+     El estado en reposo es visible: si la animación no corre, nada queda oculto. */
+  function aparecer(elementos, { pausa = 40, duracion = 360, desde = "translateY(8px)" } = {}) {
+    if (reducido()) return;
+    [...elementos].forEach((el, i) => {
+      if (el.animate) el.animate([{ opacity: 0, transform: desde }, { opacity: 1, transform: "none" }],
+        { duration: duracion, delay: i * pausa, easing: "cubic-bezier(0.23, 1, 0.32, 1)", fill: "backwards" });
+    });
+  }
+  /* Construye la línea de cajas numeradas. items = [{ id, titulo, nodos: [Node...] }] */
+  function secuencia(contenedor, prefijo, items) {
+    const resumen = document.createElement("nav");
+    resumen.className = "resumen-paso";
+    resumen.setAttribute("aria-label", "En este paso");
+    resumen.innerHTML = `<strong>En este paso</strong><ol>${items.map((it, i) => `<li><a href="#${it.id}">${esc(it.titulo)}</a></li>`).join("")}</ol>`;
+    const lista = document.createElement("ol");
+    lista.className = "secuencia";
+    items.forEach((it, i) => {
+      const li = document.createElement("li");
+      li.className = "caja";
+      li.id = it.id;
+      li.innerHTML = `<span class="caja-numero" aria-hidden="true">${prefijo}.${i + 1}</span><div class="caja-cuerpo"><h2>${esc(it.titulo)}</h2></div>`;
+      const cuerpo = li.querySelector(".caja-cuerpo");
+      it.nodos.filter(Boolean).forEach((n) => cuerpo.appendChild(typeof n === "string" ? Object.assign(document.createElement("p"), { innerHTML: n }) : n));
+      lista.appendChild(li);
+      alVerUnaVez(li, () => aparecer(cuerpo.children), "0px 0px -10% 0px");
+    });
+    contenedor.append(resumen, lista);
+    return lista;
+  }
+
+  window.SAT = Object.assign(window.SAT || {}, { $, esc, pct, num, miles, json, NOMBRES, nombre, ACCIONES, MOTIVOS, mostrarGlobo, ocultarGlobo, conGlobo, s, lienzo, escala, marcasBonitas, figura, leyenda, grafLineas, grafBarras, reducido, alVerUnaVez, aparecer, secuencia });
 })();

@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Cómo aprende</title>
-  <meta name="description" content="Épocas, pérdida y gradiente: la neurona época por época y la red neuronal.">
+  <title>Cómo aprende una neurona</title>
+  <meta name="description" content="Siga a un estudiante: de sus datos a números, por la neurona, la pérdida y el gradiente, hasta las épocas y la regularización.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%232350a8'/%3E%3Ccircle cx='16' cy='9' r='3.4' fill='%23e05a4f'/%3E%3Ccircle cx='16' cy='16' r='3.4' fill='%23f2b23a'/%3E%3Ccircle cx='16' cy='23' r='3.4' fill='%234fb57a'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -24,6 +24,7 @@
         <a href="index.html">Inicio</a>
         <a href="evaluar.html">Evaluar</a>
         <a href="proceso.html" aria-current="page">Cómo se construyó</a>
+        <a href="reporte.html">Reporte</a>
         <a href="pruebas.html">Pruebas</a>
       </nav>
     </div>
@@ -38,21 +39,27 @@
 <li><a href="contrato.html"><b class="paso-n">1</b><span class="paso-texto"><strong>El contrato</strong></span></a></li>
 <li><a href="datos.html"><b class="paso-n">2</b><span class="paso-texto"><strong>Los datos</strong></span></a></li>
 <li><a href="variables.html"><b class="paso-n">3</b><span class="paso-texto"><strong>Las variables</strong></span></a></li>
-<li><a href="aprendizaje.html" aria-current="page"><b class="paso-n">4</b><span class="paso-texto"><strong>Cómo aprende</strong></span></a></li>
-<li><a href="puntaje.html"><b class="paso-n">5</b><span class="paso-texto"><strong>De pesos a puntos</strong></span></a></li>
-<li><a href="pesos.html"><b class="paso-n">6</b><span class="paso-texto"><strong>Cuánto pesa cada variable</strong></span></a></li>
-<li><a href="resultados.html"><b class="paso-n">7</b><span class="paso-texto"><strong>Qué tan bien funciona</strong></span></a></li>
-<li><a href="pruebas.html"><b class="paso-n">8</b><span class="paso-texto"><strong>Pruebas de estrés</strong></span></a></li>
+<li><a href="aprendizaje.html" aria-current="page"><b class="paso-n">4</b><span class="paso-texto"><strong>Cómo aprende una neurona</strong></span></a></li>
+<li><a href="red.html"><b class="paso-n">5</b><span class="paso-texto"><strong>La red neuronal</strong></span></a></li>
+<li><a href="puntaje.html"><b class="paso-n">6</b><span class="paso-texto"><strong>De pesos a puntos</strong></span></a></li>
+<li><a href="pesos.html"><b class="paso-n">7</b><span class="paso-texto"><strong>Cuánto pesa cada variable</strong></span></a></li>
+<li><a href="resultados.html"><b class="paso-n">8</b><span class="paso-texto"><strong>Qué tan bien funciona</strong></span></a></li>
+<li><a href="pruebas.html"><b class="paso-n">9</b><span class="paso-texto"><strong>Pruebas de estrés</strong></span></a></li>
           </ol>
         </nav>
         <article class="paso" id="paso-aprendizaje" data-paso="aprendizaje">
           <header class="paso-cabecera">
-            <p class="nota">Paso 4 de 8</p>
-            <h1>Cómo aprende</h1>
-            <p class="entrada">Épocas, pérdida y gradiente: la neurona época por época y la red neuronal.</p>
+            <p class="nota">Paso 4 de 9</p>
+            <h1>Cómo aprende una neurona</h1>
+            <p class="entrada">Siga a un estudiante: de sus datos a números, por la neurona, la pérdida y el gradiente, hasta las épocas y la regularización.</p>
           </header>
+          <dl class="que-porque">
+            <div><dt>Qué es</dt><dd>El entrenamiento de una regresión logística: una sola neurona que aprende un peso por variable.</dd></div>
+            <div><dt>Por qué</dt><dd>Los pesos de las reglas se pusieron a ojo; aquí salen de los datos, midiendo cuánto se equivoca y corrigiendo.</dd></div>
+            <div><dt>Para qué</dt><dd>Obtener pesos medidos que después se convierten en una tarjeta de puntos que un consejero entiende.</dd></div>
+          </dl>
           <div class="cuerpo" id="contenido"><p class="nota">Cargando…</p></div>
-          <nav class="paso-navegacion" aria-label="Pasos vecinos"><a class="boton" href="variables.html">Paso 3: Las variables</a><a class="boton boton-tinta" href="puntaje.html">Paso 5: De pesos a puntos</a></nav>
+          <nav class="paso-navegacion" aria-label="Pasos vecinos"><a class="boton" href="variables.html">Paso 3: Las variables</a><a class="boton boton-tinta" href="red.html">Paso 5: La red neuronal</a></nav>
         </article>
       </div>
     </section>
@@ -68,7 +75,9 @@
   <script src="js/util.js" defer></script>
   <script src="js/recorrido.js" defer></script>
   <script src="js/evaluador.js" defer></script>
+  <script src="js/aprendizaje.js" defer></script>
   <script src="js/proceso.js" defer></script>
+  <script src="js/reporte.js" defer></script>
   <script src="js/principal.js" defer></script>
 </body>
 </html>

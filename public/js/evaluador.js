@@ -368,5 +368,5 @@
     }
   }
 
-  window.SAT = Object.assign(window.SAT || {}, { iniciarEvaluador, iniciarPortada });
+  window.SAT = Object.assign(window.SAT || {}, { iniciarEvaluador, iniciarPortada, CASOS });
 })();

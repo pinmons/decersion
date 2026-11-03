@@ -79,8 +79,10 @@ Vercel no puede ejecutar Streamlit (necesita un servidor permanente con websocke
 publicada es:
 
 - `public/`: sitio estático con una página por parte: `index.html` (portada), `evaluar.html` (planilla y
-  ficha de seguimiento), `proceso.html` (índice) y una página por cada paso (`contrato.html`, `datos.html`,
-  …, `pruebas.html`). Las genera `python -m desercion.paginas_web` desde una sola plantilla.
+  ficha de seguimiento), `proceso.html` (índice), `reporte.html` (el reporte completo, en la web) y una página por cada uno de los
+  9 pasos (`contrato`, `datos`, `variables`, `aprendizaje`, `red`, `puntaje`, `pesos`, `resultados`, `pruebas`).
+  Cada paso dice qué es, por qué y para qué, y se explica en cajas numeradas con animaciones hechas con los pesos
+  reales. Las genera `python -m desercion.paginas_web` desde una sola plantilla.
 - `api/evaluar.py` y `api/rondas.py`: funciones Python que llaman a `desercion/` (solo NumPy).
 
 Pasos: en vercel.com, **Add New → Project → Import** el repositorio `pinmons/decersion`, preset

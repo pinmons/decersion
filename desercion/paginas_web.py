@@ -16,24 +16,56 @@ PASOS = [
     ("contrato", "El contrato", "Qué datos entran, en qué orden se revisan y qué responde el sistema en cada caso."),
     ("datos", "Los datos", "Cómo se simularon 20 000 estudiantes y qué registros descartó la validación."),
     ("variables", "Las variables", "Correlaciones, VIF y qué variables redundantes se quitaron antes de entrenar."),
-    ("aprendizaje", "Cómo aprende", "Épocas, pérdida y gradiente: la neurona época por época y la red neuronal."),
+    ("aprendizaje", "Cómo aprende una neurona", "Siga a un estudiante: de sus datos a números, por la neurona, la pérdida y el gradiente, hasta las épocas y la regularización."),
+    ("red", "La red neuronal", "Aprendizaje profundo: capas, ReLU, backpropagation, Adam, inicialización He, dropout y monotonía."),
     ("puntaje", "De pesos a puntos", "La tarjeta de puntaje de 0 a 100 y cómo se eligieron los cortes de cada nivel."),
     ("pesos", "Cuánto pesa cada variable", "Importancia, tope del 35 %, ablación, estabilidad y la variable sensible estrato."),
     ("resultados", "Qué tan bien funciona", "Las métricas en prueba de los modelos aprendidos frente a las reglas del contrato."),
     ("pruebas", "Pruebas de estrés", "Las rondas 1 a 4 caso por caso, y un botón para correrlas otra vez."),
 ]
 
+# Qué es, por qué y para qué de cada paso (se muestra en la cabecera de su página).
+QUE_PORQUE = {
+    "contrato": ("Las reglas fijas que dicen qué datos entran, en qué orden se revisan y qué puede responder el sistema.",
+                 "Sin reglas claras, el sistema calificaría datos rotos o a estudiantes que no le corresponden, y se equivocaría sin avisar.",
+                 "Que toda respuesta sea un resultado confiable, un error que se corrige en el origen o una remisión a una persona."),
+    "datos": ("La generación de 20 000 estudiantes simulados, cada uno con la marca de si desertó o no.",
+              "No hay registros reales con esa marca, y un modelo necesita miles de ejemplos para aprender.",
+              "Tener con qué entrenar y medir los modelos, y dejar listo el camino para cambiar a datos reales."),
+    "variables": ("Elegir y preparar las variables que entran al modelo.",
+                  "Variables repetidas confunden al modelo, y variables en escalas distintas desequilibran el aprendizaje.",
+                  "Que cada variable aporte información propia y todas compitan en igualdad de condiciones."),
+    "aprendizaje": ("El entrenamiento de una regresión logística: una sola neurona que aprende un peso por variable.",
+                    "Los pesos de las reglas se pusieron a ojo; aquí salen de los datos, midiendo cuánto se equivoca y corrigiendo.",
+                    "Obtener pesos medidos que después se convierten en una tarjeta de puntos que un consejero entiende."),
+    "red": ("Una red neuronal de tres capas, entrenada con las técnicas del aprendizaje profundo.",
+            "Una red puede captar combinaciones que una sola neurona no ve, como que trabajar pesa más cuando la asistencia es baja.",
+            "Comprobar si un modelo más complejo predice mejor, y a qué costo en explicabilidad."),
+    "puntaje": ("Convertir los pesos aprendidos en puntos de 0 a 100 y elegir dónde empieza cada nivel.",
+                "Un consejero necesita ver por qué un estudiante sale en riesgo, no un número abstracto.",
+                "Mantener la forma de las reglas (puntos, niveles y acción) pero con pesos aprendidos de los datos."),
+    "pesos": ("Medir cuánto depende el modelo de cada variable y repartir el peso si una domina.",
+              "Si una sola variable decide todo, un error en ese dato arrastra la decisión completa.",
+              "Un modelo robusto y estable, con el estrato revisado aparte por ser una variable sensible."),
+    "resultados": ("La evaluación final con 3 000 estudiantes que ningún modelo había visto.",
+                   "Medir con los mismos datos del entrenamiento daría números inflados.",
+                   "Comparar con honestidad las reglas, la neurona y la red, y saber cuánto confiar en cada una."),
+    "pruebas": ("Casos diseñados para romper el sistema, con la respuesta esperada escrita aparte.",
+                "Un sistema que funciona con casos típicos puede fallar en silencio con casos raros.",
+                "Encontrar y corregir las fallas antes de que lleguen a un estudiante real."),
+}
+
 FAVICON = ("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' "
            "rx='6' fill='%232350a8'/%3E%3Ccircle cx='16' cy='9' r='3.4' fill='%23e05a4f'/%3E%3Ccircle cx='16' cy='16' r='3.4' "
            "fill='%23f2b23a'/%3E%3Ccircle cx='16' cy='23' r='3.4' fill='%234fb57a'/%3E%3C/svg%3E")
 FUENTES = ("https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400"
            "&family=Literata:ital,opsz,wght@0,7..72,400..800;1,7..72,400..600&display=swap")
-SCRIPTS = ["util", "recorrido", "evaluador", "proceso", "principal"]
+SCRIPTS = ["util", "recorrido", "evaluador", "aprendizaje", "proceso", "reporte", "principal"]
 
 
 def _pagina(archivo, titulo, descripcion, pagina, seccion, cuerpo):
     nav = [("index.html", "Inicio", "inicio"), ("evaluar.html", "Evaluar", "evaluar"),
-           ("proceso.html", "Cómo se construyó", "proceso"), ("pruebas.html", "Pruebas", "pruebas")]
+           ("proceso.html", "Cómo se construyó", "proceso"), ("reporte.html", "Reporte", "reporte"), ("pruebas.html", "Pruebas", "pruebas")]
     enlaces = "\n        ".join(
         f'<a href="{h}"{" aria-current=\"page\"" if seccion == s else ""}>{t}</a>' for h, t, s in nav)
     scripts = "\n  ".join(f'<script src="js/{n}.js" defer></script>' for n in SCRIPTS)
@@ -86,7 +118,7 @@ def _lista_pasos(actual=None, con_descripcion=False):
     items = []
     for i, (clave, titulo, desc) in enumerate(PASOS, 1):
         marca = ' aria-current="page"' if clave == actual else ""
-        extra = f"<span>{escape(desc)}</span>" if con_descripcion else ""
+        extra = f"<span>{escape(QUE_PORQUE[clave][0])}</span><span class=\"para-que\">Para qué: {escape(QUE_PORQUE[clave][2].rstrip('.'))}.</span>" if con_descripcion else ""
         items.append(f'<li><a href="{clave}.html"{marca}><b class="paso-n">{i}</b><span class="paso-texto"><strong>{escape(titulo)}</strong>{extra}</span></a></li>')
     return "\n".join(items)
 
@@ -120,7 +152,7 @@ def inicio():
     <section class="seccion">
       <div class="envoltura">
         <header class="seccion-encabezado">
-          <h2>Cómo se construyó, en ocho pasos</h2>
+          <h2>Cómo se construyó, paso a paso</h2>
           <p>Cada paso tiene su propia página, con las gráficas hechas a partir de la ejecución real del entrenamiento.</p>
         </header>
         <ol class="tarjetas-pasos">
@@ -188,9 +220,9 @@ def proceso():
       <div class="envoltura">
         <header class="seccion-encabezado">
           <h1>Cómo se construyó</h1>
-          <p>Ocho pasos, de las reglas escritas a mano a un modelo que aprende sus pesos. Cada número y cada gráfica salen
-            de la ejecución real del entrenamiento (semilla 2026). El reporte completo está en
-            <a href="reportes/reporte_entrenamiento.md">reporte_entrenamiento.md</a>.</p>
+          <p>Nueve pasos, de las reglas escritas a mano a una red neuronal que aprende sus pesos. Cada número y cada gráfica salen
+            de la ejecución real del entrenamiento (semilla 2026). Si prefiere leerlo todo de corrido, está el
+            <a href="reporte.html">reporte completo</a>.</p>
         </header>
         <ol class="tarjetas-pasos">
 {_lista_pasos(con_descripcion=True)}
@@ -233,6 +265,11 @@ def paso(i):
             <h1>{escape(titulo)}</h1>
             <p class="entrada">{escape(desc)}</p>
           </header>
+          <dl class="que-porque">
+            <div><dt>Qué es</dt><dd>{escape(QUE_PORQUE[clave][0])}</dd></div>
+            <div><dt>Por qué</dt><dd>{escape(QUE_PORQUE[clave][1])}</dd></div>
+            <div><dt>Para qué</dt><dd>{escape(QUE_PORQUE[clave][2])}</dd></div>
+          </dl>
           <div class="cuerpo" id="contenido"><p class="nota">Cargando…</p></div>{extra}
           {"".join(pie)}
         </article>
@@ -241,8 +278,26 @@ def paso(i):
     return _pagina(f"{clave}.html", titulo, desc, f"paso-{clave}", "pruebas" if clave == "pruebas" else "proceso", cuerpo)
 
 
+def reporte():
+    cuerpo = """    <section class="seccion seccion-primera">
+      <div class="envoltura">
+        <header class="seccion-encabezado">
+          <h1>Reporte del entrenamiento</h1>
+          <p>Todo lo que se hizo y lo que salió, en un solo documento: datos, variables, entrenamiento, control de
+            dominancia, evaluación, pruebas y supuestos. Los números salen de la ejecución real (semilla 2026).</p>
+        </header>
+        <div class="reporte-rejilla">
+          <nav class="indice" aria-label="Secciones del reporte"><ol class="lista-pasos" id="indice-reporte"></ol></nav>
+          <article class="reporte cuerpo" id="contenido"><p class="nota">Cargando el reporte…</p></article>
+        </div>
+      </div>
+    </section>"""
+    return _pagina("reporte.html", "Reporte del entrenamiento", "Reporte completo del entrenamiento con datos sintéticos.",
+                   "reporte", "reporte", cuerpo)
+
+
 def generar():
-    paginas = {"index.html": inicio(), "evaluar.html": evaluar(), "proceso.html": proceso()}
+    paginas = {"index.html": inicio(), "evaluar.html": evaluar(), "proceso.html": proceso(), "reporte.html": reporte()}
     for i, (clave, _, _) in enumerate(PASOS):
         paginas[f"{clave}.html"] = paso(i)
     for nombre, html in paginas.items():

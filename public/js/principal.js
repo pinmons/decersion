@@ -2,7 +2,7 @@
    Punto de entrada: según la página (body[data-pagina]) monta la portada, la evaluación o un paso. */
 (function () {
   "use strict";
-  const { json, miles, iniciarEvaluador, iniciarPortada, montarPaso } = window.SAT;
+  const { json, miles, iniciarEvaluador, iniciarPortada, montarPaso, montarReporte } = window.SAT;
 
   async function opcional(ruta) {
     try { return await json(ruta); } catch (e) { return null; }
@@ -25,18 +25,29 @@
 
     if (pagina === "inicio") return iniciarPortada();
     if (pagina === "evaluar") return iniciarEvaluador(R);
+    if (pagina === "reporte") {
+      const [sup, r4] = await Promise.all([opcional("reportes/supuestos.json"), opcional("reportes/resultados_ronda4.json")]);
+      return montarReporte(R, sup, r4);
+    }
     if (pagina.startsWith("paso-")) {
       const clave = pagina.slice(5);
       if (!R && clave !== "contrato") {
         document.getElementById("contenido").textContent = "No se encontraron los resultados del entrenamiento (reportes/resultados.json).";
         return;
       }
-      const [r12, r3, r4, r4v1, red] = clave === "pruebas" || clave === "aprendizaje"
-        ? await Promise.all([opcional("reportes/resultados_rondas.json"), opcional("reportes/resultados_ronda3.json"),
-          opcional("reportes/resultados_ronda4.json"), opcional("reportes/resultados_ronda4_v1.json"),
-          opcional("reportes/modelos/red_neuronal.json")])
-        : [];
-      montarPaso(clave, { R, rondas: { r12, r3, r4, r4v1 }, modelos: { red } });
+      const necesita = (lista) => lista.includes(clave);
+      const [r12, r3, r4, r4v1, red, log] = await Promise.all([
+        necesita(["pruebas"]) ? opcional("reportes/resultados_rondas.json") : null,
+        necesita(["pruebas"]) ? opcional("reportes/resultados_ronda3.json") : null,
+        necesita(["pruebas"]) ? opcional("reportes/resultados_ronda4.json") : null,
+        necesita(["pruebas"]) ? opcional("reportes/resultados_ronda4_v1.json") : null,
+        necesita(["red"]) ? opcional("reportes/modelos/red_neuronal.json") : null,
+        necesita(["aprendizaje"]) ? opcional("reportes/modelos/logistica.json") : null]);
+      if ((clave === "red" && !red) || (clave === "aprendizaje" && !log)) {
+        document.getElementById("contenido").textContent = "No se encontraron los pesos del modelo (reportes/modelos/).";
+        return;
+      }
+      montarPaso(clave, { R, rondas: { r12, r3, r4, r4v1 }, modelos: { red, log } });
     }
   }
 

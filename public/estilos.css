@@ -343,3 +343,71 @@ details[open] summary { margin-bottom: 12px; }
 
 /* ------------------------------------------------------------------ pie */
 .pie { border-top: 1px solid var(--renglon); padding-block: 28px 48px; color: var(--tinta-2); font-size: var(--paso-1); }
+
+/* ------------------------------------------------------------------ recorrido lineal en cajas */
+:root {
+  --curva-salida: cubic-bezier(0.23, 1, 0.32, 1);     /* entrada de elementos (skill animate) */
+  --curva-movimiento: cubic-bezier(0.77, 0, 0.175, 1); /* algo que se mueve en pantalla */
+}
+.resumen-paso { background: var(--hoja); border: 1px solid var(--renglon); border-radius: 10px; padding: 16px 20px; display: flex; flex-direction: column; gap: 8px; }
+.resumen-paso ol { margin: 0; padding-left: 1.3em; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 4px 24px; color: var(--tinta-2); font-size: 0.92rem; }
+.resumen-paso a { color: var(--tinta); text-decoration: none; }
+.resumen-paso a:hover { color: var(--acento); text-decoration: underline; }
+.secuencia { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 28px; position: relative; }
+.secuencia::before { content: ""; position: absolute; left: 17px; top: 20px; bottom: 20px; width: 2px; background: var(--renglon); }
+.caja { position: relative; padding-left: 52px; min-width: 0; scroll-margin-top: 84px; }
+.caja-numero {
+  position: absolute; left: 0; top: 2px; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--papel); border: 2px solid var(--acento); color: var(--acento); font: 700 0.82rem var(--letra-texto); font-variant-numeric: tabular-nums;
+}
+.caja-cuerpo { background: var(--hoja); border: 1px solid var(--renglon); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 16px; box-shadow: var(--sombra); min-width: 0; }
+.caja-cuerpo > h2 { font-size: var(--paso2); }
+.caja-cuerpo p { color: var(--tinta-2); }
+.caja-cuerpo p strong { color: var(--tinta); }
+@media (max-width: 560px) { .caja { padding-left: 0; } .caja-numero { position: static; margin-bottom: 8px; } .secuencia::before { display: none; } .caja-cuerpo { padding: 16px; } }
+.formula {
+  font-family: var(--letra-titulo); font-style: italic; font-size: 1.08rem; color: var(--tinta); background: var(--hoja-2);
+  border-radius: 8px; padding: 10px 14px; overflow-x: auto; white-space: nowrap; max-width: 100%;
+}
+.formula small { font-family: var(--letra-texto); font-style: normal; color: var(--tinta-2); font-size: 0.82rem; margin-left: 10px; }
+.fichas { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.ficha-metodo { border: 1px solid var(--renglon); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 6px; background: var(--papel); }
+.ficha-metodo h3 { font-size: var(--paso0); font-family: var(--letra-texto); font-weight: 700; letter-spacing: 0; }
+.ficha-metodo p { font-size: 0.9rem; }
+.ficha-metodo .valor-metodo { font-family: var(--letra-titulo); font-size: var(--paso1); color: var(--acento); font-weight: 650; }
+.selector-estudiante { position: sticky; top: 64px; z-index: 5; background: color-mix(in srgb, var(--papel) 92%, transparent); backdrop-filter: blur(8px); padding-block: 10px; border-bottom: 1px solid var(--renglon); display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.selector-estudiante .segmentado { flex: 1 1 320px; }
+.selector-estudiante p { font-size: 0.9rem; color: var(--tinta-2); }
+.control-etapas { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.control-etapas .etapa-texto { font-size: 0.92rem; color: var(--tinta); font-weight: 700; flex: 1 1 220px; }
+.boton-chico { min-height: 34px; padding: 4px 12px; font-size: 0.88rem; }
+.etapa { transition: opacity 320ms var(--curva-salida); }
+.etapa.apagada { opacity: 0.08; }
+.neurona-act { transition: fill-opacity 320ms var(--curva-salida), opacity 320ms var(--curva-salida); }
+.neurona-apagada { opacity: 0.18; }
+.tabla-paso td, .tabla-paso th { padding: 6px 10px; }
+.tabla-paso tr.resaltada td { background: var(--acento-suave); }
+.lote { transition: opacity 120ms linear; }
+.pulso { fill: var(--acento); }
+.pulso-atras { fill: var(--alto); }
+@media (prefers-reduced-motion: reduce) { .pulso, .pulso-atras { display: none; } }
+
+/* ------------------------------------------------------------------ reporte */
+.reporte-rejilla { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 40px; align-items: start; }
+@media (max-width: 900px) { .reporte-rejilla { grid-template-columns: 1fr; } .reporte-rejilla .indice { display: none; } }
+.reporte { display: flex; flex-direction: column; gap: 22px; }
+.reporte section { display: flex; flex-direction: column; gap: 14px; scroll-margin-top: 84px; border-top: 1px solid var(--renglon); padding-top: 22px; }
+.reporte section:first-child { border-top: 0; padding-top: 0; }
+.reporte h2 { font-size: var(--paso3); }
+.reporte h3 { font-size: var(--paso1); }
+.reporte ol.supuestos { margin: 0; padding-left: 1.4em; display: flex; flex-direction: column; gap: 6px; color: var(--tinta-2); max-width: 80ch; }
+
+/* Qué es, por qué y para qué de cada paso */
+.que-porque { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0; }
+@media (max-width: 760px) { .que-porque { grid-template-columns: 1fr; } }
+.que-porque > div { background: var(--hoja); border: 1px solid var(--renglon); border-top: 3px solid var(--acento); border-radius: 8px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; }
+.que-porque > div:nth-child(2) { border-top-color: var(--medio); }
+.que-porque > div:nth-child(3) { border-top-color: var(--bajo); }
+.que-porque dt { font-family: var(--letra-titulo); font-weight: 650; font-size: var(--paso1); }
+.que-porque dd { margin: 0; color: var(--tinta-2); font-size: 0.95rem; }
+.tarjetas-pasos .para-que { color: var(--tinta); font-size: 0.86rem; border-top: 1px solid var(--renglon); padding-top: 6px; margin-top: 2px; }

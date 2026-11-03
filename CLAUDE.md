@@ -32,6 +32,8 @@ trabajo previo está en `contexto/` y es de solo lectura.
 - Páginas web: una por parte (inicio, evaluar, índice y un paso por página). Se generan con
   `python -m desercion.paginas_web` (también lo hace `python -m desercion.publicar`); no editar los
   `.html` de `public/` a mano.
+- Animaciones: seguir las skills `.claude/skills/animate` y `animation-performance` (solo transform y
+  opacity, ease-out fuerte, una vez al entrar en pantalla, versión tranquila con reduced motion).
 - Diseño de la web: seguir la skill `.claude/skills/frontend-design` y la identidad ya definida en
   `public/estilos.css` (ficha de seguimiento con sello, semáforo de riesgo, tinta azul, Literata +
   Atkinson Hyperlegible). Las gráficas se dibujan en SVG con los datos reales de `public/reportes/`.
