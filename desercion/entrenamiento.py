@@ -45,7 +45,10 @@ SEMILLA = 2026
 
 CONFIG_LOGISTICA = {"l2": 1e-3, "tasa_aprendizaje": 0.01, "tam_lote": 256, "max_epocas": 300, "paciencia": 20}
 CONFIG_RED = {"capas": [16, 8], "l2": 1e-4, "tasa_aprendizaje": 1e-3, "dropout": 0.2, "tam_lote": 256,
-              "max_epocas": 300, "paciencia": 20}
+              "max_epocas": 300, "paciencia": 20,
+              # v2 (tras la ronda 4): red monótona en las variables que exige el contrato de la Fase 7.
+              # +1 = solo puede subir el riesgo, -1 = solo puede bajarlo.
+              "monotonas": {"promedio_acumulado": -1, "tasa_reprobacion": +1, "porcentaje_asistencia": -1}}
 # Si la pérdida de validación no baja al menos esto, no cuenta como mejora.
 MEJORA_MINIMA = 1e-5
 MARGEN_TOPE = 0.02  # [SUPUESTO] margen bajo el tope por ruido de muestreo
@@ -133,9 +136,12 @@ def crear_logistica(k, config=CONFIG_LOGISTICA, l2_por_variable=None, signos=Non
                               l2_por_variable=l2_por_variable, signos=signos, semilla=semilla)
 
 
-def crear_red(k, config=CONFIG_RED, semilla=SEMILLA):
+def crear_red(k, config=CONFIG_RED, semilla=SEMILLA, nombres=None):
+    signos = None
+    if config.get("monotonas") and nombres is not None:
+        signos = [config["monotonas"].get(n, 0) for n in nombres]
     return RedNeuronal(k, capas=tuple(config["capas"]), l2=config["l2"], tasa_aprendizaje=config["tasa_aprendizaje"],
-                       dropout=config["dropout"], semilla=semilla)
+                       dropout=config["dropout"], signos_entrada=signos, semilla=semilla)
 
 
 # ====================================================================== Fase 2 – datos
@@ -279,7 +285,7 @@ def etapa_entrenamiento(est, res, imprimir=True):
     titulo(f"FASE 4 – Modelo B: red neuronal {k} → {' → '.join(map(str, CONFIG_RED['capas']))} → 1 "
            "(ReLU, dropout, Adam, He), desde cero en NumPy")
     print(f"Configuración: {CONFIG_RED}")
-    red, hist_red, info_red = entrenar(crear_red(k), Xtr, ytr, Xva, yva, CONFIG_RED, None, imprimir)
+    red, hist_red, info_red = entrenar(crear_red(k, nombres=nombres), Xtr, ytr, Xva, yva, CONFIG_RED, None, imprimir)
 
     ajuste = ajuste_prior(info_log["pesos_clase"])
     tarjeta, cortes = tarjeta_y_cortes(log, est["escalador"], nombres, est["X_raw"][est["iva"]], yva)
@@ -441,7 +447,7 @@ def etapa_control(est, res, imprimir=True):
         pesos_b.append(m_b.w.copy())
         pct_b.append(dep.porcentajes(dep.importancia_permutacion(m_b.logit, Xte, yte, repeticiones=3)[0]))
         Xtr, ytr, Xva_, yva_, _, _ = partes(est)
-        r_b, _, _ = entrenar(crear_red(k, semilla=SEMILLA + b + 1), Xtr, ytr, Xva_, yva_, CONFIG_RED, semilla=SEMILLA + b + 1)
+        r_b, _, _ = entrenar(crear_red(k, semilla=SEMILLA + b + 1, nombres=nombres), Xtr, ytr, Xva_, yva_, CONFIG_RED, semilla=SEMILLA + b + 1)
         pct_r.append(dep.porcentajes(dep.importancia_permutacion(r_b.logit, Xte, yte, repeticiones=3)[0]))
     pesos_b, pct_b, pct_r = np.array(pesos_b), np.array(pct_b), np.array(pct_r)
     print(f"{'variable':38s} {'peso medio ± desv':>20s} {'import. logística':>20s} {'import. red':>18s}")

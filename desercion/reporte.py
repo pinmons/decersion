@@ -30,6 +30,7 @@ SUPUESTOS = [
     "Deuda no informada → se imputa el valor que no reduce el riesgo (1 si su peso es positivo); en la MLP se toma la mayor probabilidad entre 0 y 1.",
     "Pesos por clase n/(2·n_clase); la probabilidad reportada se corrige restando ln(w+/w-) al logit.",
     "Arquitectura de la MLP: n → 16 → 8 → 1, ReLU, dropout 0.2, Adam (η = 0.001), L2 = 1e-4.",
+    "MLP versión 2 (tras la ronda 4): monótona por construcción en promedio (−), tasa de reprobación (+) y asistencia (−), con signo fijo en W1 y W2, W3 ≥ 0.",
     "Logística: SGD por mini-lotes de 256, η = 0.01, L2 = 1e-3, early stopping con paciencia 20.",
     "Puntos de la tarjeta anclados a los rangos del contrato (0 puntos = valor de menor riesgo posible).",
     "Objetivo de cortes: alto ≥ 70 % de recall con ≤ 25 % de estudiantes; en bajo ≤ 10 % de los desertores. Si no se puede, se prioriza el recall.",
@@ -312,6 +313,10 @@ def _seccion_ronda4():
                   [[v["nombre"], f"{v['pasan']}/{v['total']}",
                     "; ".join(f"{g}: {a}/{b}" for g, (a, b) in v["por_grupo"].items())] for v in r4["versiones"]]), "",
            r4.get("lectura", ""), ""]
+    if r4.get("version_1"):
+        out += ["Resultados de la versión 1 (antes de la corrección):", "",
+                _tabla(["Versión", "Pasan", "Fallan"],
+                       [[v["nombre"], f"{v['pasan']}/{v['total']}", ", ".join(v["fallan"]) or "–"] for v in r4["version_1"]]), ""]
     return out
 
 

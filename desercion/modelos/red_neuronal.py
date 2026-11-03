@@ -18,6 +18,15 @@ Optimizador: Adam (promedios móviles del gradiente y de su cuadrado, con correc
 Inicialización He: W ~ N(0, 2/n_entrada), adecuada para ReLU.
 Dropout (solo al entrenar, "invertido"): apaga neuronas al azar para que la red no dependa
 de un solo camino ni de una sola variable.
+
+Versión 2 – red monótona (corrección de la falla P04 de la ronda 4):
+`signos_entrada[j]` = +1 si la variable j solo puede subir el riesgo, -1 si solo puede bajarlo
+y 0 si es libre. Tras cada paso de Adam se proyectan los pesos:
+    W1[j, :] con el signo indicado para las variables restringidas,
+    W2 ≥ 0 y W3 ≥ 0.
+Como ReLU es creciente, la composición de capas con pesos ≥ 0 es creciente, así que la salida
+es monótona en las variables restringidas POR CONSTRUCCIÓN (no depende de los datos vistos).
+Las variables libres conservan cualquier signo en W1.
 """
 import numpy as np
 
@@ -26,11 +35,15 @@ from ..metricas import sigmoide
 
 class RedNeuronal:
     def __init__(self, n_variables, capas=(16, 8), l2=1e-4, tasa_aprendizaje=1e-3,
-                 dropout=0.2, semilla=0):
+                 dropout=0.2, signos_entrada=None, semilla=0):
         self.rng = np.random.default_rng(semilla)
         tamanos = [n_variables, *capas, 1]
         self.W = [self.rng.normal(0, np.sqrt(2.0 / tamanos[i]), (tamanos[i], tamanos[i + 1]))
                   for i in range(len(tamanos) - 1)]
+        self.signos = None if signos_entrada is None else np.asarray(signos_entrada, float)
+        if self.monotona:
+            self.W = [self.W[0]] + [np.abs(W) for W in self.W[1:]]
+            self._proyectar()
         self.b = [np.zeros(t) for t in tamanos[1:]]
         self.l2 = l2
         self.eta = tasa_aprendizaje
@@ -87,6 +100,20 @@ class RedNeuronal:
             m_hat = self.m[i] / (1 - beta1 ** self.t)
             v_hat = self.v[i] / (1 - beta2 ** self.t)
             p -= self.eta * m_hat / (np.sqrt(v_hat) + eps)
+        self._proyectar()
+
+    @property
+    def monotona(self):
+        return self.signos is not None and bool(np.any(self.signos != 0))
+
+    def _proyectar(self):
+        """Lleva a 0 los pesos que romperían la monotonía (gradiente proyectado)."""
+        if not self.monotona:
+            return
+        s = self.signos[:, None]
+        self.W[0][:] = np.where((s != 0) & (s * self.W[0] < 0), 0.0, self.W[0])
+        for W in self.W[1:]:
+            np.maximum(W, 0.0, out=W)
 
     def penalizacion(self):
         return 0.5 * self.l2 * float(sum(np.sum(W ** 2) for W in self.W))
@@ -103,7 +130,8 @@ class RedNeuronal:
         return float(np.sqrt(sum(np.sum(W ** 2) for W in self.W)))
 
     def a_dict(self):
-        return {"capas": self.capas, "W": [W.tolist() for W in self.W], "b": [b.tolist() for b in self.b]}
+        return {"capas": self.capas, "W": [W.tolist() for W in self.W], "b": [b.tolist() for b in self.b],
+                "signos_entrada": None if self.signos is None else self.signos.tolist()}
 
 
 def logit_desde_dict(d, X):

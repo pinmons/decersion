@@ -92,7 +92,35 @@ def main():
     except ImportError:
         print("scikit-learn no está instalado: se omite la comparación de métricas.")
 
+    fallas += monotonia_masiva()
     print("VERIFICACIÓN:", "OK" if not fallas else f"{fallas} FALLAS")
+    return fallas
+
+
+def monotonia_masiva(n=300):
+    """Monotonía en 300 estudiantes sintéticos al azar (no solo en los 12 casos del contrato):
+    bajar promedio o asistencia, o subir materias perdidas, nunca baja la probabilidad."""
+    from desercion import datos_sinteticos as ds
+    from desercion.sistema import evaluar
+    if not (rutas.RAIZ / "modelos_entrenados" / "logistica.json").exists():
+        print("Monotonía masiva: no hay modelos entrenados, se omite.")
+        return 0
+    d = ds.generar(n_validos=n, semilla=99)
+    validos, *_ = ds.filtrar_por_contrato(d["registros"], d["deserto"])
+    cambios = [("promedio_acumulado", lambda e: max(0.0, round(e["promedio_acumulado"] - 0.3, 2))),
+               ("porcentaje_asistencia", lambda e: max(2.0, e["porcentaje_asistencia"] - 10)),
+               ("materias_reprobadas", lambda e: min(e["materias_cursadas_periodo_anterior"], e["materias_reprobadas"] + 1))]
+    fallas = 0
+    for modelo in ("logistica", "red_neuronal"):
+        violaciones = 0
+        for e in validos:
+            base = evaluar(e, "aprendido", modelo)["probabilidad"]
+            for campo, f in cambios:
+                otro = dict(e); otro[campo] = f(e)
+                if evaluar(otro, "aprendido", modelo)["probabilidad"] < base - 1e-12:
+                    violaciones += 1
+        print(f"Monotonía en {len(validos)} estudiantes × 3 cambios – {modelo}: {violaciones} violaciones")
+        fallas += violaciones > 0
     return fallas
 
 

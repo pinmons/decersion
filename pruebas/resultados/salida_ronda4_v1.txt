@@ -1,0 +1,519 @@
+Nota: los 23 casos del contrato solo se muestran si fallan (usa --todos para verlos).
+
+####################################################################################################
+# Ronda 4 – modo reglas (referencia)
+####################################################################################################
+----------------------------------------------------------------------------------------------------
+[PASA ] P01  (propiedad)
+  Qué prueba:  Orden de los casos reales
+  Esperado:    riesgo(R03) > riesgo(R02) > riesgo(R01) (puntaje estrictamente mayor)
+  Obtenido:    R03 alto (100) > R02 medio (50) > R01 bajo (0)
+  Significado: Correcto. R03 tiene todos los factores de riesgo, R02 varios moderados, R01 ninguno.
+----------------------------------------------------------------------------------------------------
+[PASA ] P02  (propiedad)
+  Qué prueba:  Monotonía del promedio
+  Esperado:    en los 12 casos con resultado, bajar el promedio paso a paso (hasta 0.0) nunca reduce
+               el riesgo
+  Obtenido:    sin violaciones en los 12 casos
+  Significado: Correcto. Prompt Fase 7: bajar el promedio nunca reduce el riesgo si lo demás se
+               mantiene.
+----------------------------------------------------------------------------------------------------
+[PASA ] P03  (propiedad)
+  Qué prueba:  Monotonía de las materias perdidas
+  Esperado:    en los 12 casos, subir las materias perdidas de una en una (hasta las cursadas) nunca
+               reduce el riesgo
+  Obtenido:    sin violaciones en los 12 casos
+  Significado: Correcto. Prompt Fase 7.
+----------------------------------------------------------------------------------------------------
+[PASA ] P04  (propiedad)
+  Qué prueba:  Monotonía de la asistencia
+  Esperado:    en los 12 casos, bajar la asistencia paso a paso (hasta 2 %, para no entrar en C3)
+               nunca reduce el riesgo
+  Obtenido:    sin violaciones en los 12 casos
+  Significado: Correcto. Prompt Fase 7.
+----------------------------------------------------------------------------------------------------
+[PASA ] P05  (propiedad)
+  Qué prueba:  R3.4 se mantiene
+  Esperado:    S14 sale en nivel alto
+  Obtenido:    S14 → alto (50)
+  Significado: Correcto. R3.4: promedio < 3.0 y asistencia < 70 → alto, en ambos modos.
+----------------------------------------------------------------------------------------------------
+[PASA ] P06  (propiedad)
+  Qué prueba:  Deuda ausente informada
+  Esperado:    R04 reporta deuda_matricula en datos_no_informados
+  Obtenido:    R04 datos_no_informados = ['deuda_matricula']
+  Significado: Correcto. R2.6 / garantía 2: no se inventan datos.
+----------------------------------------------------------------------------------------------------
+[PASA ] P07  (propiedad)
+  Qué prueba:  Siempre un resultado válido
+  Esperado:    los 12 casos con resultado devuelven decision = resultado y un puntaje entero entre 0
+               y 100
+  Obtenido:    12/12 con resultado válido
+  Significado: Correcto. Garantías del contrato.
+----------------------------------------------------------------------------------------------------
+[PASA ] U01  (nuevo – monotonía)
+  Qué prueba:  R02 con promedio 2.0 en vez de 3.2. Si el modelo aprendió un peso con el signo
+               equivocado, bajar el promedio bajaría el riesgo.
+  Esperado:    Monotonía del promedio respecto a R02.
+  Obtenido:    alto (65) | riesgo ≥ R02 medio (50): sí
+  Significado: Correcto. Cumple la propiedad.
+----------------------------------------------------------------------------------------------------
+[PASA ] U02  (nuevo – monotonía)
+  Qué prueba:  R05 con 6 de 6 materias perdidas en vez de 2. Con variables colineales (conteo y
+               tasa) un peso puede salir negativo.
+  Esperado:    Monotonía de materias perdidas respecto a R05.
+  Obtenido:    medio (45) | riesgo ≥ R05 medio (45): sí
+  Significado: Correcto. Cumple la propiedad.
+----------------------------------------------------------------------------------------------------
+[PASA ] U03  (nuevo – monotonía)
+  Qué prueba:  R02 con 50 % de asistencia en vez de 80 %. Promedio 3.2, así que R3.4 no ayuda:
+               depende solo del modelo.
+  Esperado:    Monotonía de la asistencia respecto a R02.
+  Obtenido:    alto (60) | riesgo ≥ R02 medio (50): sí
+  Significado: Correcto. Cumple la propiedad.
+----------------------------------------------------------------------------------------------------
+[PASA ] U04  (nuevo – extrapolación)
+  Qué prueba:  En el entrenamiento la asistencia nunca bajó de 30. Una red con ReLU puede extrapolar
+               en cualquier dirección.
+  Esperado:    Asistencia 20 % no puede dar menos riesgo que 30 %, aunque ninguna de las dos se vio
+               al entrenar.
+  Obtenido:    bajo (20) | pareja: bajo (20) | riesgo ≥ pareja bajo (20): sí
+  Significado: Correcto. Cumple la propiedad.
+----------------------------------------------------------------------------------------------------
+[PASA ] U05  (nuevo – extrema)
+  Qué prueba:  Promedio 0.0 (válido en el contrato, nunca visto: el mínimo simulado es 0.5) con
+               asistencia 92 y nada más de riesgo. R3.4 no aplica. ¿El modelo lo deja en bajo?
+  Esperado:    [SUPUESTO del oráculo] Un promedio de 0.0 no puede quedar en riesgo bajo aunque lo
+               demás sea normal.
+  Obtenido:    medio (30) | nivel no bajo: sí
+  Significado: Correcto. Cumple la propiedad.
+----------------------------------------------------------------------------------------------------
+[FALLA] U06  (nuevo – extrema)
+  Qué prueba:  Asistencia 0 % (C3 solo abstiene entre 0 y 1, el 0 es válido) con promedio 3.8. R3.4
+               no aplica.
+  Esperado:    [SUPUESTO del oráculo] Una asistencia de 0 % no puede quedar en riesgo bajo.
+  Obtenido:    bajo (20) | nivel no bajo: NO
+  Significado: Incorrecto. Viola la propiedad del oráculo; ver análisis.
+----------------------------------------------------------------------------------------------------
+[FALLA] U07  (nuevo – contradicción válida)
+  Qué prueba:  Promedio 4.9 pero perdió las 6 materias del periodo anterior. En los datos estas
+               variables van juntas (r = -0.6); aquí se contradicen y el promedio alto podría tapar
+               el resto.
+  Esperado:    [SUPUESTO del oráculo] Perder todas las materias no puede quedar en bajo, aunque el
+               promedio sea alto.
+  Obtenido:    bajo (25) | nivel no bajo: NO
+  Significado: Incorrecto. Viola la propiedad del oráculo; ver análisis.
+----------------------------------------------------------------------------------------------------
+[PASA ] U08  (nuevo – contradicción válida)
+  Qué prueba:  Promedio 1.5 con asistencia perfecta y 0 materias perdidas: la asistencia alta podría
+               compensar de más.
+  Esperado:    Promedio 1.5 da al menos el riesgo del mismo estudiante con 3.8, y no queda en bajo.
+  Obtenido:    medio (30) | pareja: bajo (0) | riesgo ≥ pareja bajo (0): sí; nivel no bajo: sí
+  Significado: Correcto. Cumple la propiedad.
+----------------------------------------------------------------------------------------------------
+[PASA ] U09  (nuevo – combinación rara)
+  Qué prueba:  Estrato 6 que trabaja y debe matrícula: casi no aparece en el entrenamiento (estrato
+               alto va con no trabajar).
+  Esperado:    Sumar dos factores de riesgo (trabaja, deuda) no reduce el riesgo, aunque la
+               combinación sea rara.
+  Obtenido:    bajo (15) | pareja: bajo (0) | riesgo ≥ pareja bajo (0): sí
+  Significado: Correcto. Cumple la propiedad.
+----------------------------------------------------------------------------------------------------
+[PASA ] U10  (nuevo – frontera del contrato)
+  Qué prueba:  Todos los campos en su máximo permitido. El puntaje debe seguir entre 0 y 100 y no
+               debe haber excepción.
+  Esperado:    Garantías: resultado con puntaje entre 0 y 100.
+  Obtenido:    medio (40) | puntaje entre 0 y 100: sí
+  Significado: Correcto. Cumple la propiedad.
+----------------------------------------------------------------------------------------------------
+[PASA ] U11  (nuevo – frontera del contrato)
+  Qué prueba:  Todos los campos en el valor de más riesgo, varios fuera de lo visto (1 crédito, 1
+               materia, asistencia 0).
+  Esperado:    Garantías + R3.4 (promedio 0 y asistencia 0).
+  Obtenido:    alto (85) | puntaje entre 0 y 100: sí; nivel alto: sí
+  Significado: Correcto. Cumple la propiedad.
+----------------------------------------------------------------------------------------------------
+[FALLA] U12  (nuevo – continuidad)
+  Qué prueba:  Una centésima de promedio. En las reglas cruza el escalón de 3.5 (+15 puntos); un
+               modelo aprendido no debería saltar.
+  Esperado:    [SUPUESTO del oráculo] Una centésima de promedio cambia el puntaje en 2 puntos o
+               menos, y no lo baja.
+  Obtenido:    bajo (15) | pareja: bajo (0) | |Δ puntaje| con la pareja = 15 (≤ 2): NO; riesgo ≥
+               pareja bajo (0): sí
+  Significado: Incorrecto. Viola la propiedad del oráculo; ver análisis.
+----------------------------------------------------------------------------------------------------
+[FALLA] U13  (nuevo – continuidad)
+  Qué prueba:  Una décima de asistencia que cruza el escalón de 85 en las reglas (+10 puntos).
+  Esperado:    [SUPUESTO del oráculo] Una décima de asistencia cambia el puntaje en 2 puntos o
+               menos, y no lo baja.
+  Obtenido:    bajo (10) | pareja: bajo (0) | |Δ puntaje| con la pareja = 10 (≤ 2): NO; riesgo ≥
+               pareja bajo (0): sí
+  Significado: Incorrecto. Viola la propiedad del oráculo; ver análisis.
+----------------------------------------------------------------------------------------------------
+[PASA ] U14  (nuevo – dato opcional ausente)
+  Qué prueba:  Si falta la deuda, el modelo no puede asumir que no hay deuda (eso bajaría el riesgo
+               inventando un dato).
+  Esperado:    Garantía 2: la deuda ausente se reporta y no puede dar menos riesgo que 'sin deuda'.
+  Obtenido:    bajo (0) | pareja: bajo (0) | riesgo ≥ pareja bajo (0): sí; deuda_matricula en
+               datos_no_informados: sí
+  Significado: Correcto. Cumple la propiedad.
+----------------------------------------------------------------------------------------------------
+[PASA ] U15  (nuevo – monotonía)
+  Qué prueba:  Trabajar, si lo demás es igual, no debería bajar el riesgo. Con la interacción
+               trabaja × asistencia de los datos, una red podría aprender lo contrario para
+               asistencias altas.
+  Esperado:    Monotonía de trabaja.
+  Obtenido:    bajo (5) | pareja: bajo (0) | riesgo ≥ pareja bajo (0): sí
+  Significado: Correcto. Cumple la propiedad.
+====================================================================================================
+RESULTADO Ronda 4 – modo reglas (referencia): 41/45 pasan | contrato 23/23 · propiedades 7/7 · nuevos 11/15
+Fallan: U06, U07, U12, U13
+====================================================================================================
+
+####################################################################################################
+# Ronda 4 – modo aprendido, logística
+####################################################################################################
+----------------------------------------------------------------------------------------------------
+[PASA ] P01  (propiedad)
+  Qué prueba:  Orden de los casos reales
+  Esperado:    riesgo(R03) > riesgo(R02) > riesgo(R01) (puntaje estrictamente mayor)
+  Obtenido:    R03 alto (56) > R02 alto (36) > R01 bajo (19)
+  Significado: Correcto. R03 tiene todos los factores de riesgo, R02 varios moderados, R01 ninguno.
+----------------------------------------------------------------------------------------------------
+[PASA ] P02  (propiedad)
+  Qué prueba:  Monotonía del promedio
+  Esperado:    en los 12 casos con resultado, bajar el promedio paso a paso (hasta 0.0) nunca reduce
+               el riesgo
+  Obtenido:    sin violaciones en los 12 casos
+  Significado: Correcto. Prompt Fase 7: bajar el promedio nunca reduce el riesgo si lo demás se
+               mantiene.
+----------------------------------------------------------------------------------------------------
+[PASA ] P03  (propiedad)
+  Qué prueba:  Monotonía de las materias perdidas
+  Esperado:    en los 12 casos, subir las materias perdidas de una en una (hasta las cursadas) nunca
+               reduce el riesgo
+  Obtenido:    sin violaciones en los 12 casos
+  Significado: Correcto. Prompt Fase 7.
+----------------------------------------------------------------------------------------------------
+[PASA ] P04  (propiedad)
+  Qué prueba:  Monotonía de la asistencia
+  Esperado:    en los 12 casos, bajar la asistencia paso a paso (hasta 2 %, para no entrar en C3)
+               nunca reduce el riesgo
+  Obtenido:    sin violaciones en los 12 casos
+  Significado: Correcto. Prompt Fase 7.
+----------------------------------------------------------------------------------------------------
+[PASA ] P05  (propiedad)
+  Qué prueba:  R3.4 se mantiene
+  Esperado:    S14 sale en nivel alto
+  Obtenido:    S14 → alto (25)
+  Significado: Correcto. R3.4: promedio < 3.0 y asistencia < 70 → alto, en ambos modos.
+----------------------------------------------------------------------------------------------------
+[PASA ] P06  (propiedad)
+  Qué prueba:  Deuda ausente informada
+  Esperado:    R04 reporta deuda_matricula en datos_no_informados
+  Obtenido:    R04 datos_no_informados = ['deuda_matricula']
+  Significado: Correcto. R2.6 / garantía 2: no se inventan datos.
+----------------------------------------------------------------------------------------------------
+[PASA ] P07  (propiedad)
+  Qué prueba:  Siempre un resultado válido
+  Esperado:    los 12 casos con resultado devuelven decision = resultado y un puntaje entero entre 0
+               y 100
+  Obtenido:    12/12 con resultado válido
+  Significado: Correcto. Garantías del contrato.
+----------------------------------------------------------------------------------------------------
+[PASA ] U01  (nuevo – monotonía)
+  Qué prueba:  R02 con promedio 2.0 en vez de 3.2. Si el modelo aprendió un peso con el signo
+               equivocado, bajar el promedio bajaría el riesgo.
+  Esperado:    Monotonía del promedio respecto a R02.
+  Obtenido:    alto (42) | riesgo ≥ R02 alto (36): sí
+  Significado: Correcto. Cumple la propiedad.
+----------------------------------------------------------------------------------------------------
+[PASA ] U02  (nuevo – monotonía)
+  Qué prueba:  R05 con 6 de 6 materias perdidas en vez de 2. Con variables colineales (conteo y
+               tasa) un peso puede salir negativo.
+  Esperado:    Monotonía de materias perdidas respecto a R05.
+  Obtenido:    alto (42) | riesgo ≥ R05 medio (32): sí
+  Significado: Correcto. Cumple la propiedad.
+----------------------------------------------------------------------------------------------------
+[PASA ] U03  (nuevo – monotonía)
+  Qué prueba:  R02 con 50 % de asistencia en vez de 80 %. Promedio 3.2, así que R3.4 no ayuda:
+               depende solo del modelo.
+  Esperado:    Monotonía de la asistencia respecto a R02.
+  Obtenido:    alto (44) | riesgo ≥ R02 alto (36): sí
+  Significado: Correcto. Cumple la propiedad.
+----------------------------------------------------------------------------------------------------
+[PASA ] U04  (nuevo – extrapolación)
+  Qué prueba:  En el entrenamiento la asistencia nunca bajó de 30. Una red con ReLU puede extrapolar
+               en cualquier dirección.
+  Esperado:    Asistencia 20 % no puede dar menos riesgo que 30 %, aunque ninguna de las dos se vio
+               al entrenar.
+  Obtenido:    alto (39) | pareja: alto (36) | riesgo ≥ pareja alto (36): sí
+  Significado: Correcto. Cumple la propiedad.
+----------------------------------------------------------------------------------------------------
+[PASA ] U05  (nuevo – extrema)
+  Qué prueba:  Promedio 0.0 (válido en el contrato, nunca visto: el mínimo simulado es 0.5) con
+               asistencia 92 y nada más de riesgo. R3.4 no aplica. ¿El modelo lo deja en bajo?
+  Esperado:    [SUPUESTO del oráculo] Un promedio de 0.0 no puede quedar en riesgo bajo aunque lo
+               demás sea normal.
+  Obtenido:    alto (38) | nivel no bajo: sí
+  Significado: Correcto. Cumple la propiedad.
+----------------------------------------------------------------------------------------------------
+[PASA ] U06  (nuevo – extrema)
+  Qué prueba:  Asistencia 0 % (C3 solo abstiene entre 0 y 1, el 0 es válido) con promedio 3.8. R3.4
+               no aplica.
+  Esperado:    [SUPUESTO del oráculo] Una asistencia de 0 % no puede quedar en riesgo bajo.
+  Obtenido:    alto (44) | nivel no bajo: sí
+  Significado: Correcto. Cumple la propiedad.
+----------------------------------------------------------------------------------------------------
+[PASA ] U07  (nuevo – contradicción válida)
+  Qué prueba:  Promedio 4.9 pero perdió las 6 materias del periodo anterior. En los datos estas
+               variables van juntas (r = -0.6); aquí se contradicen y el promedio alto podría tapar
+               el resto.
+  Esperado:    [SUPUESTO del oráculo] Perder todas las materias no puede quedar en bajo, aunque el
+               promedio sea alto.
+  Obtenido:    medio (29) | nivel no bajo: sí
+  Significado: Correcto. Cumple la propiedad.
+----------------------------------------------------------------------------------------------------
+[PASA ] U08  (nuevo – contradicción válida)
+  Qué prueba:  Promedio 1.5 con asistencia perfecta y 0 materias perdidas: la asistencia alta podría
+               compensar de más.
+  Esperado:    Promedio 1.5 da al menos el riesgo del mismo estudiante con 3.8, y no queda en bajo.
+  Obtenido:    medio (28) | pareja: bajo (17) | riesgo ≥ pareja bajo (17): sí; nivel no bajo: sí
+  Significado: Correcto. Cumple la propiedad.
+----------------------------------------------------------------------------------------------------
+[PASA ] U09  (nuevo – combinación rara)
+  Qué prueba:  Estrato 6 que trabaja y debe matrícula: casi no aparece en el entrenamiento (estrato
+               alto va con no trabajar).
+  Esperado:    Sumar dos factores de riesgo (trabaja, deuda) no reduce el riesgo, aunque la
+               combinación sea rara.
+  Obtenido:    bajo (17) | pareja: bajo (8) | riesgo ≥ pareja bajo (8): sí
+  Significado: Correcto. Cumple la propiedad.
+----------------------------------------------------------------------------------------------------
+[PASA ] U10  (nuevo – frontera del contrato)
+  Qué prueba:  Todos los campos en su máximo permitido. El puntaje debe seguir entre 0 y 100 y no
+               debe haber excepción.
+  Esperado:    Garantías: resultado con puntaje entre 0 y 100.
+  Obtenido:    bajo (25) | puntaje entre 0 y 100: sí
+  Significado: Correcto. Cumple la propiedad.
+----------------------------------------------------------------------------------------------------
+[PASA ] U11  (nuevo – frontera del contrato)
+  Qué prueba:  Todos los campos en el valor de más riesgo, varios fuera de lo visto (1 crédito, 1
+               materia, asistencia 0).
+  Esperado:    Garantías + R3.4 (promedio 0 y asistencia 0).
+  Obtenido:    alto (100) | puntaje entre 0 y 100: sí; nivel alto: sí
+  Significado: Correcto. Cumple la propiedad.
+----------------------------------------------------------------------------------------------------
+[PASA ] U12  (nuevo – continuidad)
+  Qué prueba:  Una centésima de promedio. En las reglas cruza el escalón de 3.5 (+15 puntos); un
+               modelo aprendido no debería saltar.
+  Esperado:    [SUPUESTO del oráculo] Una centésima de promedio cambia el puntaje en 2 puntos o
+               menos, y no lo baja.
+  Obtenido:    bajo (20) | pareja: bajo (20) | |Δ puntaje| con la pareja = 0 (≤ 2): sí; riesgo ≥
+               pareja bajo (20): sí
+  Significado: Correcto. Cumple la propiedad.
+----------------------------------------------------------------------------------------------------
+[PASA ] U13  (nuevo – continuidad)
+  Qué prueba:  Una décima de asistencia que cruza el escalón de 85 en las reglas (+10 puntos).
+  Esperado:    [SUPUESTO del oráculo] Una décima de asistencia cambia el puntaje en 2 puntos o
+               menos, y no lo baja.
+  Obtenido:    bajo (21) | pareja: bajo (21) | |Δ puntaje| con la pareja = 0 (≤ 2): sí; riesgo ≥
+               pareja bajo (21): sí
+  Significado: Correcto. Cumple la propiedad.
+----------------------------------------------------------------------------------------------------
+[PASA ] U14  (nuevo – dato opcional ausente)
+  Qué prueba:  Si falta la deuda, el modelo no puede asumir que no hay deuda (eso bajaría el riesgo
+               inventando un dato).
+  Esperado:    Garantía 2: la deuda ausente se reporta y no puede dar menos riesgo que 'sin deuda'.
+  Obtenido:    bajo (24) | pareja: bajo (19) | riesgo ≥ pareja bajo (19): sí; deuda_matricula en
+               datos_no_informados: sí
+  Significado: Correcto. Cumple la propiedad.
+----------------------------------------------------------------------------------------------------
+[PASA ] U15  (nuevo – monotonía)
+  Qué prueba:  Trabajar, si lo demás es igual, no debería bajar el riesgo. Con la interacción
+               trabaja × asistencia de los datos, una red podría aprender lo contrario para
+               asistencias altas.
+  Esperado:    Monotonía de trabaja.
+  Obtenido:    bajo (24) | pareja: bajo (19) | riesgo ≥ pareja bajo (19): sí
+  Significado: Correcto. Cumple la propiedad.
+====================================================================================================
+RESULTADO Ronda 4 – modo aprendido, logística: 45/45 pasan | contrato 23/23 · propiedades 7/7 · nuevos 15/15
+====================================================================================================
+
+####################################################################################################
+# Ronda 4 – modo aprendido, red neuronal
+####################################################################################################
+----------------------------------------------------------------------------------------------------
+[PASA ] P01  (propiedad)
+  Qué prueba:  Orden de los casos reales
+  Esperado:    riesgo(R03) > riesgo(R02) > riesgo(R01) (puntaje estrictamente mayor)
+  Obtenido:    R03 alto (90) > R02 alto (22) > R01 bajo (4)
+  Significado: Correcto. R03 tiene todos los factores de riesgo, R02 varios moderados, R01 ninguno.
+----------------------------------------------------------------------------------------------------
+[PASA ] P02  (propiedad)
+  Qué prueba:  Monotonía del promedio
+  Esperado:    en los 12 casos con resultado, bajar el promedio paso a paso (hasta 0.0) nunca reduce
+               el riesgo
+  Obtenido:    sin violaciones en los 12 casos
+  Significado: Correcto. Prompt Fase 7: bajar el promedio nunca reduce el riesgo si lo demás se
+               mantiene.
+----------------------------------------------------------------------------------------------------
+[PASA ] P03  (propiedad)
+  Qué prueba:  Monotonía de las materias perdidas
+  Esperado:    en los 12 casos, subir las materias perdidas de una en una (hasta las cursadas) nunca
+               reduce el riesgo
+  Obtenido:    sin violaciones en los 12 casos
+  Significado: Correcto. Prompt Fase 7.
+----------------------------------------------------------------------------------------------------
+[FALLA] P04  (propiedad)
+  Qué prueba:  Monotonía de la asistencia
+  Esperado:    en los 12 casos, bajar la asistencia paso a paso (hasta 2 %, para no entrar en C3)
+               nunca reduce el riesgo
+  Obtenido:    T11: porcentaje_asistencia 89.5 → 87.0: alto (32) → alto (31)
+  Significado: Incorrecto. Prompt Fase 7.
+----------------------------------------------------------------------------------------------------
+[PASA ] P05  (propiedad)
+  Qué prueba:  R3.4 se mantiene
+  Esperado:    S14 sale en nivel alto
+  Obtenido:    S14 → alto (4)
+  Significado: Correcto. R3.4: promedio < 3.0 y asistencia < 70 → alto, en ambos modos.
+----------------------------------------------------------------------------------------------------
+[PASA ] P06  (propiedad)
+  Qué prueba:  Deuda ausente informada
+  Esperado:    R04 reporta deuda_matricula en datos_no_informados
+  Obtenido:    R04 datos_no_informados = ['deuda_matricula']
+  Significado: Correcto. R2.6 / garantía 2: no se inventan datos.
+----------------------------------------------------------------------------------------------------
+[PASA ] P07  (propiedad)
+  Qué prueba:  Siempre un resultado válido
+  Esperado:    los 12 casos con resultado devuelven decision = resultado y un puntaje entero entre 0
+               y 100
+  Obtenido:    12/12 con resultado válido
+  Significado: Correcto. Garantías del contrato.
+----------------------------------------------------------------------------------------------------
+[PASA ] U01  (nuevo – monotonía)
+  Qué prueba:  R02 con promedio 2.0 en vez de 3.2. Si el modelo aprendió un peso con el signo
+               equivocado, bajar el promedio bajaría el riesgo.
+  Esperado:    Monotonía del promedio respecto a R02.
+  Obtenido:    alto (54) | riesgo ≥ R02 alto (22): sí
+  Significado: Correcto. Cumple la propiedad.
+----------------------------------------------------------------------------------------------------
+[PASA ] U02  (nuevo – monotonía)
+  Qué prueba:  R05 con 6 de 6 materias perdidas en vez de 2. Con variables colineales (conteo y
+               tasa) un peso puede salir negativo.
+  Esperado:    Monotonía de materias perdidas respecto a R05.
+  Obtenido:    alto (40) | riesgo ≥ R05 medio (13): sí
+  Significado: Correcto. Cumple la propiedad.
+----------------------------------------------------------------------------------------------------
+[PASA ] U03  (nuevo – monotonía)
+  Qué prueba:  R02 con 50 % de asistencia en vez de 80 %. Promedio 3.2, así que R3.4 no ayuda:
+               depende solo del modelo.
+  Esperado:    Monotonía de la asistencia respecto a R02.
+  Obtenido:    alto (64) | riesgo ≥ R02 alto (22): sí
+  Significado: Correcto. Cumple la propiedad.
+----------------------------------------------------------------------------------------------------
+[PASA ] U04  (nuevo – extrapolación)
+  Qué prueba:  En el entrenamiento la asistencia nunca bajó de 30. Una red con ReLU puede extrapolar
+               en cualquier dirección.
+  Esperado:    Asistencia 20 % no puede dar menos riesgo que 30 %, aunque ninguna de las dos se vio
+               al entrenar.
+  Obtenido:    alto (55) | pareja: alto (43) | riesgo ≥ pareja alto (43): sí
+  Significado: Correcto. Cumple la propiedad.
+----------------------------------------------------------------------------------------------------
+[PASA ] U05  (nuevo – extrema)
+  Qué prueba:  Promedio 0.0 (válido en el contrato, nunca visto: el mínimo simulado es 0.5) con
+               asistencia 92 y nada más de riesgo. R3.4 no aplica. ¿El modelo lo deja en bajo?
+  Esperado:    [SUPUESTO del oráculo] Un promedio de 0.0 no puede quedar en riesgo bajo aunque lo
+               demás sea normal.
+  Obtenido:    alto (62) | nivel no bajo: sí
+  Significado: Correcto. Cumple la propiedad.
+----------------------------------------------------------------------------------------------------
+[PASA ] U06  (nuevo – extrema)
+  Qué prueba:  Asistencia 0 % (C3 solo abstiene entre 0 y 1, el 0 es válido) con promedio 3.8. R3.4
+               no aplica.
+  Esperado:    [SUPUESTO del oráculo] Una asistencia de 0 % no puede quedar en riesgo bajo.
+  Obtenido:    alto (77) | nivel no bajo: sí
+  Significado: Correcto. Cumple la propiedad.
+----------------------------------------------------------------------------------------------------
+[PASA ] U07  (nuevo – contradicción válida)
+  Qué prueba:  Promedio 4.9 pero perdió las 6 materias del periodo anterior. En los datos estas
+               variables van juntas (r = -0.6); aquí se contradicen y el promedio alto podría tapar
+               el resto.
+  Esperado:    [SUPUESTO del oráculo] Perder todas las materias no puede quedar en bajo, aunque el
+               promedio sea alto.
+  Obtenido:    alto (19) | nivel no bajo: sí
+  Significado: Correcto. Cumple la propiedad.
+----------------------------------------------------------------------------------------------------
+[PASA ] U08  (nuevo – contradicción válida)
+  Qué prueba:  Promedio 1.5 con asistencia perfecta y 0 materias perdidas: la asistencia alta podría
+               compensar de más.
+  Esperado:    Promedio 1.5 da al menos el riesgo del mismo estudiante con 3.8, y no queda en bajo.
+  Obtenido:    medio (14) | pareja: bajo (4) | riesgo ≥ pareja bajo (4): sí; nivel no bajo: sí
+  Significado: Correcto. Cumple la propiedad.
+----------------------------------------------------------------------------------------------------
+[PASA ] U09  (nuevo – combinación rara)
+  Qué prueba:  Estrato 6 que trabaja y debe matrícula: casi no aparece en el entrenamiento (estrato
+               alto va con no trabajar).
+  Esperado:    Sumar dos factores de riesgo (trabaja, deuda) no reduce el riesgo, aunque la
+               combinación sea rara.
+  Obtenido:    bajo (4) | pareja: bajo (3) | riesgo ≥ pareja bajo (3): sí
+  Significado: Correcto. Cumple la propiedad.
+----------------------------------------------------------------------------------------------------
+[PASA ] U10  (nuevo – frontera del contrato)
+  Qué prueba:  Todos los campos en su máximo permitido. El puntaje debe seguir entre 0 y 100 y no
+               debe haber excepción.
+  Esperado:    Garantías: resultado con puntaje entre 0 y 100.
+  Obtenido:    medio (12) | puntaje entre 0 y 100: sí
+  Significado: Correcto. Cumple la propiedad.
+----------------------------------------------------------------------------------------------------
+[PASA ] U11  (nuevo – frontera del contrato)
+  Qué prueba:  Todos los campos en el valor de más riesgo, varios fuera de lo visto (1 crédito, 1
+               materia, asistencia 0).
+  Esperado:    Garantías + R3.4 (promedio 0 y asistencia 0).
+  Obtenido:    alto (100) | puntaje entre 0 y 100: sí; nivel alto: sí
+  Significado: Correcto. Cumple la propiedad.
+----------------------------------------------------------------------------------------------------
+[PASA ] U12  (nuevo – continuidad)
+  Qué prueba:  Una centésima de promedio. En las reglas cruza el escalón de 3.5 (+15 puntos); un
+               modelo aprendido no debería saltar.
+  Esperado:    [SUPUESTO del oráculo] Una centésima de promedio cambia el puntaje en 2 puntos o
+               menos, y no lo baja.
+  Obtenido:    bajo (4) | pareja: bajo (4) | |Δ puntaje| con la pareja = 0 (≤ 2): sí; riesgo ≥
+               pareja bajo (4): sí
+  Significado: Correcto. Cumple la propiedad.
+----------------------------------------------------------------------------------------------------
+[PASA ] U13  (nuevo – continuidad)
+  Qué prueba:  Una décima de asistencia que cruza el escalón de 85 en las reglas (+10 puntos).
+  Esperado:    [SUPUESTO del oráculo] Una décima de asistencia cambia el puntaje en 2 puntos o
+               menos, y no lo baja.
+  Obtenido:    bajo (4) | pareja: bajo (4) | |Δ puntaje| con la pareja = 0 (≤ 2): sí; riesgo ≥
+               pareja bajo (4): sí
+  Significado: Correcto. Cumple la propiedad.
+----------------------------------------------------------------------------------------------------
+[PASA ] U14  (nuevo – dato opcional ausente)
+  Qué prueba:  Si falta la deuda, el modelo no puede asumir que no hay deuda (eso bajaría el riesgo
+               inventando un dato).
+  Esperado:    Garantía 2: la deuda ausente se reporta y no puede dar menos riesgo que 'sin deuda'.
+  Obtenido:    medio (7) | pareja: bajo (4) | riesgo ≥ pareja bajo (4): sí; deuda_matricula en
+               datos_no_informados: sí
+  Significado: Correcto. Cumple la propiedad.
+----------------------------------------------------------------------------------------------------
+[PASA ] U15  (nuevo – monotonía)
+  Qué prueba:  Trabajar, si lo demás es igual, no debería bajar el riesgo. Con la interacción
+               trabaja × asistencia de los datos, una red podría aprender lo contrario para
+               asistencias altas.
+  Esperado:    Monotonía de trabaja.
+  Obtenido:    bajo (4) | pareja: bajo (4) | riesgo ≥ pareja bajo (4): sí
+  Significado: Correcto. Cumple la propiedad.
+====================================================================================================
+RESULTADO Ronda 4 – modo aprendido, red neuronal: 44/45 pasan | contrato 23/23 · propiedades 6/7 · nuevos 15/15
+Fallan: P04
+====================================================================================================
+
+Regresión: rondas 1–3 con modo reglas = 35/35
+
+Resumen ronda 4:
+  Ronda 4 – modo reglas (referencia)            41/45 | contrato 23/23 · propiedades 7/7 · nuevos 11/15
+  Ronda 4 – modo aprendido, logística           45/45 | contrato 23/23 · propiedades 7/7 · nuevos 15/15
+  Ronda 4 – modo aprendido, red neuronal        44/45 | contrato 23/23 · propiedades 6/7 · nuevos 15/15
+Reportes generados: reportes/datos_resumen.md, reportes/reporte_entrenamiento.md
+Web: 18 archivos copiados a public/reportes/

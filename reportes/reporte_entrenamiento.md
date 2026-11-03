@@ -8,17 +8,17 @@ Generado automáticamente por `python -m desercion.entrenamiento` con semilla 20
 
 | Métrica en test | reglas (línea base) | regresión logística | red neuronal (MLP) |
 |---|---|---|---|
-| Log-loss (↓) | 0.4552 | 0.3653 | 0.3600 |
-| Brier (↓) | 0.1453 | 0.1114 | 0.1101 |
-| AUC-ROC (↑) | 0.7931 | 0.8170 | 0.8203 |
-| Recall de desertores (nivel alto) | 51.1 % | 69.6 % | 67.3 % |
-| Precisión (nivel alto) | 51.1 % | 42.0 % | 43.9 % |
-| Accuracy (nivel alto = riesgo) | 82.1 % | 76.8 % | 78.2 % |
-| % de estudiantes en alto | 18.3 % | 30.4 % | 28.1 % |
+| Log-loss (↓) | 0.4552 | 0.3653 | 0.3616 |
+| Brier (↓) | 0.1453 | 0.1114 | 0.1100 |
+| AUC-ROC (↑) | 0.7931 | 0.8170 | 0.8232 |
+| Recall de desertores (nivel alto) | 51.1 % | 69.6 % | 69.6 % |
+| Precisión (nivel alto) | 51.1 % | 42.0 % | 43.0 % |
+| Accuracy (nivel alto = riesgo) | 82.1 % | 76.8 % | 77.5 % |
+| % de estudiantes en alto | 18.3 % | 30.4 % | 29.7 % |
 
 Techo teórico (AUC de la probabilidad real que generó los datos): **0.8459**.
 
-**Conclusión.** La red neuronal NO supera de forma relevante a la logística (AUC 0.820 vs 0.817); la logística es preferible porque es explicable. La línea base por reglas queda cerca (AUC 0.793, +0.024 frente a la logística) y su probabilidad (puntaje/100) está mal calibrada (Brier 0.145 vs 0.111). Ningún modelo puede pasar de ~0.846 de AUC porque el resto es ruido de la simulación. Todo se midió con datos SINTÉTICOS: no representa el desempeño con estudiantes reales.
+**Conclusión.** La red neuronal ordena algo mejor que la logística (AUC 0.823 vs 0.817), a costa de perder la tarjeta de puntaje explicable. La línea base por reglas queda cerca (AUC 0.793, +0.024 frente a la logística) y su probabilidad (puntaje/100) está mal calibrada (Brier 0.145 vs 0.111). Ningún modelo puede pasar de ~0.846 de AUC porque el resto es ruido de la simulación. Todo se midió con datos SINTÉTICOS: no representa el desempeño con estudiantes reales.
 
 # Cómo se asignan los pesos de las variables
 
@@ -38,7 +38,7 @@ con b0 = -3.676, ajustado para una tasa de deserción de 18.0 % (resultó 18.3 %
 
 - **Ejemplo de entrenamiento:** un estudiante del conjunto de train (14000 en total) descrito por 8 números: semestre, promedio_acumulado, creditos_inscritos, tasa_reprobacion, porcentaje_asistencia, estrato, trabaja, deuda_matricula.
 - **Mini-lote:** 256 estudiantes. Con cada lote se calcula cuánto se equivoca el modelo y se corrigen los pesos una vez (≈ 55 correcciones por época).
-- **Época:** una pasada por los 14000 estudiantes. La logística corrió 44 épocas y se quedó con la 24; la red corrió 128 y se quedó con la 108.
+- **Época:** una pasada por los 14000 estudiantes. La logística corrió 44 épocas y se quedó con la 24; la red corrió 127 y se quedó con la 107.
 - **Pérdida (entropía cruzada):** si el modelo le da 0.9 de probabilidad a un estudiante que sí desertó, la pérdida es −ln(0.9) = 0.105; si le da 0.1, es −ln(0.1) = 2.303. Equivocarse con seguridad cuesta mucho. Como hay pocos desertores, cada uno pesa 2.73 y cada no desertor 0.61 (pesos por clase); así el modelo no aprende a decir "nadie deserta".
 - **Gradiente:** para cada peso, cuánto cambia la pérdida si el peso sube un poco. En la logística es `Σ s·(p − y)·x / Σ s + λ·w`: si el modelo subestima el riesgo de los desertores (p < y) en estudiantes con tasa de reprobación alta (x > 0), el gradiente es negativo y el peso de la tasa sube.
 - **Paso:** `w ← w − η·gradiente`, con η = 0.01 en la logística (SGD) y Adam con η = 0.001 en la red (backpropagation programado a mano y verificado contra diferencias finitas: `python pruebas/verificar_modelos.py`).
@@ -73,8 +73,8 @@ Todos los pesos arrancan cerca de 0 y crecen en la dirección esperada: la tasa 
 | Tratar la colinealidad | Quita variables casi duplicadas antes de entrenar | se quitó `materias_reprobadas` (r = 0.965 con `tasa_reprobacion`); se quitó `materias_cursadas_periodo_anterior` (r = 0.804 con `creditos_inscritos`). VIF máximo 21.2 → 2.2 |
 | Estandarización | Media 0 y desviación 1 con datos de train | Sin escalar, la asistencia (0–100) daría gradientes ~20 veces mayores que el promedio (0–5) y L2 castigaría según las unidades |
 | L2 (weight decay) | Penaliza pesos grandes: λ = 0.001 (logística), 0.0001 (red) | Norma de pesos de la logística en la mejor época: 0.798 |
-| Dropout | Apaga 20% de las neuronas ocultas al azar en cada lote | La red no se apoya en una sola variable: su variable más importante pesa 29.3 % |
-| Early stopping | Para si la pérdida de validación no mejora en 20 épocas | Logística: mejor época 24 de 44; red: 108 de 128 |
+| Dropout | Apaga 20% de las neuronas ocultas al azar en cada lote | La red no se apoya en una sola variable: su variable más importante pesa 25.4 % |
+| Early stopping | Para si la pérdida de validación no mejora en 20 épocas | Logística: mejor época 24 de 44; red: 107 de 127 |
 | Tope de dominancia (35 %) | Si una variable supera el tope, se sube su L2 y se reentrena | `tasa_reprobacion` pasó de 36.7 % a 31.5 % de la importancia (train) con L2 ×32; AUC test 0.8166 → 0.8170 |
 
 ### Importancia por permutación en test
@@ -83,14 +83,14 @@ Se desordena una variable a la vez y se mide cuánto cae el AUC (5 repeticiones)
 
 | Variable | Logística (caída AUC) | Logística (% total) | Red (caída AUC) | Red (% total) |
 |---|---|---|---|---|
-| semestre | 0.0007 ± 0.0006 | 0.5 % | 0.0012 ± 0.0007 | 0.9 % |
-| promedio acumulado | 0.0235 ± 0.0030 | 18.8 % | 0.0260 ± 0.0034 | 18.4 % |
-| créditos inscritos | 0.0085 ± 0.0017 | 6.8 % | 0.0081 ± 0.0025 | 5.7 % |
-| tasa de reprobación | 0.0407 ± 0.0040 | 32.6 % | 0.0413 ± 0.0043 | 29.3 % |
-| asistencia | 0.0207 ± 0.0015 | 16.5 % | 0.0236 ± 0.0042 | 16.8 % |
-| estrato | 0.0079 ± 0.0032 | 6.3 % | 0.0102 ± 0.0032 | 7.3 % |
-| trabaja | 0.0096 ± 0.0018 | 7.7 % | 0.0147 ± 0.0015 | 10.4 % |
-| deuda de matrícula | 0.0134 ± 0.0032 | 10.7 % | 0.0157 ± 0.0026 | 11.2 % |
+| semestre | 0.0007 ± 0.0006 | 0.5 % | 0.0043 ± 0.0013 | 3.1 % |
+| promedio acumulado | 0.0235 ± 0.0030 | 18.8 % | 0.0351 ± 0.0029 | 24.9 % |
+| créditos inscritos | 0.0085 ± 0.0017 | 6.8 % | 0.0067 ± 0.0016 | 4.7 % |
+| tasa de reprobación | 0.0407 ± 0.0040 | 32.6 % | 0.0358 ± 0.0036 | 25.4 % |
+| asistencia | 0.0207 ± 0.0015 | 16.5 % | 0.0199 ± 0.0019 | 14.1 % |
+| estrato | 0.0079 ± 0.0032 | 6.3 % | 0.0083 ± 0.0021 | 5.9 % |
+| trabaja | 0.0096 ± 0.0018 | 7.7 % | 0.0159 ± 0.0023 | 11.3 % |
+| deuda de matrícula | 0.0134 ± 0.0032 | 10.7 % | 0.0152 ± 0.0030 | 10.7 % |
 
 ![Importancia por permutación](importancia_permutacion.png)
 
@@ -130,14 +130,14 @@ Las caídas son pequeñas porque las variables correlacionadas cubren en parte a
 
 | Variable | Peso medio ± desv. | Importancia logística | Importancia red (5 semillas) |
 |---|---|---|---|
-| semestre | -0.068 ± 0.026 | 0.3 % ± 0.1 % | 0.2 % ± 0.2 % |
-| promedio acumulado | -0.302 ± 0.029 | 16.0 % ± 2.2 % | 15.8 % ± 1.8 % |
-| créditos inscritos | -0.198 ± 0.018 | 7.9 % ± 0.8 % | 8.0 % ± 0.7 % |
-| tasa de reprobación | +0.398 ± 0.006 | 34.5 % ± 1.3 % | 32.2 % ± 1.3 % |
-| asistencia | -0.297 ± 0.021 | 15.5 % ± 1.8 % | 14.5 % ± 1.7 % |
-| estrato | -0.273 ± 0.012 | 9.0 % ± 0.5 % | 10.9 % ± 1.0 % |
-| trabaja | +0.280 ± 0.010 | 8.3 % ± 0.3 % | 10.4 % ± 0.7 % |
-| deuda de matrícula | +0.265 ± 0.018 | 8.5 % ± 0.6 % | 8.0 % ± 0.7 % |
+| semestre | -0.068 ± 0.026 | 0.3 % ± 0.1 % | 1.5 % ± 0.5 % |
+| promedio acumulado | -0.302 ± 0.029 | 16.0 % ± 2.2 % | 19.4 % ± 1.4 % |
+| créditos inscritos | -0.198 ± 0.018 | 7.9 % ± 0.8 % | 6.8 % ± 0.9 % |
+| tasa de reprobación | +0.398 ± 0.006 | 34.5 % ± 1.3 % | 29.4 % ± 0.6 % |
+| asistencia | -0.297 ± 0.021 | 15.5 % ± 1.8 % | 13.8 % ± 0.3 % |
+| estrato | -0.273 ± 0.012 | 9.0 % ± 0.5 % | 9.8 % ± 0.4 % |
+| trabaja | +0.280 ± 0.010 | 8.3 % ± 0.3 % | 10.6 % ± 0.3 % |
+| deuda de matrícula | +0.265 ± 0.018 | 8.5 % ± 0.6 % | 8.7 % ± 0.2 % |
 
 Variables cuyo peso cambia de signo entre muestras: ninguna.
 
@@ -183,7 +183,7 @@ Con estrato, el modelo concentra el nivel alto en los estratos 1 y 2 (donde la d
 | Modelo | Medio desde | Alto desde | Recall alto (val) | % estudiantes en alto (val) | % desertores en bajo (val) | ¿Objetivo cumplido? |
 |---|---|---|---|---|---|---|
 | logística (puntos) | 26 | 35 | 70.5 % | 31.2 % | 9.1 % | no: No se pueden cumplir las dos condiciones a la vez: se priorizó el recall (≥ 70 %). |
-| red neuronal (100·p) | 7 | 19 | 70.0 % | 30.7 % | 8.5 % | no: No se pueden cumplir las dos condiciones a la vez: se priorizó el recall (≥ 70 %). |
+| red neuronal (100·p) | 7 | 17 | 70.7 % | 31.6 % | 4.7 % | no: No se pueden cumplir las dos condiciones a la vez: se priorizó el recall (≥ 70 %). |
 
 **Hallazgo:** con un AUC cercano a 0.81 no se puede capturar el 70 % de los desertores marcando solo al 25 % de los estudiantes. Se priorizó el recall (no detectar a un desertor es el error más caro). El equipo debe decidir si acepta marcar a ~1 de cada 3 estudiantes o si baja la meta de recall.
 
@@ -193,15 +193,15 @@ La regla R3.4 (promedio < 3.0 y asistencia < 70 → alto) se aplica encima del m
 
 | Métrica | reglas (línea base) | regresión logística | red neuronal (MLP) |
 |---|---|---|---|
-| Log-loss | 0.4552 | 0.3653 | 0.3600 |
-| Brier | 0.1453 | 0.1114 | 0.1101 |
-| AUC-ROC | 0.7931 | 0.8170 | 0.8203 |
-| Accuracy (alto) | 82.1% | 76.8% | 78.2% |
-| Recall (alto) | 51.1% | 69.6% | 67.3% |
-| Precisión (alto) | 51.1% | 42.0% | 43.9% |
-| Recall (medio + alto) | 82.5% | 92.2% | 93.1% |
-| Precisión (medio + alto) | 31.3% | 26.5% | 25.8% |
-| % en alto | 18.3% | 30.4% | 28.1% |
+| Log-loss | 0.4552 | 0.3653 | 0.3616 |
+| Brier | 0.1453 | 0.1114 | 0.1100 |
+| AUC-ROC | 0.7931 | 0.8170 | 0.8232 |
+| Accuracy (alto) | 82.1% | 76.8% | 77.5% |
+| Recall (alto) | 51.1% | 69.6% | 69.6% |
+| Precisión (alto) | 51.1% | 42.0% | 43.0% |
+| Recall (medio + alto) | 82.5% | 92.2% | 96.7% |
+| Precisión (medio + alto) | 31.3% | 26.5% | 22.7% |
+| % en alto | 18.3% | 30.4% | 29.7% |
 
 **Matriz de confusión por nivel** (desertó sí / no, y tasa real de deserción dentro de cada nivel):
 
@@ -209,7 +209,7 @@ La regla R3.4 (promedio < 3.0 y asistencia < 70 → alto) se aplica encima del m
 |---|---|---|---|
 | reglas (línea base) | 96 / 1452 (6 %) | 173 / 729 (19 %) | 281 / 269 (51 %) |
 | regresión logística | 43 / 1045 (4 %) | 124 / 876 (12 %) | 383 / 529 (42 %) |
-| red neuronal (MLP) | 38 / 979 (4 %) | 142 / 998 (12 %) | 370 / 473 (44 %) |
+| red neuronal (MLP) | 18 / 639 (3 %) | 149 / 1303 (10 %) | 383 / 508 (43 %) |
 
 La **accuracy engaña** con clases desbalanceadas: un sistema que dijera "nadie deserta" acertaría 82 % sin detectar a un solo desertor.
 
@@ -217,7 +217,25 @@ La línea base usa puntaje/100 como probabilidad [SUPUESTO], por eso su log-loss
 
 ![Calibración](calibracion.png)
 
-**Conclusión.** La red neuronal NO supera de forma relevante a la logística (AUC 0.820 vs 0.817); la logística es preferible porque es explicable. La línea base por reglas queda cerca (AUC 0.793, +0.024 frente a la logística) y su probabilidad (puntaje/100) está mal calibrada (Brier 0.145 vs 0.111). Ningún modelo puede pasar de ~0.846 de AUC porque el resto es ruido de la simulación. Todo se midió con datos SINTÉTICOS: no representa el desempeño con estudiantes reales.
+**Conclusión.** La red neuronal ordena algo mejor que la logística (AUC 0.823 vs 0.817), a costa de perder la tarjeta de puntaje explicable. La línea base por reglas queda cerca (AUC 0.793, +0.024 frente a la logística) y su probabilidad (puntaje/100) está mal calibrada (Brier 0.145 vs 0.111). Ningún modelo puede pasar de ~0.846 de AUC porque el resto es ruido de la simulación. Todo se midió con datos SINTÉTICOS: no representa el desempeño con estudiantes reales.
+
+## Pruebas de estrés del modo aprendido (ronda 4)
+
+| Versión | Pasan | Detalle |
+|---|---|---|
+| Ronda 4 – modo reglas (referencia) | 41/45 | contrato: 23/23; propiedades: 7/7; nuevos: 11/15 |
+| Ronda 4 – modo aprendido, logística | 45/45 | contrato: 23/23; propiedades: 7/7; nuevos: 15/15 |
+| Ronda 4 – modo aprendido, red neuronal | 45/45 | contrato: 23/23; propiedades: 7/7; nuevos: 15/15 |
+
+Historial: en la versión 1 la red neuronal fallaba P04 (en T11, bajar la asistencia de 89.5 a 87 bajaba el puntaje de 32 a 31): una MLP sin restricciones no garantiza monotonía en combinaciones raras. La versión 2 restringe los signos (W1 con signo fijo en promedio, tasa de reprobación y asistencia; W2 y W3 ≥ 0), así que es monótona por construcción y pasa 45/45. La logística (modelo principal) pasa 45/45 desde la primera versión: su tarjeta es lineal y cada peso aprendido tiene el signo esperado; no se le impuso ninguna restricción. El modo reglas se corre como referencia y falla U06, U07, U12 y U13: sus puntos van por escalones (una centésima de promedio cambia 15 puntos) y deja en bajo una asistencia de 0 % o perder todas las materias con promedio alto. Es un hallazgo sobre las reglas del contrato, no un error de código; las reglas no se cambian. El oráculo de la ronda 4 es un BORRADOR escrito por el modelo y debe firmarlo el equipo.
+
+Resultados de la versión 1 (antes de la corrección):
+
+| Versión | Pasan | Fallan |
+|---|---|---|
+| Ronda 4 – modo reglas (referencia) (v1) | 41/45 | U06, U07, U12, U13 |
+| Ronda 4 – modo aprendido, logística (v1) | 45/45 | – |
+| Ronda 4 – modo aprendido, red neuronal (v1) | 44/45 | P04 |
 
 ## 7. Limitaciones y supuestos para revisar
 
@@ -245,13 +263,14 @@ La línea base usa puntaje/100 como probabilidad [SUPUESTO], por eso su log-loss
 12. Deuda no informada → se imputa el valor que no reduce el riesgo (1 si su peso es positivo); en la MLP se toma la mayor probabilidad entre 0 y 1.
 13. Pesos por clase n/(2·n_clase); la probabilidad reportada se corrige restando ln(w+/w-) al logit.
 14. Arquitectura de la MLP: n → 16 → 8 → 1, ReLU, dropout 0.2, Adam (η = 0.001), L2 = 1e-4.
-15. Logística: SGD por mini-lotes de 256, η = 0.01, L2 = 1e-3, early stopping con paciencia 20.
-16. Puntos de la tarjeta anclados a los rangos del contrato (0 puntos = valor de menor riesgo posible).
-17. Objetivo de cortes: alto ≥ 70 % de recall con ≤ 25 % de estudiantes; en bajo ≤ 10 % de los desertores. Si no se puede, se prioriza el recall.
-18. R3.4 fuerza nivel alto en modo aprendido sin cambiar el puntaje.
-19. Probabilidad de la línea base = puntaje/100 recortado a [0.01, 0.99].
-20. "Marcado en riesgo" = nivel alto (también se reporta medio + alto).
-21. Tope de dominancia 35 % de la importancia por permutación; se decide con la importancia en train y un margen de 2 puntos.
-22. Colapso en ablación = caída de AUC > 0.10 al quitar una variable.
-23. La ablación y la estabilidad de pesos se hacen sobre la logística (modelo principal); para la MLP se reporta la importancia con 5 semillas.
-24. Ronda 4: los casos con resultado se verifican con propiedades, no con el puntaje exacto del oráculo (que no se modifica).
+15. MLP versión 2 (tras la ronda 4): monótona por construcción en promedio (−), tasa de reprobación (+) y asistencia (−), con signo fijo en W1 y W2, W3 ≥ 0.
+16. Logística: SGD por mini-lotes de 256, η = 0.01, L2 = 1e-3, early stopping con paciencia 20.
+17. Puntos de la tarjeta anclados a los rangos del contrato (0 puntos = valor de menor riesgo posible).
+18. Objetivo de cortes: alto ≥ 70 % de recall con ≤ 25 % de estudiantes; en bajo ≤ 10 % de los desertores. Si no se puede, se prioriza el recall.
+19. R3.4 fuerza nivel alto en modo aprendido sin cambiar el puntaje.
+20. Probabilidad de la línea base = puntaje/100 recortado a [0.01, 0.99].
+21. "Marcado en riesgo" = nivel alto (también se reporta medio + alto).
+22. Tope de dominancia 35 % de la importancia por permutación; se decide con la importancia en train y un margen de 2 puntos.
+23. Colapso en ablación = caída de AUC > 0.10 al quitar una variable.
+24. La ablación y la estabilidad de pesos se hacen sobre la logística (modelo principal); para la MLP se reporta la importancia con 5 semillas.
+25. Ronda 4: los casos con resultado se verifican con propiedades, no con el puntaje exacto del oráculo (que no se modifica).

@@ -1,0 +1,1139 @@
+{
+  "versiones": [
+    {
+      "nombre": "Ronda 4 – modo reglas (referencia)",
+      "opciones": {
+        "modo": "reglas"
+      },
+      "pasan": 41,
+      "total": 45,
+      "por_grupo": {
+        "contrato": [
+          23,
+          23
+        ],
+        "propiedades": [
+          7,
+          7
+        ],
+        "nuevos": [
+          11,
+          15
+        ]
+      },
+      "filas": [
+        {
+          "id": "S01",
+          "grupo": "contrato",
+          "esperado": "abstener(campo_faltante)",
+          "obtenido": "abstener(campo_faltante)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "S02",
+          "grupo": "contrato",
+          "esperado": "abstener(campo_faltante)",
+          "obtenido": "abstener(campo_faltante)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "S03",
+          "grupo": "contrato",
+          "esperado": "abstener(datos_contradictorios)",
+          "obtenido": "abstener(datos_contradictorios)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "S04",
+          "grupo": "contrato",
+          "esperado": "abstener(datos_contradictorios)",
+          "obtenido": "abstener(datos_contradictorios)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "S05",
+          "grupo": "contrato",
+          "esperado": "abstener(fuera_de_poblacion)",
+          "obtenido": "abstener(fuera_de_poblacion)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "S06",
+          "grupo": "contrato",
+          "esperado": "abstener(fuera_de_poblacion)",
+          "obtenido": "abstener(fuera_de_poblacion)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "S07",
+          "grupo": "contrato",
+          "esperado": "abstener(fuera_de_poblacion)",
+          "obtenido": "abstener(fuera_de_poblacion)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "S08",
+          "grupo": "contrato",
+          "esperado": "error(fuera_de_rango)",
+          "obtenido": "error(fuera_de_rango)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "S09",
+          "grupo": "contrato",
+          "esperado": "error(tipo_invalido)",
+          "obtenido": "error(tipo_invalido)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "S10",
+          "grupo": "contrato",
+          "esperado": "error(tipo_invalido)",
+          "obtenido": "error(tipo_invalido)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "S11",
+          "grupo": "contrato",
+          "esperado": "error(valor_no_permitido)",
+          "obtenido": "error(valor_no_permitido)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "S15",
+          "grupo": "contrato",
+          "esperado": "error(tipo_invalido)",
+          "obtenido": "error(tipo_invalido)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "T01",
+          "grupo": "contrato",
+          "esperado": "abstener(datos_contradictorios)",
+          "obtenido": "abstener(datos_contradictorios)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "T02",
+          "grupo": "contrato",
+          "esperado": "error(tipo_invalido)",
+          "obtenido": "error(tipo_invalido)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "T03",
+          "grupo": "contrato",
+          "esperado": "error(tipo_invalido)",
+          "obtenido": "error(tipo_invalido)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "T04",
+          "grupo": "contrato",
+          "esperado": "error(tipo_invalido)",
+          "obtenido": "error(tipo_invalido)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "T05",
+          "grupo": "contrato",
+          "esperado": "error(valor_no_permitido)",
+          "obtenido": "error(valor_no_permitido)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "T06",
+          "grupo": "contrato",
+          "esperado": "abstener(campo_faltante)",
+          "obtenido": "abstener(campo_faltante)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "T07",
+          "grupo": "contrato",
+          "esperado": "abstener(campo_faltante)",
+          "obtenido": "abstener(campo_faltante)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "T08",
+          "grupo": "contrato",
+          "esperado": "error(tipo_invalido)",
+          "obtenido": "error(tipo_invalido)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "T09",
+          "grupo": "contrato",
+          "esperado": "error(fuera_de_rango)",
+          "obtenido": "error(fuera_de_rango)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "T10",
+          "grupo": "contrato",
+          "esperado": "abstener(fuera_de_poblacion)",
+          "obtenido": "abstener(fuera_de_poblacion)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "T12",
+          "grupo": "contrato",
+          "esperado": "abstener(datos_contradictorios)",
+          "obtenido": "abstener(datos_contradictorios)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "P01",
+          "grupo": "propiedades",
+          "esperado": "riesgo(R03) > riesgo(R02) > riesgo(R01) (puntaje estrictamente mayor)",
+          "obtenido": "R03 alto (100) > R02 medio (50) > R01 bajo (0)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "P02",
+          "grupo": "propiedades",
+          "esperado": "en los 12 casos con resultado, bajar el promedio paso a paso (hasta 0.0) nunca reduce el riesgo",
+          "obtenido": "sin violaciones en los 12 casos",
+          "resultado": "PASA"
+        },
+        {
+          "id": "P03",
+          "grupo": "propiedades",
+          "esperado": "en los 12 casos, subir las materias perdidas de una en una (hasta las cursadas) nunca reduce el riesgo",
+          "obtenido": "sin violaciones en los 12 casos",
+          "resultado": "PASA"
+        },
+        {
+          "id": "P04",
+          "grupo": "propiedades",
+          "esperado": "en los 12 casos, bajar la asistencia paso a paso (hasta 2 %, para no entrar en C3) nunca reduce el riesgo",
+          "obtenido": "sin violaciones en los 12 casos",
+          "resultado": "PASA"
+        },
+        {
+          "id": "P05",
+          "grupo": "propiedades",
+          "esperado": "S14 sale en nivel alto",
+          "obtenido": "S14 → alto (50)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "P06",
+          "grupo": "propiedades",
+          "esperado": "R04 reporta deuda_matricula en datos_no_informados",
+          "obtenido": "R04 datos_no_informados = ['deuda_matricula']",
+          "resultado": "PASA"
+        },
+        {
+          "id": "P07",
+          "grupo": "propiedades",
+          "esperado": "los 12 casos con resultado devuelven decision = resultado y un puntaje entero entre 0 y 100",
+          "obtenido": "12/12 con resultado válido",
+          "resultado": "PASA"
+        },
+        {
+          "id": "U01",
+          "grupo": "nuevos",
+          "esperado": "Monotonía del promedio respecto a R02.",
+          "obtenido": "alto (65) | riesgo ≥ R02 medio (50): sí",
+          "resultado": "PASA",
+          "ataca": "monotonía del promedio"
+        },
+        {
+          "id": "U02",
+          "grupo": "nuevos",
+          "esperado": "Monotonía de materias perdidas respecto a R05.",
+          "obtenido": "medio (45) | riesgo ≥ R05 medio (45): sí",
+          "resultado": "PASA",
+          "ataca": "monotonía de las materias perdidas"
+        },
+        {
+          "id": "U03",
+          "grupo": "nuevos",
+          "esperado": "Monotonía de la asistencia respecto a R02.",
+          "obtenido": "alto (60) | riesgo ≥ R02 medio (50): sí",
+          "resultado": "PASA",
+          "ataca": "monotonía de la asistencia"
+        },
+        {
+          "id": "U04",
+          "grupo": "nuevos",
+          "esperado": "Asistencia 20 % no puede dar menos riesgo que 30 %, aunque ninguna de las dos se vio al entrenar.",
+          "obtenido": "bajo (20) | pareja: bajo (20) | riesgo ≥ pareja bajo (20): sí",
+          "resultado": "PASA",
+          "ataca": "monotonía fuera de lo visto en entrenamiento"
+        },
+        {
+          "id": "U05",
+          "grupo": "nuevos",
+          "esperado": "[SUPUESTO del oráculo] Un promedio de 0.0 no puede quedar en riesgo bajo aunque lo demás sea normal.",
+          "obtenido": "medio (30) | nivel no bajo: sí",
+          "resultado": "PASA",
+          "ataca": "una variable extrema, las demás normales"
+        },
+        {
+          "id": "U06",
+          "grupo": "nuevos",
+          "esperado": "[SUPUESTO del oráculo] Una asistencia de 0 % no puede quedar en riesgo bajo.",
+          "obtenido": "bajo (20) | nivel no bajo: NO",
+          "resultado": "FALLA",
+          "ataca": "una variable extrema, las demás normales"
+        },
+        {
+          "id": "U07",
+          "grupo": "nuevos",
+          "esperado": "[SUPUESTO del oráculo] Perder todas las materias no puede quedar en bajo, aunque el promedio sea alto.",
+          "obtenido": "bajo (25) | nivel no bajo: NO",
+          "resultado": "FALLA",
+          "ataca": "correlacionadas que se contradicen"
+        },
+        {
+          "id": "U08",
+          "grupo": "nuevos",
+          "esperado": "Promedio 1.5 da al menos el riesgo del mismo estudiante con 3.8, y no queda en bajo.",
+          "obtenido": "medio (30) | pareja: bajo (0) | riesgo ≥ pareja bajo (0): sí; nivel no bajo: sí",
+          "resultado": "PASA",
+          "ataca": "correlacionadas que se contradicen"
+        },
+        {
+          "id": "U09",
+          "grupo": "nuevos",
+          "esperado": "Sumar dos factores de riesgo (trabaja, deuda) no reduce el riesgo, aunque la combinación sea rara.",
+          "obtenido": "bajo (15) | pareja: bajo (0) | riesgo ≥ pareja bajo (0): sí",
+          "resultado": "PASA",
+          "ataca": "combinación rara"
+        },
+        {
+          "id": "U10",
+          "grupo": "nuevos",
+          "esperado": "Garantías: resultado con puntaje entre 0 y 100.",
+          "obtenido": "medio (40) | puntaje entre 0 y 100: sí",
+          "resultado": "PASA",
+          "ataca": "garantía de rango con todo en el máximo"
+        },
+        {
+          "id": "U11",
+          "grupo": "nuevos",
+          "esperado": "Garantías + R3.4 (promedio 0 y asistencia 0).",
+          "obtenido": "alto (85) | puntaje entre 0 y 100: sí; nivel alto: sí",
+          "resultado": "PASA",
+          "ataca": "garantía de rango con todo en el peor valor"
+        },
+        {
+          "id": "U12",
+          "grupo": "nuevos",
+          "esperado": "[SUPUESTO del oráculo] Una centésima de promedio cambia el puntaje en 2 puntos o menos, y no lo baja.",
+          "obtenido": "bajo (15) | pareja: bajo (0) | |Δ puntaje| con la pareja = 15 (≤ 2): NO; riesgo ≥ pareja bajo (0): sí",
+          "resultado": "FALLA",
+          "ataca": "salto por un cambio mínimo (promedio)"
+        },
+        {
+          "id": "U13",
+          "grupo": "nuevos",
+          "esperado": "[SUPUESTO del oráculo] Una décima de asistencia cambia el puntaje en 2 puntos o menos, y no lo baja.",
+          "obtenido": "bajo (10) | pareja: bajo (0) | |Δ puntaje| con la pareja = 10 (≤ 2): NO; riesgo ≥ pareja bajo (0): sí",
+          "resultado": "FALLA",
+          "ataca": "salto por un cambio mínimo (asistencia)"
+        },
+        {
+          "id": "U14",
+          "grupo": "nuevos",
+          "esperado": "Garantía 2: la deuda ausente se reporta y no puede dar menos riesgo que 'sin deuda'.",
+          "obtenido": "bajo (0) | pareja: bajo (0) | riesgo ≥ pareja bajo (0): sí; deuda_matricula en datos_no_informados: sí",
+          "resultado": "PASA",
+          "ataca": "imputación prudente de la deuda"
+        },
+        {
+          "id": "U15",
+          "grupo": "nuevos",
+          "esperado": "Monotonía de trabaja.",
+          "obtenido": "bajo (5) | pareja: bajo (0) | riesgo ≥ pareja bajo (0): sí",
+          "resultado": "PASA",
+          "ataca": "monotonía de una variable binaria"
+        }
+      ]
+    },
+    {
+      "nombre": "Ronda 4 – modo aprendido, logística",
+      "opciones": {
+        "modo": "aprendido",
+        "modelo": "logistica"
+      },
+      "pasan": 45,
+      "total": 45,
+      "por_grupo": {
+        "contrato": [
+          23,
+          23
+        ],
+        "propiedades": [
+          7,
+          7
+        ],
+        "nuevos": [
+          15,
+          15
+        ]
+      },
+      "filas": [
+        {
+          "id": "S01",
+          "grupo": "contrato",
+          "esperado": "abstener(campo_faltante)",
+          "obtenido": "abstener(campo_faltante)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "S02",
+          "grupo": "contrato",
+          "esperado": "abstener(campo_faltante)",
+          "obtenido": "abstener(campo_faltante)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "S03",
+          "grupo": "contrato",
+          "esperado": "abstener(datos_contradictorios)",
+          "obtenido": "abstener(datos_contradictorios)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "S04",
+          "grupo": "contrato",
+          "esperado": "abstener(datos_contradictorios)",
+          "obtenido": "abstener(datos_contradictorios)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "S05",
+          "grupo": "contrato",
+          "esperado": "abstener(fuera_de_poblacion)",
+          "obtenido": "abstener(fuera_de_poblacion)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "S06",
+          "grupo": "contrato",
+          "esperado": "abstener(fuera_de_poblacion)",
+          "obtenido": "abstener(fuera_de_poblacion)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "S07",
+          "grupo": "contrato",
+          "esperado": "abstener(fuera_de_poblacion)",
+          "obtenido": "abstener(fuera_de_poblacion)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "S08",
+          "grupo": "contrato",
+          "esperado": "error(fuera_de_rango)",
+          "obtenido": "error(fuera_de_rango)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "S09",
+          "grupo": "contrato",
+          "esperado": "error(tipo_invalido)",
+          "obtenido": "error(tipo_invalido)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "S10",
+          "grupo": "contrato",
+          "esperado": "error(tipo_invalido)",
+          "obtenido": "error(tipo_invalido)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "S11",
+          "grupo": "contrato",
+          "esperado": "error(valor_no_permitido)",
+          "obtenido": "error(valor_no_permitido)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "S15",
+          "grupo": "contrato",
+          "esperado": "error(tipo_invalido)",
+          "obtenido": "error(tipo_invalido)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "T01",
+          "grupo": "contrato",
+          "esperado": "abstener(datos_contradictorios)",
+          "obtenido": "abstener(datos_contradictorios)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "T02",
+          "grupo": "contrato",
+          "esperado": "error(tipo_invalido)",
+          "obtenido": "error(tipo_invalido)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "T03",
+          "grupo": "contrato",
+          "esperado": "error(tipo_invalido)",
+          "obtenido": "error(tipo_invalido)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "T04",
+          "grupo": "contrato",
+          "esperado": "error(tipo_invalido)",
+          "obtenido": "error(tipo_invalido)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "T05",
+          "grupo": "contrato",
+          "esperado": "error(valor_no_permitido)",
+          "obtenido": "error(valor_no_permitido)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "T06",
+          "grupo": "contrato",
+          "esperado": "abstener(campo_faltante)",
+          "obtenido": "abstener(campo_faltante)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "T07",
+          "grupo": "contrato",
+          "esperado": "abstener(campo_faltante)",
+          "obtenido": "abstener(campo_faltante)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "T08",
+          "grupo": "contrato",
+          "esperado": "error(tipo_invalido)",
+          "obtenido": "error(tipo_invalido)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "T09",
+          "grupo": "contrato",
+          "esperado": "error(fuera_de_rango)",
+          "obtenido": "error(fuera_de_rango)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "T10",
+          "grupo": "contrato",
+          "esperado": "abstener(fuera_de_poblacion)",
+          "obtenido": "abstener(fuera_de_poblacion)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "T12",
+          "grupo": "contrato",
+          "esperado": "abstener(datos_contradictorios)",
+          "obtenido": "abstener(datos_contradictorios)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "P01",
+          "grupo": "propiedades",
+          "esperado": "riesgo(R03) > riesgo(R02) > riesgo(R01) (puntaje estrictamente mayor)",
+          "obtenido": "R03 alto (56) > R02 alto (36) > R01 bajo (19)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "P02",
+          "grupo": "propiedades",
+          "esperado": "en los 12 casos con resultado, bajar el promedio paso a paso (hasta 0.0) nunca reduce el riesgo",
+          "obtenido": "sin violaciones en los 12 casos",
+          "resultado": "PASA"
+        },
+        {
+          "id": "P03",
+          "grupo": "propiedades",
+          "esperado": "en los 12 casos, subir las materias perdidas de una en una (hasta las cursadas) nunca reduce el riesgo",
+          "obtenido": "sin violaciones en los 12 casos",
+          "resultado": "PASA"
+        },
+        {
+          "id": "P04",
+          "grupo": "propiedades",
+          "esperado": "en los 12 casos, bajar la asistencia paso a paso (hasta 2 %, para no entrar en C3) nunca reduce el riesgo",
+          "obtenido": "sin violaciones en los 12 casos",
+          "resultado": "PASA"
+        },
+        {
+          "id": "P05",
+          "grupo": "propiedades",
+          "esperado": "S14 sale en nivel alto",
+          "obtenido": "S14 → alto (25)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "P06",
+          "grupo": "propiedades",
+          "esperado": "R04 reporta deuda_matricula en datos_no_informados",
+          "obtenido": "R04 datos_no_informados = ['deuda_matricula']",
+          "resultado": "PASA"
+        },
+        {
+          "id": "P07",
+          "grupo": "propiedades",
+          "esperado": "los 12 casos con resultado devuelven decision = resultado y un puntaje entero entre 0 y 100",
+          "obtenido": "12/12 con resultado válido",
+          "resultado": "PASA"
+        },
+        {
+          "id": "U01",
+          "grupo": "nuevos",
+          "esperado": "Monotonía del promedio respecto a R02.",
+          "obtenido": "alto (42) | riesgo ≥ R02 alto (36): sí",
+          "resultado": "PASA",
+          "ataca": "monotonía del promedio"
+        },
+        {
+          "id": "U02",
+          "grupo": "nuevos",
+          "esperado": "Monotonía de materias perdidas respecto a R05.",
+          "obtenido": "alto (42) | riesgo ≥ R05 medio (32): sí",
+          "resultado": "PASA",
+          "ataca": "monotonía de las materias perdidas"
+        },
+        {
+          "id": "U03",
+          "grupo": "nuevos",
+          "esperado": "Monotonía de la asistencia respecto a R02.",
+          "obtenido": "alto (44) | riesgo ≥ R02 alto (36): sí",
+          "resultado": "PASA",
+          "ataca": "monotonía de la asistencia"
+        },
+        {
+          "id": "U04",
+          "grupo": "nuevos",
+          "esperado": "Asistencia 20 % no puede dar menos riesgo que 30 %, aunque ninguna de las dos se vio al entrenar.",
+          "obtenido": "alto (39) | pareja: alto (36) | riesgo ≥ pareja alto (36): sí",
+          "resultado": "PASA",
+          "ataca": "monotonía fuera de lo visto en entrenamiento"
+        },
+        {
+          "id": "U05",
+          "grupo": "nuevos",
+          "esperado": "[SUPUESTO del oráculo] Un promedio de 0.0 no puede quedar en riesgo bajo aunque lo demás sea normal.",
+          "obtenido": "alto (38) | nivel no bajo: sí",
+          "resultado": "PASA",
+          "ataca": "una variable extrema, las demás normales"
+        },
+        {
+          "id": "U06",
+          "grupo": "nuevos",
+          "esperado": "[SUPUESTO del oráculo] Una asistencia de 0 % no puede quedar en riesgo bajo.",
+          "obtenido": "alto (44) | nivel no bajo: sí",
+          "resultado": "PASA",
+          "ataca": "una variable extrema, las demás normales"
+        },
+        {
+          "id": "U07",
+          "grupo": "nuevos",
+          "esperado": "[SUPUESTO del oráculo] Perder todas las materias no puede quedar en bajo, aunque el promedio sea alto.",
+          "obtenido": "medio (29) | nivel no bajo: sí",
+          "resultado": "PASA",
+          "ataca": "correlacionadas que se contradicen"
+        },
+        {
+          "id": "U08",
+          "grupo": "nuevos",
+          "esperado": "Promedio 1.5 da al menos el riesgo del mismo estudiante con 3.8, y no queda en bajo.",
+          "obtenido": "medio (28) | pareja: bajo (17) | riesgo ≥ pareja bajo (17): sí; nivel no bajo: sí",
+          "resultado": "PASA",
+          "ataca": "correlacionadas que se contradicen"
+        },
+        {
+          "id": "U09",
+          "grupo": "nuevos",
+          "esperado": "Sumar dos factores de riesgo (trabaja, deuda) no reduce el riesgo, aunque la combinación sea rara.",
+          "obtenido": "bajo (17) | pareja: bajo (8) | riesgo ≥ pareja bajo (8): sí",
+          "resultado": "PASA",
+          "ataca": "combinación rara"
+        },
+        {
+          "id": "U10",
+          "grupo": "nuevos",
+          "esperado": "Garantías: resultado con puntaje entre 0 y 100.",
+          "obtenido": "bajo (25) | puntaje entre 0 y 100: sí",
+          "resultado": "PASA",
+          "ataca": "garantía de rango con todo en el máximo"
+        },
+        {
+          "id": "U11",
+          "grupo": "nuevos",
+          "esperado": "Garantías + R3.4 (promedio 0 y asistencia 0).",
+          "obtenido": "alto (100) | puntaje entre 0 y 100: sí; nivel alto: sí",
+          "resultado": "PASA",
+          "ataca": "garantía de rango con todo en el peor valor"
+        },
+        {
+          "id": "U12",
+          "grupo": "nuevos",
+          "esperado": "[SUPUESTO del oráculo] Una centésima de promedio cambia el puntaje en 2 puntos o menos, y no lo baja.",
+          "obtenido": "bajo (20) | pareja: bajo (20) | |Δ puntaje| con la pareja = 0 (≤ 2): sí; riesgo ≥ pareja bajo (20): sí",
+          "resultado": "PASA",
+          "ataca": "salto por un cambio mínimo (promedio)"
+        },
+        {
+          "id": "U13",
+          "grupo": "nuevos",
+          "esperado": "[SUPUESTO del oráculo] Una décima de asistencia cambia el puntaje en 2 puntos o menos, y no lo baja.",
+          "obtenido": "bajo (21) | pareja: bajo (21) | |Δ puntaje| con la pareja = 0 (≤ 2): sí; riesgo ≥ pareja bajo (21): sí",
+          "resultado": "PASA",
+          "ataca": "salto por un cambio mínimo (asistencia)"
+        },
+        {
+          "id": "U14",
+          "grupo": "nuevos",
+          "esperado": "Garantía 2: la deuda ausente se reporta y no puede dar menos riesgo que 'sin deuda'.",
+          "obtenido": "bajo (24) | pareja: bajo (19) | riesgo ≥ pareja bajo (19): sí; deuda_matricula en datos_no_informados: sí",
+          "resultado": "PASA",
+          "ataca": "imputación prudente de la deuda"
+        },
+        {
+          "id": "U15",
+          "grupo": "nuevos",
+          "esperado": "Monotonía de trabaja.",
+          "obtenido": "bajo (24) | pareja: bajo (19) | riesgo ≥ pareja bajo (19): sí",
+          "resultado": "PASA",
+          "ataca": "monotonía de una variable binaria"
+        }
+      ]
+    },
+    {
+      "nombre": "Ronda 4 – modo aprendido, red neuronal",
+      "opciones": {
+        "modo": "aprendido",
+        "modelo": "red_neuronal"
+      },
+      "pasan": 45,
+      "total": 45,
+      "por_grupo": {
+        "contrato": [
+          23,
+          23
+        ],
+        "propiedades": [
+          7,
+          7
+        ],
+        "nuevos": [
+          15,
+          15
+        ]
+      },
+      "filas": [
+        {
+          "id": "S01",
+          "grupo": "contrato",
+          "esperado": "abstener(campo_faltante)",
+          "obtenido": "abstener(campo_faltante)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "S02",
+          "grupo": "contrato",
+          "esperado": "abstener(campo_faltante)",
+          "obtenido": "abstener(campo_faltante)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "S03",
+          "grupo": "contrato",
+          "esperado": "abstener(datos_contradictorios)",
+          "obtenido": "abstener(datos_contradictorios)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "S04",
+          "grupo": "contrato",
+          "esperado": "abstener(datos_contradictorios)",
+          "obtenido": "abstener(datos_contradictorios)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "S05",
+          "grupo": "contrato",
+          "esperado": "abstener(fuera_de_poblacion)",
+          "obtenido": "abstener(fuera_de_poblacion)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "S06",
+          "grupo": "contrato",
+          "esperado": "abstener(fuera_de_poblacion)",
+          "obtenido": "abstener(fuera_de_poblacion)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "S07",
+          "grupo": "contrato",
+          "esperado": "abstener(fuera_de_poblacion)",
+          "obtenido": "abstener(fuera_de_poblacion)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "S08",
+          "grupo": "contrato",
+          "esperado": "error(fuera_de_rango)",
+          "obtenido": "error(fuera_de_rango)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "S09",
+          "grupo": "contrato",
+          "esperado": "error(tipo_invalido)",
+          "obtenido": "error(tipo_invalido)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "S10",
+          "grupo": "contrato",
+          "esperado": "error(tipo_invalido)",
+          "obtenido": "error(tipo_invalido)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "S11",
+          "grupo": "contrato",
+          "esperado": "error(valor_no_permitido)",
+          "obtenido": "error(valor_no_permitido)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "S15",
+          "grupo": "contrato",
+          "esperado": "error(tipo_invalido)",
+          "obtenido": "error(tipo_invalido)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "T01",
+          "grupo": "contrato",
+          "esperado": "abstener(datos_contradictorios)",
+          "obtenido": "abstener(datos_contradictorios)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "T02",
+          "grupo": "contrato",
+          "esperado": "error(tipo_invalido)",
+          "obtenido": "error(tipo_invalido)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "T03",
+          "grupo": "contrato",
+          "esperado": "error(tipo_invalido)",
+          "obtenido": "error(tipo_invalido)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "T04",
+          "grupo": "contrato",
+          "esperado": "error(tipo_invalido)",
+          "obtenido": "error(tipo_invalido)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "T05",
+          "grupo": "contrato",
+          "esperado": "error(valor_no_permitido)",
+          "obtenido": "error(valor_no_permitido)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "T06",
+          "grupo": "contrato",
+          "esperado": "abstener(campo_faltante)",
+          "obtenido": "abstener(campo_faltante)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "T07",
+          "grupo": "contrato",
+          "esperado": "abstener(campo_faltante)",
+          "obtenido": "abstener(campo_faltante)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "T08",
+          "grupo": "contrato",
+          "esperado": "error(tipo_invalido)",
+          "obtenido": "error(tipo_invalido)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "T09",
+          "grupo": "contrato",
+          "esperado": "error(fuera_de_rango)",
+          "obtenido": "error(fuera_de_rango)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "T10",
+          "grupo": "contrato",
+          "esperado": "abstener(fuera_de_poblacion)",
+          "obtenido": "abstener(fuera_de_poblacion)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "T12",
+          "grupo": "contrato",
+          "esperado": "abstener(datos_contradictorios)",
+          "obtenido": "abstener(datos_contradictorios)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "P01",
+          "grupo": "propiedades",
+          "esperado": "riesgo(R03) > riesgo(R02) > riesgo(R01) (puntaje estrictamente mayor)",
+          "obtenido": "R03 alto (93) > R02 alto (20) > R01 bajo (6)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "P02",
+          "grupo": "propiedades",
+          "esperado": "en los 12 casos con resultado, bajar el promedio paso a paso (hasta 0.0) nunca reduce el riesgo",
+          "obtenido": "sin violaciones en los 12 casos",
+          "resultado": "PASA"
+        },
+        {
+          "id": "P03",
+          "grupo": "propiedades",
+          "esperado": "en los 12 casos, subir las materias perdidas de una en una (hasta las cursadas) nunca reduce el riesgo",
+          "obtenido": "sin violaciones en los 12 casos",
+          "resultado": "PASA"
+        },
+        {
+          "id": "P04",
+          "grupo": "propiedades",
+          "esperado": "en los 12 casos, bajar la asistencia paso a paso (hasta 2 %, para no entrar en C3) nunca reduce el riesgo",
+          "obtenido": "sin violaciones en los 12 casos",
+          "resultado": "PASA"
+        },
+        {
+          "id": "P05",
+          "grupo": "propiedades",
+          "esperado": "S14 sale en nivel alto",
+          "obtenido": "S14 → alto (9)",
+          "resultado": "PASA"
+        },
+        {
+          "id": "P06",
+          "grupo": "propiedades",
+          "esperado": "R04 reporta deuda_matricula en datos_no_informados",
+          "obtenido": "R04 datos_no_informados = ['deuda_matricula']",
+          "resultado": "PASA"
+        },
+        {
+          "id": "P07",
+          "grupo": "propiedades",
+          "esperado": "los 12 casos con resultado devuelven decision = resultado y un puntaje entero entre 0 y 100",
+          "obtenido": "12/12 con resultado válido",
+          "resultado": "PASA"
+        },
+        {
+          "id": "U01",
+          "grupo": "nuevos",
+          "esperado": "Monotonía del promedio respecto a R02.",
+          "obtenido": "alto (53) | riesgo ≥ R02 alto (20): sí",
+          "resultado": "PASA",
+          "ataca": "monotonía del promedio"
+        },
+        {
+          "id": "U02",
+          "grupo": "nuevos",
+          "esperado": "Monotonía de materias perdidas respecto a R05.",
+          "obtenido": "alto (32) | riesgo ≥ R05 medio (9): sí",
+          "resultado": "PASA",
+          "ataca": "monotonía de las materias perdidas"
+        },
+        {
+          "id": "U03",
+          "grupo": "nuevos",
+          "esperado": "Monotonía de la asistencia respecto a R02.",
+          "obtenido": "alto (70) | riesgo ≥ R02 alto (20): sí",
+          "resultado": "PASA",
+          "ataca": "monotonía de la asistencia"
+        },
+        {
+          "id": "U04",
+          "grupo": "nuevos",
+          "esperado": "Asistencia 20 % no puede dar menos riesgo que 30 %, aunque ninguna de las dos se vio al entrenar.",
+          "obtenido": "alto (60) | pareja: alto (42) | riesgo ≥ pareja alto (42): sí",
+          "resultado": "PASA",
+          "ataca": "monotonía fuera de lo visto en entrenamiento"
+        },
+        {
+          "id": "U05",
+          "grupo": "nuevos",
+          "esperado": "[SUPUESTO del oráculo] Un promedio de 0.0 no puede quedar en riesgo bajo aunque lo demás sea normal.",
+          "obtenido": "alto (69) | nivel no bajo: sí",
+          "resultado": "PASA",
+          "ataca": "una variable extrema, las demás normales"
+        },
+        {
+          "id": "U06",
+          "grupo": "nuevos",
+          "esperado": "[SUPUESTO del oráculo] Una asistencia de 0 % no puede quedar en riesgo bajo.",
+          "obtenido": "alto (87) | nivel no bajo: sí",
+          "resultado": "PASA",
+          "ataca": "una variable extrema, las demás normales"
+        },
+        {
+          "id": "U07",
+          "grupo": "nuevos",
+          "esperado": "[SUPUESTO del oráculo] Perder todas las materias no puede quedar en bajo, aunque el promedio sea alto.",
+          "obtenido": "medio (16) | nivel no bajo: sí",
+          "resultado": "PASA",
+          "ataca": "correlacionadas que se contradicen"
+        },
+        {
+          "id": "U08",
+          "grupo": "nuevos",
+          "esperado": "Promedio 1.5 da al menos el riesgo del mismo estudiante con 3.8, y no queda en bajo.",
+          "obtenido": "alto (17) | pareja: bajo (6) | riesgo ≥ pareja bajo (6): sí; nivel no bajo: sí",
+          "resultado": "PASA",
+          "ataca": "correlacionadas que se contradicen"
+        },
+        {
+          "id": "U09",
+          "grupo": "nuevos",
+          "esperado": "Sumar dos factores de riesgo (trabaja, deuda) no reduce el riesgo, aunque la combinación sea rara.",
+          "obtenido": "bajo (6) | pareja: bajo (6) | riesgo ≥ pareja bajo (6): sí",
+          "resultado": "PASA",
+          "ataca": "combinación rara"
+        },
+        {
+          "id": "U10",
+          "grupo": "nuevos",
+          "esperado": "Garantías: resultado con puntaje entre 0 y 100.",
+          "obtenido": "medio (16) | puntaje entre 0 y 100: sí",
+          "resultado": "PASA",
+          "ataca": "garantía de rango con todo en el máximo"
+        },
+        {
+          "id": "U11",
+          "grupo": "nuevos",
+          "esperado": "Garantías + R3.4 (promedio 0 y asistencia 0).",
+          "obtenido": "alto (100) | puntaje entre 0 y 100: sí; nivel alto: sí",
+          "resultado": "PASA",
+          "ataca": "garantía de rango con todo en el peor valor"
+        },
+        {
+          "id": "U12",
+          "grupo": "nuevos",
+          "esperado": "[SUPUESTO del oráculo] Una centésima de promedio cambia el puntaje en 2 puntos o menos, y no lo baja.",
+          "obtenido": "bajo (6) | pareja: bajo (6) | |Δ puntaje| con la pareja = 0 (≤ 2): sí; riesgo ≥ pareja bajo (6): sí",
+          "resultado": "PASA",
+          "ataca": "salto por un cambio mínimo (promedio)"
+        },
+        {
+          "id": "U13",
+          "grupo": "nuevos",
+          "esperado": "[SUPUESTO del oráculo] Una décima de asistencia cambia el puntaje en 2 puntos o menos, y no lo baja.",
+          "obtenido": "bajo (6) | pareja: bajo (6) | |Δ puntaje| con la pareja = 0 (≤ 2): sí; riesgo ≥ pareja bajo (6): sí",
+          "resultado": "PASA",
+          "ataca": "salto por un cambio mínimo (asistencia)"
+        },
+        {
+          "id": "U14",
+          "grupo": "nuevos",
+          "esperado": "Garantía 2: la deuda ausente se reporta y no puede dar menos riesgo que 'sin deuda'.",
+          "obtenido": "medio (7) | pareja: bajo (6) | riesgo ≥ pareja bajo (6): sí; deuda_matricula en datos_no_informados: sí",
+          "resultado": "PASA",
+          "ataca": "imputación prudente de la deuda"
+        },
+        {
+          "id": "U15",
+          "grupo": "nuevos",
+          "esperado": "Monotonía de trabaja.",
+          "obtenido": "bajo (6) | pareja: bajo (6) | riesgo ≥ pareja bajo (6): sí",
+          "resultado": "PASA",
+          "ataca": "monotonía de una variable binaria"
+        }
+      ]
+    }
+  ],
+  "regresion_rondas_1_3": 35,
+  "lectura": "Historial: en la versión 1 la red neuronal fallaba P04 (en T11, bajar la asistencia de 89.5 a 87 bajaba el puntaje de 32 a 31): una MLP sin restricciones no garantiza monotonía en combinaciones raras. La versión 2 restringe los signos (W1 con signo fijo en promedio, tasa de reprobación y asistencia; W2 y W3 ≥ 0), así que es monótona por construcción y pasa 45/45. La logística (modelo principal) pasa 45/45 desde la primera versión: su tarjeta es lineal y cada peso aprendido tiene el signo esperado; no se le impuso ninguna restricción. El modo reglas se corre como referencia y falla U06, U07, U12 y U13: sus puntos van por escalones (una centésima de promedio cambia 15 puntos) y deja en bajo una asistencia de 0 % o perder todas las materias con promedio alto. Es un hallazgo sobre las reglas del contrato, no un error de código; las reglas no se cambian. El oráculo de la ronda 4 es un BORRADOR escrito por el modelo y debe firmarlo el equipo.",
+  "version_1": [
+    {
+      "nombre": "Ronda 4 – modo reglas (referencia) (v1)",
+      "pasan": 41,
+      "total": 45,
+      "por_grupo": {
+        "contrato": [
+          23,
+          23
+        ],
+        "propiedades": [
+          7,
+          7
+        ],
+        "nuevos": [
+          11,
+          15
+        ]
+      },
+      "fallan": [
+        "U06",
+        "U07",
+        "U12",
+        "U13"
+      ]
+    },
+    {
+      "nombre": "Ronda 4 – modo aprendido, logística (v1)",
+      "pasan": 45,
+      "total": 45,
+      "por_grupo": {
+        "contrato": [
+          23,
+          23
+        ],
+        "propiedades": [
+          7,
+          7
+        ],
+        "nuevos": [
+          15,
+          15
+        ]
+      },
+      "fallan": []
+    },
+    {
+      "nombre": "Ronda 4 – modo aprendido, red neuronal (v1)",
+      "pasan": 44,
+      "total": 45,
+      "por_grupo": {
+        "contrato": [
+          23,
+          23
+        ],
+        "propiedades": [
+          6,
+          7
+        ],
+        "nuevos": [
+          15,
+          15
+        ]
+      },
+      "fallan": [
+        "P04"
+      ]
+    }
+  ]
+}
