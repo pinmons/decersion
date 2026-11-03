@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Alerta temprana de deserción</title>
+  <meta name="description" content="Prototipo de un sistema de alerta temprana de deserción universitaria con pesos aprendidos desde cero. Datos sintéticos.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%232a78d6'/><path d='M8 22 L14 15 L18 19 L25 10' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+  <header class="barra">
+    <a class="marca-sitio" href="#inicio">Alerta temprana de deserción</a>
+    <nav aria-label="Secciones">
+      <a href="#inicio">Inicio</a>
+      <a href="#evaluar">Evaluar</a>
+      <a href="#proceso">Cómo se hizo</a>
+    </nav>
+  </header>
+
+  <main>
+    <!-- ============================================================ 1. PORTADA -->
+    <section id="inicio" class="portada">
+      <div class="contenedor">
+        <p class="sobretitulo">Prototipo · Semestres 2 a 4 de pregrado</p>
+        <h1>¿Qué estudiantes necesitan apoyo antes de que se vayan?</h1>
+        <p class="entrada">
+          Este sistema recibe el registro de un estudiante de pregrado activo en los semestres 2 a 4 y devuelve
+          su <strong>nivel de riesgo de deserción</strong> (bajo, medio o alto) con una acción recomendada para
+          bienestar universitario y consejería. Si los datos están mal, responde con un <strong>error controlado</strong>;
+          si no debe decidir (falta un dato, el registro se contradice o el estudiante no es de la población), se
+          <strong>abstiene</strong> y remite el caso a una persona.
+        </p>
+        <div class="aviso" role="note">
+          <strong>Datos sintéticos.</strong> Los modelos se entrenaron con estudiantes simulados. El prototipo sirve para
+          mostrar el proceso; <strong>no se usa para decidir sobre estudiantes reales.</strong>
+        </div>
+        <div class="tres-salidas">
+          <div class="tarjeta"><span class="chip chip-resultado">resultado</span><p>Nivel, puntaje 0–100, acción recomendada y qué factores sumaron.</p></div>
+          <div class="tarjeta"><span class="chip chip-error">error</span><p>El dato tiene un tipo, rango o valor no permitido: se corrige en el origen.</p></div>
+          <div class="tarjeta"><span class="chip chip-abstener">abstener</span><p>Falta un dato, hay una contradicción o el estudiante no es de la población: decide una persona.</p></div>
+        </div>
+        <div class="botones">
+          <a class="boton primario" href="#evaluar">Evaluar un estudiante</a>
+          <a class="boton" href="#proceso">Ver cómo se hizo</a>
+        </div>
+        <dl class="cifras" id="cifras-portada" aria-live="polite"></dl>
+      </div>
+    </section>
+
+    <!-- ============================================================ 2. FORMULARIO -->
+    <section id="evaluar" class="seccion">
+      <div class="contenedor">
+        <h2>Evaluar un estudiante</h2>
+        <p class="ayuda">Llene los 12 campos del contrato o cargue un ejemplo. La marca se actualiza sola; cada campo
+          queda <em>sin dato</em> hasta que lo toque. Puede probar valores fuera de la población o contradictorios para
+          ver cómo el sistema se abstiene.</p>
+
+        <div class="evaluador">
+          <form id="formulario" class="formulario" autocomplete="off" novalidate>
+            <fieldset class="modo">
+              <legend>Modo del sistema</legend>
+              <label><input type="radio" name="modo" value="reglas"> Reglas (línea base)</label>
+              <label><input type="radio" name="modo" value="logistica" checked> Aprendido: regresión logística</label>
+              <label><input type="radio" name="modo" value="red_neuronal"> Aprendido: red neuronal</label>
+            </fieldset>
+            <div id="campos" class="campos"></div>
+            <div class="botones">
+              <button type="button" class="boton primario" id="btn-ejemplo">Cargar ejemplo</button>
+              <button type="button" class="boton" id="btn-limpiar">Limpiar</button>
+            </div>
+          </form>
+
+          <aside class="panel-resultado" aria-live="polite">
+            <div id="marca" class="marca marca-vacia">
+              <p class="marca-titulo">Faltan 12 datos</p>
+              <p class="marca-detalle">Llene el formulario o cargue un ejemplo.</p>
+            </div>
+            <div id="detalle-resultado" hidden>
+              <div class="regla-puntaje" id="regla-puntaje" aria-hidden="true"></div>
+              <p class="leyenda-cortes" id="leyenda-cortes"></p>
+              <dl class="datos-resultado" id="datos-resultado"></dl>
+              <h3>Cuánto aporta cada variable</h3>
+              <p class="ayuda" id="ayuda-influencia"></p>
+              <div id="influencia" class="influencia"></div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ 3. CÓMO SE HIZO -->
+    <section id="proceso" class="seccion seccion-alterna">
+      <div class="contenedor">
+        <h2>Cómo se hizo</h2>
+        <p class="ayuda">Cada número de esta sección sale de la ejecución real del entrenamiento
+          (<code>python -m desercion.entrenamiento</code>, semilla 2026). Reporte completo:
+          <a href="reportes/reporte_entrenamiento.md">reporte_entrenamiento.md</a> ·
+          <a href="reportes/datos_resumen.md">datos_resumen.md</a>.</p>
+        <ol class="pasos" id="pasos">
+          <li class="paso" id="paso-contrato">
+            <h3><span class="paso-num">1</span> El contrato</h3>
+            <div class="flujo">
+              <div class="nodo">Entrada E<br><small>12 campos</small></div>
+              <div class="flecha" aria-hidden="true">→</div>
+              <div class="nodo">Paso 1<br><small>validar</small></div>
+              <div class="flecha" aria-hidden="true">→</div>
+              <div class="nodo">Paso 2<br><small>puntaje 0–100</small></div>
+              <div class="flecha" aria-hidden="true">→</div>
+              <div class="nodo">Paso 3<br><small>nivel y acción</small></div>
+            </div>
+            <ul class="lista">
+              <li><strong>Paso 1 – validar</strong>, en este orden: formato (tipo, rango, valores permitidos) → población
+                (pregrado, activo, semestres 2–4) → datos faltantes → contradicciones (C1 reprobadas &gt; cursadas,
+                C2 activo sin créditos, C3 asistencia entre 0 y 1, C4 sin materias cursadas). Es igual en los dos modos.</li>
+              <li><strong>Pasos 2 y 3 – calificar</strong>: en modo <em>reglas</em> con puntos fijos escritos a mano
+                (promedio &lt; 3.0 → +30, …) y cortes 30/60; en modo <em>aprendido</em> con pesos aprendidos de los datos
+                y cortes elegidos en validación.</li>
+              <li><strong>R3.4</strong>: promedio &lt; 3.0 y asistencia &lt; 70 → nivel alto, siempre, en los dos modos.</li>
+              <li><strong>Garantías</strong>: nunca lanza excepción, nunca inventa un dato que falta, nunca califica fuera
+                de la población, y los umbrales se aplican tal como están escritos.</li>
+            </ul>
+          </li>
+          <li class="paso" id="paso-datos"><h3><span class="paso-num">2</span> Los datos</h3><div class="cuerpo">Cargando…</div></li>
+          <li class="paso" id="paso-variables"><h3><span class="paso-num">3</span> Las variables</h3><div class="cuerpo">Cargando…</div></li>
+          <li class="paso" id="paso-modelos"><h3><span class="paso-num">4</span> Los modelos</h3><div class="cuerpo">Cargando…</div></li>
+          <li class="paso" id="paso-pesos"><h3><span class="paso-num">5</span> Cuánto pesa cada variable</h3><div class="cuerpo">Cargando…</div></li>
+          <li class="paso" id="paso-resultados"><h3><span class="paso-num">6</span> Resultados y pruebas</h3><div class="cuerpo">Cargando…</div>
+            <div class="pruebas-vivo">
+              <button type="button" class="boton primario" id="btn-rondas">Correr las pruebas ahora</button>
+              <span class="ayuda" id="estado-rondas">Corre en el servidor las rondas 1–3 (modo reglas) y la ronda 4.</span>
+              <div id="tabla-rondas"></div>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+  </main>
+
+  <footer class="pie">
+    <div class="contenedor">
+      Prototipo académico. Modelos implementados desde cero en NumPy. Entrenado y evaluado con
+      <strong>datos sintéticos</strong>: las métricas no representan el desempeño con estudiantes reales.
+    </div>
+  </footer>
+  <script src="app.js"></script>
+</body>
+</html>

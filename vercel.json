@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "api/*.py": {
+      "includeFiles": "{desercion/**,modelos_entrenados/**,pruebas/*.py,contexto/*.py}",
+      "maxDuration": 30
+    }
+  }
+}

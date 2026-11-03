@@ -66,6 +66,8 @@ Todos los pesos arrancan cerca de 0 y crecen en la dirección esperada: la tasa 
 
 ![Evolución de los pesos](evolucion_pesos.png)
 
+La gráfica muestra el primer entrenamiento, antes del tope de dominancia; la columna "Final" de la tabla ya lo incluye.
+
 ## 4. Qué hizo cada técnica contra la dependencia excesiva
 
 | Técnica | Qué hace | Efecto medido |

@@ -515,4 +515,4 @@ Resumen ronda 4:
   Ronda 4 – modo aprendido, logística           45/45 | contrato 23/23 · propiedades 7/7 · nuevos 15/15
   Ronda 4 – modo aprendido, red neuronal        45/45 | contrato 23/23 · propiedades 7/7 · nuevos 15/15
 Reportes generados: reportes/datos_resumen.md, reportes/reporte_entrenamiento.md
-Web: 19 archivos copiados a public/reportes/
+Web: 20 archivos copiados a public/reportes/ (incluye esquema.json del contrato)

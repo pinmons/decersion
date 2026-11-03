@@ -25,7 +25,10 @@ elif [ -f package.json ]; then
 fi
 
 # Python
-if [ -f requirements.txt ]; then
+if [ -f requirements-dev.txt ]; then
+  echo "[setup] pip install -r requirements-dev.txt"
+  pip install -r requirements-dev.txt
+elif [ -f requirements.txt ]; then
   echo "[setup] pip install -r requirements.txt"
   pip install -r requirements.txt
 elif [ -f pyproject.toml ]; then

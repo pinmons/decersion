@@ -78,7 +78,7 @@ def evaluar_en_test(est, dir_reportes):
         "regresión logística": _metricas(y, p_log, n_log),
         "red neuronal (MLP)": _metricas(y, p_red, n_red),
     }
-    techo = auc(y, est["prob_real"][ite])
+    techo = None if est.get("prob_real") is None else auc(y, est["prob_real"][ite])
     _imprimir(modelos, techo, float(y.mean()))
     figuras.calibracion([(n, curva_calibracion(y, p)) for n, p in
                          zip(modelos, (p_reglas, p_log, p_red))], dir_reportes / "calibracion.png")
@@ -97,7 +97,8 @@ def _imprimir(modelos, techo, tasa):
     print(f"{'Métrica':28s}" + "".join(f"{n:>24s}" for n in nombres))
     for etiqueta, clave, fmt in filas:
         print(f"{etiqueta:28s}" + "".join(f"{fmt.format(modelos[n][clave]):>24s}" for n in nombres))
-    print(f"\nTecho teórico (AUC de la probabilidad real que generó los datos): {techo:.4f}")
+    if techo is not None:
+        print(f"\nTecho teórico (AUC de la probabilidad real que generó los datos): {techo:.4f}")
     print("\nMatriz de confusión por nivel (desertó sí / no) y tasa real de deserción en cada nivel:")
     for n in nombres:
         c = modelos[n]["confusion"]
@@ -122,6 +123,7 @@ def conclusion(modelos, techo):
     partes.append(f"La línea base por reglas queda {'cerca' if dif < 0.03 else 'por debajo'} "
                   f"(AUC {r['auc']:.3f}, {dif:+.3f} frente a la logística) y su probabilidad (puntaje/100) está mal "
                   f"calibrada (Brier {r['brier']:.3f} vs {l['brier']:.3f}).")
-    partes.append(f"Ningún modelo puede pasar de ~{techo:.3f} de AUC porque el resto es ruido de la simulación.")
-    partes.append("Todo se midió con datos SINTÉTICOS: no representa el desempeño con estudiantes reales.")
+    if techo is not None:
+        partes.append(f"Ningún modelo puede pasar de ~{techo:.3f} de AUC porque el resto es ruido de la simulación.")
+        partes.append("Todo se midió con datos SINTÉTICOS: no representa el desempeño con estudiantes reales.")
     return " ".join(partes)

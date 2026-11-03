@@ -38,6 +38,7 @@ trabajo previo está en `contexto/` y es de solo lectura.
 ## Comandos
 - Pruebas por reglas: `python pruebas/correr_rondas.py` y `python pruebas/correr_ronda3.py`
 - Pruebas del modo aprendido: `python pruebas/correr_ronda4.py`
-- Entrenar: `python -m desercion.entrenamiento`
+- Verificar gradientes, métricas y monotonía: `python pruebas/verificar_modelos.py`
+- Entrenar: `python -m desercion.entrenamiento` (datos reales: `--csv archivo.csv`)
 - App local: `streamlit run app.py`
-- Web local (como en Vercel): `vercel dev`
+- Web local (como en Vercel): `python servidor_local.py` (o `vercel dev`)

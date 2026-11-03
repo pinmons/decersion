@@ -59,9 +59,25 @@ def _tabla(encabezados, filas):
 
 
 # ====================================================================== datos_resumen.md
+def _aviso(res):
+    d = res["datos"]
+    if d.get("origen") == "csv":
+        return f"> Datos cargados desde `{d['archivo']}` con `cargar_datos_reales()`."
+    return AVISO
+
+
 def datos_resumen(res):
     d = res["datos"]
     rc = d["resumen_campos"]
+    if d.get("origen") == "csv":
+        return "\n".join([
+            "# Resumen del dataset", "", _aviso(res), "",
+            _tabla(["Concepto", "Valor"], [["Filas leídas", d["n_generados"]], ["Válidas con etiqueta", d["n_validos"]],
+                                           ["Descartadas", d["n_descartados"]], ["Tasa de deserción", _p(d["tasa_desercion"])],
+                                           ["Sin deuda informada", d["sin_deuda_informada"]]]), "",
+            "## Descartes por motivo", "",
+            _tabla(["Motivo", "Filas"], [[k, v] for k, v in d["descartes_por_motivo"].items()]), "",
+            "![Distribuciones](distribuciones.png)", ""])
     out = [
         "# Resumen del dataset sintético", "", AVISO, "",
         "Generado por `python -m desercion.entrenamiento` (módulo `desercion/datos_sinteticos.py`).", "",
@@ -114,6 +130,8 @@ def reporte_entrenamiento(res):
     hl = en["historial_logistica"]
     tarjeta, cortes, cortes_red = en["tarjeta"], en["cortes"], en["cortes_red"]
     m = ev["modelos"]
+    if d.get("origen") == "csv":
+        return _reporte_csv(res)
     out = ["# Reporte de entrenamiento – sistema de alerta temprana de deserción", "", AVISO, "",
            "Generado automáticamente por `python -m desercion.entrenamiento` con semilla "
            f"{res['semilla']}. Los números de este documento salen de esa ejecución.", "",
@@ -174,6 +192,7 @@ def reporte_entrenamiento(res):
            "Todos los pesos arrancan cerca de 0 y crecen en la dirección esperada: la tasa de reprobación, trabajar y "
            "la deuda suben el riesgo; el promedio, la asistencia, el estrato y los créditos lo bajan.", "",
            "![Evolución de los pesos](evolucion_pesos.png)", "",
+           "La gráfica muestra el primer entrenamiento, antes del tope de dominancia; la columna \"Final\" de la tabla ya lo incluye.", "",
            "## 4. Qué hizo cada técnica contra la dependencia excesiva", "",
            "| Técnica | Qué hace | Efecto medido |", "|---|---|---|",
            "| Tratar la colinealidad | Quita variables casi duplicadas antes de entrenar | " +
@@ -301,6 +320,26 @@ def reporte_entrenamiento(res):
             "- Los oráculos de las rondas 1–4 son borradores escritos por el modelo y deben firmarlos personas del equipo.", "",
             "**Supuestos [SUPUESTO]**", ""]
     out += [f"{i}. {s}" for i, s in enumerate(SUPUESTOS, 1)]
+    return "\n".join(out) + "\n"
+
+
+def _reporte_csv(res):
+    """Versión corta del reporte cuando se entrenó con un CSV (no hay fórmula ni techo simulados)."""
+    ev, co, en = res["evaluacion"], res["control"], res["entrenamiento"]
+    m = ev["modelos"]
+    out = ["# Reporte de entrenamiento – datos cargados desde CSV", "", _aviso(res), "",
+           _tabla(["Métrica en test", *m.keys()],
+                  [[nom, *(fmt.format(v[k]) for v in m.values())] for nom, k, fmt in (
+                      ("Log-loss", "log_loss", "{:.4f}"), ("Brier", "brier", "{:.4f}"), ("AUC-ROC", "auc", "{:.4f}"),
+                      ("Recall (alto)", "recall", "{:.1%}"), ("Precisión (alto)", "precision", "{:.1%}"),
+                      ("% en alto", "fraccion_alto", "{:.1%}"))]), "",
+           f"**Conclusión.** {ev['conclusion']}", "",
+           f"Cortes: medio ≥ {en['cortes']['corte_medio']}, alto ≥ {en['cortes']['corte_alto']}. {en['cortes']['nota']}", "",
+           "Importancia por permutación (logística): " + ", ".join(
+               f"{_leg(n)} {_p(x)}" for n, x in zip(co["importancia_test"]["variables"], co["importancia_test"]["logistica_pct"])), "",
+           "![Curvas](curvas_perdida.png)", "", "![Importancia](importancia_permutacion.png)", "", "![Calibración](calibracion.png)", ""]
+    out += _seccion_ronda4()
+    out += ["## Supuestos [SUPUESTO]", ""] + [f"{i}. {s}" for i, s in enumerate(SUPUESTOS, 1)]
     return "\n".join(out) + "\n"
 
 

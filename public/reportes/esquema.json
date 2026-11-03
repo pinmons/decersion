@@ -1,0 +1,109 @@
+{
+ "campos": {
+  "id_estudiante": {
+   "tipo": "str",
+   "obligatorio": true,
+   "valores": null,
+   "rango": null
+  },
+  "nivel_formacion": {
+   "tipo": "enum",
+   "obligatorio": true,
+   "valores": [
+    "educacion_continua",
+    "posgrado",
+    "pregrado"
+   ],
+   "rango": null
+  },
+  "estado_matricula": {
+   "tipo": "enum",
+   "obligatorio": true,
+   "valores": [
+    "activo",
+    "graduado",
+    "retirado"
+   ],
+   "rango": null
+  },
+  "semestre": {
+   "tipo": "int",
+   "obligatorio": true,
+   "valores": null,
+   "rango": [
+    1,
+    12
+   ]
+  },
+  "promedio_acumulado": {
+   "tipo": "num",
+   "obligatorio": true,
+   "valores": null,
+   "rango": [
+    0.0,
+    5.0
+   ]
+  },
+  "creditos_inscritos": {
+   "tipo": "int",
+   "obligatorio": true,
+   "valores": null,
+   "rango": [
+    0,
+    25
+   ]
+  },
+  "materias_cursadas_periodo_anterior": {
+   "tipo": "int",
+   "obligatorio": true,
+   "valores": null,
+   "rango": [
+    0,
+    12
+   ]
+  },
+  "materias_reprobadas": {
+   "tipo": "int",
+   "obligatorio": true,
+   "valores": null,
+   "rango": [
+    0,
+    12
+   ]
+  },
+  "porcentaje_asistencia": {
+   "tipo": "num",
+   "obligatorio": true,
+   "valores": null,
+   "rango": [
+    0.0,
+    100.0
+   ]
+  },
+  "estrato": {
+   "tipo": "int",
+   "obligatorio": true,
+   "valores": null,
+   "rango": [
+    1,
+    6
+   ]
+  },
+  "trabaja": {
+   "tipo": "bool",
+   "obligatorio": true,
+   "valores": null,
+   "rango": null
+  },
+  "deuda_matricula": {
+   "tipo": "bool",
+   "obligatorio": false,
+   "valores": null,
+   "rango": null
+  }
+ },
+ "semestres_poblacion": [
+  2,
+  4
+ ]
+}

@@ -198,6 +198,6 @@ Conclusión: La red neuronal ordena algo mejor que la logística (AUC 0.823 vs 0
 
 Modelos guardados en modelos_entrenados/ (logistica.json, red_neuronal.json)
 Reportes generados: reportes/datos_resumen.md, reportes/reporte_entrenamiento.md
-Web: 19 archivos copiados a public/reportes/
+Web: 20 archivos copiados a public/reportes/ (incluye esquema.json del contrato)
 
-Listo en 101 s. Resultados en reportes/resultados.json
+Listo en 89 s. Resultados en reportes/resultados.json

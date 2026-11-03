@@ -1,0 +1,11 @@
+# No hace falta subir a Vercel: datos de entrenamiento, reportes originales (public/reportes
+# tiene la copia para la web), imágenes del trabajo previo y la app Streamlit local.
+datos/
+reportes/
+contexto/*.png
+contexto/*.json
+contexto/*.md
+app.py
+requirements-dev.txt
+.claude/
+scripts/

@@ -910,7 +910,7 @@
    "mejor_epoca": 24,
    "epocas_corridas": 44,
    "perdida_val_mejor": 0.5369832380785101,
-   "segundos": 0.6,
+   "segundos": 0.5,
    "pesos_clase": {
     "positivo": 2.7269185820023374,
     "negativo": 0.6122627481850783
@@ -920,7 +920,7 @@
    "mejor_epoca": 107,
    "epocas_corridas": 127,
    "perdida_val_mejor": 0.5322197659172866,
-   "segundos": 7.7,
+   "segundos": 7.3,
    "pesos_clase": {
     "positivo": 2.7269185820023374,
     "negativo": 0.6122627481850783

@@ -24,6 +24,7 @@ import argparse
 import json
 import time
 from collections import Counter
+from pathlib import Path
 
 import numpy as np
 
@@ -190,6 +191,29 @@ def etapa_datos(est, res, imprimir=True):
         "auc_techo_test": auc_techo,
         "resumen_campos": resumen_campos(validos, y),
         "ejemplos_descartados": detalle[:12],
+    }
+
+
+def etapa_datos_csv(est, res, ruta):
+    """Fase 2 con datos reales: CSV con las 12 columnas del contrato + `deserto` (0/1)."""
+    from . import figuras
+    titulo(f"FASE 2 – Datos desde CSV: {ruta}")
+    validos, y, motivos = ds.cargar_datos_reales(ruta)
+    n_desc = int(sum(motivos.values()))
+    print(f"Registros válidos con etiqueta: {len(validos)} | descartados: {n_desc} | tasa de deserción: {_pct(y.mean())}")
+    print("Descartes por motivo:", dict(sorted(motivos.items())))
+    itr, iva, ite = dividir_estratificado(y, semilla=SEMILLA)
+    print(f"División estratificada: train {len(itr)} | val {len(iva)} | test {len(ite)}")
+    figuras.distribuciones(validos, y, DIR_REPORTES / "distribuciones.png")
+    est.update(registros=validos, y=y, prob_real=None, itr=itr, iva=iva, ite=ite)
+    res["aviso"] = f"Métricas medidas con los datos de {Path(ruta).name}."
+    res["datos"] = {
+        "origen": "csv", "archivo": str(ruta), "n_generados": len(validos) + n_desc, "n_validos": len(validos),
+        "n_descartados": n_desc, "tasa_desercion": float(y.mean()), "descartes_por_motivo": dict(sorted(motivos.items())),
+        "sin_deuda_informada": sum("deuda_matricula" not in r for r in validos),
+        "division": {"train": len(itr), "val": len(iva), "test": len(ite), "tasa_train": float(y[itr].mean()),
+                     "tasa_val": float(y[iva].mean()), "tasa_test": float(y[ite].mean())},
+        "resumen_campos": resumen_campos(validos, y),
     }
 
 
@@ -521,7 +545,8 @@ def etapa_control(est, res, imprimir=True):
 # ====================================================================== Fase 6 – evaluación
 def etapa_evaluacion(est, res, imprimir=True):
     from .evaluacion import evaluar_en_test
-    titulo("FASE 6 – Evaluación final en TEST (primera vez que se usa el test). Datos SINTÉTICOS.")
+    titulo("FASE 6 – Evaluación final en TEST (primera vez que se usa el test)."
+           + (" Datos SINTÉTICOS." if est.get("prob_real") is not None else ""))
     res["evaluacion"] = evaluar_en_test(est, DIR_REPORTES)
 
 
@@ -570,11 +595,14 @@ def main(argv=None):
         pass
     p = argparse.ArgumentParser(description="Entrena los modelos del sistema de alerta temprana (datos sintéticos).")
     p.add_argument("--hasta", choices=ETAPAS, default=ETAPAS[-1], help="última etapa a ejecutar")
+    p.add_argument("--csv", help="entrenar con datos reales: CSV con las 12 columnas del contrato + deserto (0/1)")
     args = p.parse_args(argv)
     est, res = {}, {"semilla": SEMILLA, "aviso": "Todas las métricas se midieron con datos SINTÉTICOS."}
     funciones = {"datos": etapa_datos, "dependencia": etapa_dependencia, "entrenamiento": etapa_entrenamiento,
                  "control": etapa_control, "evaluacion": etapa_evaluacion}
     t0 = time.time()
+    if args.csv:
+        funciones["datos"] = lambda e, r: etapa_datos_csv(e, r, Path(args.csv))
     for etapa in ETAPAS:
         funciones[etapa](est, res)
         if etapa == args.hasta:

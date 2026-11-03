@@ -2,9 +2,11 @@
 
     python -m desercion.publicar
 """
+import json
 import shutil
 
 from . import RAIZ
+from .contrato import ESQUEMA, SEMESTRES_POBLACION
 
 ORIGEN = RAIZ / "reportes"
 DESTINO = RAIZ / "public" / "reportes"
@@ -20,7 +22,14 @@ def publicar_para_web():
     for archivo in (RAIZ / "pruebas" / "resultados").glob("resultados_ronda*.json"):
         shutil.copy2(archivo, DESTINO / archivo.name)
         n += 1
-    print(f"Web: {n} archivos copiados a public/reportes/")
+    esquema = {campo: {"tipo": tipo, "obligatorio": ob,
+                       "valores": sorted(regla) if tipo == "enum" else None,
+                       "rango": list(regla) if tipo in ("int", "num") else None}
+               for campo, (tipo, regla, ob) in ESQUEMA.items()}
+    (DESTINO / "esquema.json").write_text(json.dumps(
+        {"campos": esquema, "semestres_poblacion": list(SEMESTRES_POBLACION)}, ensure_ascii=False, indent=1),
+        encoding="utf-8")
+    print(f"Web: {n + 1} archivos copiados a public/reportes/ (incluye esquema.json del contrato)")
 
 
 if __name__ == "__main__":
