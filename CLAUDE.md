@@ -29,12 +29,16 @@ trabajo previo está en `contexto/` y es de solo lectura.
 - Scripts en LF (lo garantiza `.gitattributes`).
 - Despliegue en Vercel: `api/` (funciones Python, solo NumPy) + `public/` (interfaz web
   estática). Streamlit (`app.py`) es para uso local; Vercel no puede ejecutarlo.
+- Páginas web: una por parte (inicio, evaluar, índice y un paso por página). Se generan con
+  `python -m desercion.paginas_web` (también lo hace `python -m desercion.publicar`); no editar los
+  `.html` de `public/` a mano.
 - Diseño de la web: seguir la skill `.claude/skills/frontend-design` y la identidad ya definida en
   `public/estilos.css` (ficha de seguimiento con sello, semáforo de riesgo, tinta azul, Literata +
   Atkinson Hyperlegible). Las gráficas se dibujan en SVG con los datos reales de `public/reportes/`.
 
 ## Flujo de trabajo
-- Se trabaja en ramas; no se hace push directo a `main`.
+- Se trabaja y se sube directo a `main` (decisión del dueño del repositorio, 2026-11-03). La rama
+  `prototipo` quedó como historial.
 - Commits pequeños con mensajes claros en español, uno o más por fase.
 - Antes de dar algo por terminado se corren las rondas.
 

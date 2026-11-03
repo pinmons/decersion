@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Evaluar a un estudiante</title>
+  <meta name="description" content="Planilla con los 12 datos del contrato y ficha de seguimiento con el nivel de riesgo.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%232350a8'/%3E%3Ccircle cx='16' cy='9' r='3.4' fill='%23e05a4f'/%3E%3Ccircle cx='16' cy='16' r='3.4' fill='%23f2b23a'/%3E%3Ccircle cx='16' cy='23' r='3.4' fill='%234fb57a'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Literata:ital,opsz,wght@0,7..72,400..800;1,7..72,400..600&display=swap">
+  <link rel="stylesheet" href="estilos.css">
+</head>
+<body data-pagina="evaluar">
+  <!-- Generado por python -m desercion.paginas_web: edite la plantilla, no este archivo. -->
+  <a class="saltar" href="#principal">Ir al contenido</a>
+  <header class="barra">
+    <div class="barra-interior">
+      <a class="nombre-sitio" href="index.html">
+        <svg class="semaforo-logo" viewBox="0 0 12 30" aria-hidden="true"><rect width="12" height="30" rx="6" fill="currentColor"/><circle cx="6" cy="7" r="3" fill="var(--alto)"/><circle cx="6" cy="15" r="3" fill="var(--medio)"/><circle cx="6" cy="23" r="3" fill="var(--bajo)"/></svg>
+        Alerta temprana
+      </a>
+      <nav aria-label="Secciones">
+        <a href="index.html">Inicio</a>
+        <a href="evaluar.html" aria-current="page">Evaluar</a>
+        <a href="proceso.html">Cómo se construyó</a>
+        <a href="pruebas.html">Pruebas</a>
+      </nav>
+    </div>
+  </header>
+  <div id="aviso-archivo" class="aviso-archivo" hidden></div>
+  <main id="principal">
+    <section class="seccion seccion-primera">
+      <div class="envoltura">
+        <header class="seccion-encabezado">
+          <h1>Evaluar a un estudiante</h1>
+          <p>Llene la planilla con los 12 datos del contrato. La ficha de seguimiento se actualiza sola cuando están
+            completos los obligatorios y muestra el recorrido que hizo el registro por las reglas. Si prefiere, cargue un
+            ejemplo y modifíquelo.</p>
+        </header>
+        <div class="evaluador">
+          <form id="planilla" class="planilla" autocomplete="off" novalidate>
+            <fieldset class="selector-modo">
+              <legend>Quién califica</legend>
+              <div class="segmentado" role="radiogroup" aria-label="Modo del sistema">
+                <label><input type="radio" name="modo" value="reglas" id="modo-reglas"><span>Reglas del contrato</span></label>
+                <label><input type="radio" name="modo" value="logistica" id="modo-logistica" checked><span>Regresión logística</span></label>
+                <label><input type="radio" name="modo" value="red_neuronal" id="modo-red"><span>Red neuronal</span></label>
+              </div>
+            </fieldset>
+            <div id="campos" class="campos"><p class="nota">Cargando la planilla…</p></div>
+            <div class="acciones">
+              <button type="button" class="boton boton-tinta" id="btn-ejemplo">Cargar un ejemplo</button>
+              <button type="button" class="boton" id="btn-limpiar">Limpiar planilla</button>
+            </div>
+          </form>
+          <article class="ficha" aria-labelledby="ficha-titulo" aria-live="polite">
+            <header class="ficha-cabecera">
+              <h2 id="ficha-titulo">Ficha de seguimiento</h2>
+              <dl class="ficha-meta">
+                <div><dt>Estudiante</dt><dd id="ficha-id">sin identificar</dd></div>
+                <div><dt>Calificó</dt><dd id="ficha-modo">regresión logística</dd></div>
+              </dl>
+            </header>
+            <div id="sello" class="sello-zona"><p class="sello-vacio">Faltan 11 datos</p></div>
+            <p id="ficha-resumen" class="ficha-resumen">Llene la planilla para calificar al estudiante.</p>
+            <div id="ficha-detalle" class="ficha-detalle" hidden>
+              <section class="ficha-bloque"><h3>Puntaje de riesgo</h3><div id="regla-puntaje"></div></section>
+              <section class="ficha-bloque" id="bloque-sigmoide" hidden><h3>De puntos a probabilidad</h3><div id="sigmoide"></div></section>
+              <section class="ficha-bloque"><h3>Qué empuja el puntaje</h3><p class="nota" id="nota-influencia"></p><div id="influencia" class="influencia"></div></section>
+            </div>
+            <section class="ficha-bloque"><h3>Recorrido por el contrato</h3><div id="recorrido" class="recorrido"></div></section>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer class="pie">
+    <div class="envoltura">
+      <p>Prototipo académico. Los modelos están implementados desde cero en NumPy y se entrenaron con datos
+        sintéticos: las métricas no representan el desempeño con estudiantes reales. Los oráculos de las pruebas son
+        borradores que debe firmar el equipo.</p>
+    </div>
+  </footer>
+  <div id="globo" class="globo" role="tooltip" hidden></div>
+  <script src="js/util.js" defer></script>
+  <script src="js/recorrido.js" defer></script>
+  <script src="js/evaluador.js" defer></script>
+  <script src="js/proceso.js" defer></script>
+  <script src="js/principal.js" defer></script>
+</body>
+</html>

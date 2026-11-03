@@ -4,32 +4,33 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Alerta temprana de deserción</title>
-  <meta name="description" content="Prototipo de un sistema de alerta temprana de deserción universitaria para semestres 2 a 4. Pesos aprendidos desde cero con datos sintéticos.">
+  <meta name="description" content="Prototipo de un sistema de alerta temprana de deserción universitaria para semestres 2 a 4.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%232350a8'/%3E%3Ccircle cx='16' cy='9' r='3.4' fill='%23e05a4f'/%3E%3Ccircle cx='16' cy='16' r='3.4' fill='%23f2b23a'/%3E%3Ccircle cx='16' cy='23' r='3.4' fill='%234fb57a'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Literata:ital,opsz,wght@0,7..72,400..800;1,7..72,400..600&display=swap">
   <link rel="stylesheet" href="estilos.css">
 </head>
-<body>
-  <a class="saltar" href="#ficha">Ir a la ficha de evaluación</a>
+<body data-pagina="inicio">
+  <!-- Generado por python -m desercion.paginas_web: edite la plantilla, no este archivo. -->
+  <a class="saltar" href="#principal">Ir al contenido</a>
   <header class="barra">
     <div class="barra-interior">
-      <a class="nombre-sitio" href="#inicio">
+      <a class="nombre-sitio" href="index.html">
         <svg class="semaforo-logo" viewBox="0 0 12 30" aria-hidden="true"><rect width="12" height="30" rx="6" fill="currentColor"/><circle cx="6" cy="7" r="3" fill="var(--alto)"/><circle cx="6" cy="15" r="3" fill="var(--medio)"/><circle cx="6" cy="23" r="3" fill="var(--bajo)"/></svg>
         Alerta temprana
       </a>
       <nav aria-label="Secciones">
-        <a href="#ficha">Evaluar</a>
-        <a href="#proceso">Cómo se construyó</a>
-        <a href="#pruebas">Pruebas</a>
+        <a href="index.html" aria-current="page">Inicio</a>
+        <a href="evaluar.html">Evaluar</a>
+        <a href="proceso.html">Cómo se construyó</a>
+        <a href="pruebas.html">Pruebas</a>
       </nav>
     </div>
   </header>
-
-  <main>
-    <!-- ======================================================== PORTADA -->
-    <section id="inicio" class="portada">
+  <div id="aviso-archivo" class="aviso-archivo" hidden></div>
+  <main id="principal">
+    <section class="portada">
       <div class="envoltura portada-rejilla">
         <div class="portada-texto">
           <h1>Detectar a tiempo a quién se le está haciendo cuesta arriba la universidad.</h1>
@@ -42,8 +43,8 @@
             <span data-cifra="n_validos">20 000</span> estudiantes simulados. Sirve para ver y discutir el proceso,
             no para decidir sobre estudiantes reales.</p>
           <div class="acciones">
-            <a class="boton boton-tinta" href="#ficha">Evaluar a un estudiante</a>
-            <a class="boton" href="#proceso">Ver cómo se construyó</a>
+            <a class="boton boton-tinta" href="evaluar.html">Evaluar a un estudiante</a>
+            <a class="boton" href="proceso.html">Ver cómo se construyó</a>
           </div>
         </div>
         <figure class="portada-casos" aria-labelledby="casos-titulo">
@@ -54,113 +55,25 @@
         </figure>
       </div>
     </section>
-
-    <!-- ======================================================== FICHA -->
-    <section id="ficha" class="seccion">
+    <section class="seccion">
       <div class="envoltura">
         <header class="seccion-encabezado">
-          <h2>Evaluar a un estudiante</h2>
-          <p>Llene la planilla con los 12 datos del contrato o cargue un ejemplo. La ficha de la derecha se actualiza
-            sola y muestra el recorrido que hizo el registro por las reglas.</p>
+          <h2>Cómo se construyó, en ocho pasos</h2>
+          <p>Cada paso tiene su propia página, con las gráficas hechas a partir de la ejecución real del entrenamiento.</p>
         </header>
-
-        <div class="evaluador">
-          <form id="planilla" class="planilla" autocomplete="off" novalidate>
-            <fieldset class="selector-modo">
-              <legend>Quién califica</legend>
-              <div class="segmentado" role="radiogroup" aria-label="Modo del sistema">
-                <label><input type="radio" name="modo" value="reglas" id="modo-reglas"><span>Reglas del contrato</span></label>
-                <label><input type="radio" name="modo" value="logistica" id="modo-logistica" checked><span>Regresión logística</span></label>
-                <label><input type="radio" name="modo" value="red_neuronal" id="modo-red"><span>Red neuronal</span></label>
-              </div>
-            </fieldset>
-            <div id="campos" class="campos"></div>
-            <div class="acciones">
-              <button type="button" class="boton boton-tinta" id="btn-ejemplo">Cargar ejemplo</button>
-              <button type="button" class="boton" id="btn-limpiar">Limpiar planilla</button>
-            </div>
-          </form>
-
-          <article class="ficha" aria-labelledby="ficha-titulo" aria-live="polite">
-            <header class="ficha-cabecera">
-              <h3 id="ficha-titulo">Ficha de seguimiento</h3>
-              <dl class="ficha-meta">
-                <div><dt>Estudiante</dt><dd id="ficha-id">sin identificar</dd></div>
-                <div><dt>Calificó</dt><dd id="ficha-modo">regresión logística</dd></div>
-              </dl>
-            </header>
-            <div id="sello" class="sello-zona">
-              <p class="sello-vacio" id="sello-vacio">Faltan 12 datos</p>
-            </div>
-            <p id="ficha-resumen" class="ficha-resumen">Llene la planilla o cargue un ejemplo.</p>
-
-            <div id="ficha-detalle" class="ficha-detalle" hidden>
-              <section class="ficha-bloque">
-                <h4>Puntaje de riesgo</h4>
-                <div id="regla-puntaje" class="regla-puntaje"></div>
-              </section>
-              <section class="ficha-bloque" id="bloque-sigmoide" hidden>
-                <h4>De puntos a probabilidad</h4>
-                <div id="sigmoide"></div>
-              </section>
-              <section class="ficha-bloque">
-                <h4>Qué empuja el puntaje</h4>
-                <p class="nota" id="nota-influencia"></p>
-                <div id="influencia" class="influencia"></div>
-              </section>
-            </div>
-            <section class="ficha-bloque">
-              <h4>Recorrido por el contrato</h4>
-              <div id="recorrido" class="recorrido"></div>
-            </section>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <!-- ======================================================== PROCESO -->
-    <section id="proceso" class="seccion seccion-hoja">
-      <div class="envoltura">
-        <header class="seccion-encabezado">
-          <h2>Cómo se construyó</h2>
-          <p>Ocho pasos, de las reglas escritas a mano a un modelo que aprende sus pesos. Cada número y cada gráfica salen
-            de la ejecución real del entrenamiento (semilla 2026). El reporte completo está en
-            <a href="reportes/reporte_entrenamiento.md">reporte_entrenamiento.md</a>.</p>
-        </header>
-        <div class="proceso-rejilla">
-          <nav class="indice" aria-label="Pasos del proceso">
-            <ol>
-              <li><a href="#p-contrato">El contrato</a></li>
-              <li><a href="#p-datos">Los datos</a></li>
-              <li><a href="#p-variables">Las variables</a></li>
-              <li><a href="#p-aprende">Cómo aprende</a></li>
-              <li><a href="#p-tarjeta">De pesos a puntos</a></li>
-              <li><a href="#p-pesos">Cuánto pesa cada variable</a></li>
-              <li><a href="#p-resultados">Qué tan bien funciona</a></li>
-              <li><a href="#pruebas">Pruebas de estrés</a></li>
-            </ol>
-          </nav>
-          <div class="pasos" id="pasos">
-            <article class="paso" id="p-contrato"><h3><span class="paso-n">1</span>El contrato</h3><div class="cuerpo"></div></article>
-            <article class="paso" id="p-datos"><h3><span class="paso-n">2</span>Los datos</h3><div class="cuerpo"></div></article>
-            <article class="paso" id="p-variables"><h3><span class="paso-n">3</span>Las variables</h3><div class="cuerpo"></div></article>
-            <article class="paso" id="p-aprende"><h3><span class="paso-n">4</span>Cómo aprende</h3><div class="cuerpo"></div></article>
-            <article class="paso" id="p-tarjeta"><h3><span class="paso-n">5</span>De pesos a puntos</h3><div class="cuerpo"></div></article>
-            <article class="paso" id="p-pesos"><h3><span class="paso-n">6</span>Cuánto pesa cada variable</h3><div class="cuerpo"></div></article>
-            <article class="paso" id="p-resultados"><h3><span class="paso-n">7</span>Qué tan bien funciona</h3><div class="cuerpo"></div></article>
-            <article class="paso" id="pruebas"><h3><span class="paso-n">8</span>Pruebas de estrés</h3><div class="cuerpo"></div>
-              <div class="pruebas-vivo">
-                <button type="button" class="boton boton-tinta" id="btn-rondas">Correr las pruebas en el servidor</button>
-                <p class="nota" id="estado-rondas">Corre otra vez las rondas 1 a 3 (modo reglas) y la ronda 4 (modo aprendido).</p>
-                <div id="tabla-rondas"></div>
-              </div>
-            </article>
-          </div>
-        </div>
+        <ol class="tarjetas-pasos">
+<li><a href="contrato.html"><b class="paso-n">1</b><span class="paso-texto"><strong>El contrato</strong><span>Qué datos entran, en qué orden se revisan y qué responde el sistema en cada caso.</span></span></a></li>
+<li><a href="datos.html"><b class="paso-n">2</b><span class="paso-texto"><strong>Los datos</strong><span>Cómo se simularon 20 000 estudiantes y qué registros descartó la validación.</span></span></a></li>
+<li><a href="variables.html"><b class="paso-n">3</b><span class="paso-texto"><strong>Las variables</strong><span>Correlaciones, VIF y qué variables redundantes se quitaron antes de entrenar.</span></span></a></li>
+<li><a href="aprendizaje.html"><b class="paso-n">4</b><span class="paso-texto"><strong>Cómo aprende</strong><span>Épocas, pérdida y gradiente: la neurona época por época y la red neuronal.</span></span></a></li>
+<li><a href="puntaje.html"><b class="paso-n">5</b><span class="paso-texto"><strong>De pesos a puntos</strong><span>La tarjeta de puntaje de 0 a 100 y cómo se eligieron los cortes de cada nivel.</span></span></a></li>
+<li><a href="pesos.html"><b class="paso-n">6</b><span class="paso-texto"><strong>Cuánto pesa cada variable</strong><span>Importancia, tope del 35 %, ablación, estabilidad y la variable sensible estrato.</span></span></a></li>
+<li><a href="resultados.html"><b class="paso-n">7</b><span class="paso-texto"><strong>Qué tan bien funciona</strong><span>Las métricas en prueba de los modelos aprendidos frente a las reglas del contrato.</span></span></a></li>
+<li><a href="pruebas.html"><b class="paso-n">8</b><span class="paso-texto"><strong>Pruebas de estrés</strong><span>Las rondas 1 a 4 caso por caso, y un botón para correrlas otra vez.</span></span></a></li>
+        </ol>
       </div>
     </section>
   </main>
-
   <footer class="pie">
     <div class="envoltura">
       <p>Prototipo académico. Los modelos están implementados desde cero en NumPy y se entrenaron con datos
@@ -169,6 +82,10 @@
     </div>
   </footer>
   <div id="globo" class="globo" role="tooltip" hidden></div>
-  <script type="module" src="js/principal.js"></script>
+  <script src="js/util.js" defer></script>
+  <script src="js/recorrido.js" defer></script>
+  <script src="js/evaluador.js" defer></script>
+  <script src="js/proceso.js" defer></script>
+  <script src="js/principal.js" defer></script>
 </body>
 </html>

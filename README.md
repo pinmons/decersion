@@ -78,7 +78,9 @@ evaluar(entrada, modo="aprendido", modelo="red_neuronal")
 Vercel no puede ejecutar Streamlit (necesita un servidor permanente con websockets). Por eso la web
 publicada es:
 
-- `public/`: página estática (portada, formulario con la marca de riesgo en vivo y "Cómo se hizo").
+- `public/`: sitio estático con una página por parte: `index.html` (portada), `evaluar.html` (planilla y
+  ficha de seguimiento), `proceso.html` (índice) y una página por cada paso (`contrato.html`, `datos.html`,
+  …, `pruebas.html`). Las genera `python -m desercion.paginas_web` desde una sola plantilla.
 - `api/evaluar.py` y `api/rondas.py`: funciones Python que llaman a `desercion/` (solo NumPy).
 
 Pasos: en vercel.com, **Add New → Project → Import** el repositorio `pinmons/decersion`, preset

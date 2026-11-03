@@ -35,6 +35,8 @@ def publicar_para_web():
         {"campos": esquema, "semestres_poblacion": list(SEMESTRES_POBLACION)}, ensure_ascii=False, indent=1),
         encoding="utf-8")
     print(f"Web: {n + 1} archivos copiados a public/reportes/ (incluye esquema.json del contrato)")
+    from .paginas_web import generar
+    generar()
 
 
 if __name__ == "__main__":

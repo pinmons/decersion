@@ -57,6 +57,7 @@
 
 /* ------------------------------------------------------------------ base */
 *, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }  /* que ningún display: flex anule el atributo hidden */
 html { scroll-behavior: smooth; scroll-padding-top: 72px; }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { transition: none !important; animation: none !important; } }
 body {
@@ -88,7 +89,8 @@ code { font-size: 0.88em; background: var(--hoja-2); padding: 0.05em 0.35em; bor
 .barra nav { display: flex; gap: 2px; flex-wrap: wrap; justify-content: flex-end; }
 .barra nav a { color: var(--tinta-2); text-decoration: none; padding: 6px 10px; border-radius: 6px; font-size: 0.95rem; }
 .barra nav a:hover { color: var(--tinta); background: var(--hoja-2); }
-@media (max-width: 520px) { .barra nav a:first-child { display: none; } .nombre-sitio { font-size: var(--paso0); } }
+.barra nav a[aria-current="page"] { color: var(--acento); font-weight: 700; box-shadow: inset 0 -2px 0 var(--acento); border-radius: 6px 6px 0 0; }
+@media (max-width: 560px) { .barra-interior { flex-wrap: wrap; gap: 4px; } .barra nav { width: 100%; justify-content: flex-start; } .barra nav a { padding: 6px 8px; font-size: 0.9rem; } }
 
 /* ------------------------------------------------------------------ botones */
 .acciones { display: flex; flex-wrap: wrap; gap: 10px; }
@@ -154,7 +156,8 @@ code { font-size: 0.88em; background: var(--hoja-2); padding: 0.05em 0.35em; bor
   width: 100%; min-height: 38px; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--renglon);
   background: var(--papel); color: var(--tinta); font: inherit; font-size: 0.95rem;
 }
-.fila-num { display: grid; grid-template-columns: minmax(0, 1fr) 76px; gap: 10px; align-items: center; }
+.fila-num { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 12px; align-items: center; }
+.campo input[type="number"] { font-variant-numeric: tabular-nums; font-weight: 700; }
 .campo input[type="range"] { width: 100%; accent-color: var(--acento); margin: 6px 0; }
 .campo.vacio input[type="range"] { opacity: 0.35; }
 .dos-o-tres { display: flex; border: 1px solid var(--renglon); border-radius: 6px; overflow: hidden; }
@@ -169,7 +172,8 @@ code { font-size: 0.88em; background: var(--hoja-2); padding: 0.05em 0.35em; bor
 }
 @media (max-width: 940px) { .ficha { position: static; } }
 .ficha-cabecera { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 16px; align-items: baseline; border-bottom: 2px solid var(--tinta); padding-bottom: 10px; }
-.ficha-cabecera h3 { font-size: var(--paso2); }
+.ficha-cabecera h2 { font-size: var(--paso2); }
+.ficha-bloque h3 { font-size: var(--paso1); font-weight: 600; }
 .ficha-meta { display: flex; flex-wrap: wrap; gap: 16px; margin: 0; font-size: var(--paso-1); }
 .ficha-meta dt { color: var(--tenue); }
 .ficha-meta dd { margin: 0; font-weight: 700; }
@@ -270,16 +274,33 @@ svg text { font-family: var(--letra-texto); }
 /* ------------------------------------------------------------------ proceso */
 .proceso-rejilla { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 40px; align-items: start; }
 @media (max-width: 900px) { .proceso-rejilla { grid-template-columns: 1fr; } .indice { display: none; } }
-.indice { position: sticky; top: 88px; }
-.indice ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; counter-reset: paso; }
-.indice li { counter-increment: paso; }
-.indice a { display: flex; gap: 10px; padding: 6px 8px; border-radius: 6px; color: var(--tinta-2); text-decoration: none; font-size: 0.92rem; }
-.indice a::before { content: counter(paso); color: var(--tenue); font-variant-numeric: tabular-nums; min-width: 1ch; }
-.indice a:hover, .indice a.actual { background: var(--hoja-2); color: var(--tinta); }
-.indice a.actual::before { color: var(--acento); font-weight: 700; }
+.indice { position: sticky; top: 88px; display: flex; flex-direction: column; gap: 10px; }
+.indice-volver { font-weight: 700; text-decoration: none; color: var(--tinta-2); font-size: 0.92rem; }
+.indice-volver:hover { color: var(--acento); }
+.lista-pasos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.lista-pasos a { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 6px; color: var(--tinta-2); text-decoration: none; font-size: 0.92rem; line-height: 1.3; }
+.lista-pasos a:hover { background: var(--hoja-2); color: var(--tinta); }
+.lista-pasos a[aria-current="page"] { background: var(--acento-suave); color: var(--tinta); font-weight: 700; }
+.lista-pasos .paso-n { width: 24px; height: 24px; font-size: 0.78rem; border-width: 1.5px; }
+.lista-pasos a[aria-current="page"] .paso-n { background: var(--acento); color: var(--hoja); }
+.lista-pasos strong { font-weight: inherit; }
+@media (max-width: 900px) { .indice { position: static; } .lista-pasos { flex-direction: row; flex-wrap: wrap; } .lista-pasos .paso-texto { display: none; } .lista-pasos a { padding: 4px; } }
 .pasos { display: flex; flex-direction: column; gap: 64px; min-width: 0; }
 .paso { display: flex; flex-direction: column; gap: 18px; min-width: 0; scroll-margin-top: 80px; }
-.paso h3 { display: flex; align-items: center; gap: 12px; font-size: var(--paso2); }
+.paso-cabecera { display: flex; flex-direction: column; gap: 8px; }
+.paso-cabecera h1, .seccion-encabezado h1 { font-size: var(--paso4); font-weight: 700; }
+.paso-navegacion { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; border-top: 1px solid var(--renglon); padding-top: 20px; margin-top: 12px; }
+.seccion-primera { border-top: 0; padding-block: clamp(32px, 5vw, 56px) clamp(48px, 7vw, 80px); }
+.tarjetas-pasos { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; }
+.tarjetas-pasos a {
+  height: 100%; display: flex; gap: 14px; align-items: flex-start; padding: 16px; border-radius: 10px; text-decoration: none;
+  background: var(--hoja); border: 1px solid var(--renglon); color: var(--tinta); transition: border-color 0.15s, transform 0.15s;
+}
+.tarjetas-pasos a:hover { border-color: var(--acento); transform: translateY(-2px); }
+.tarjetas-pasos .paso-texto { display: flex; flex-direction: column; gap: 4px; }
+.tarjetas-pasos strong { font-family: var(--letra-titulo); font-size: var(--paso1); font-weight: 650; }
+.tarjetas-pasos .paso-texto span { color: var(--tinta-2); font-size: 0.92rem; }
+.aviso-archivo { background: var(--medio-fondo); border-bottom: 1px solid var(--medio); padding-block: 12px; font-size: 0.95rem; }
 .paso-n { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--acento); color: var(--acento); font: 700 0.95rem var(--letra-texto); flex: none; }
 .cuerpo { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
 .cuerpo p { color: var(--tinta-2); }
