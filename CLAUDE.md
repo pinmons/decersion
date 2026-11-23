@@ -20,9 +20,9 @@ trabajo previo está en `contexto/` y es de solo lectura.
 - Toda decisión no especificada se marca como `[SUPUESTO]`.
 - Los modelos se implementan desde cero en NumPy. scikit-learn solo para verificar.
 - Los datos de entrenamiento son sintéticos. Todo reporte de error debe decirlo.
-- La corrida con la base real (UCI, Portalegre) va aparte: `--nombre real`, `modelos_entrenados/real/`,
+- La corrida con la base real (UPV, Zenodo; primer año de grado al cerrar el primer cuatrimestre) va aparte: `--nombre real`, `modelos_entrenados/real/`,
   `reportes/real/`. Nunca reemplaza a la sintética, que es la que prueban las rondas. Las páginas Estudiantes y
-  Modelo usan la real; sus tres datos aproximados (asistencia, estrato, trabaja) se dicen siempre.
+  Modelo usan la real; sus límites (asistencia y trabaja aproximados, estrato y deuda sin dato, letra de abandono deducida) se dicen siempre.
 - Nada escribe dentro de `contexto/`: los resultados van a `reportes/` o `pruebas/resultados/`.
 
 ## Entorno
@@ -57,7 +57,7 @@ trabajo previo está en `contexto/` y es de solo lectura.
 - Pruebas del modo aprendido: `python pruebas/correr_ronda4.py`
 - Verificar gradientes, métricas y monotonía: `python pruebas/verificar_modelos.py`
 - Entrenar: `python -m desercion.entrenamiento` (datos reales: `--csv archivo.csv`)
-- Base real: `python -m desercion.datos_reales`, luego
+- Base real: `python -m desercion.datos_reales` (`--extraer` rehace el extracto desde Zenodo), luego
   `python -m desercion.entrenamiento --csv datos/reales/estudiantes_reales.csv --nombre real` y
   `python -m desercion.operacion` (arma `base_datos/` y la copia de la web)
 - App local: `streamlit run app.py`
