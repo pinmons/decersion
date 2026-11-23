@@ -1,0 +1,83 @@
+{
+ "archivo": "registro_academico.sqlite",
+ "motor": "SQLite",
+ "total": 4424,
+ "historico": 3537,
+ "operacion": 887,
+ "fuente": {
+  "nombre": "Predict Students' Dropout and Academic Success",
+  "institucion": "Instituto Politécnico de Portalegre (Portugal)",
+  "autores": "Realinho, Vieira Martins, Machado y Baptista (2021)",
+  "repositorio": "UCI Machine Learning Repository",
+  "doi": "https://doi.org/10.24432/C5MC89",
+  "licencia": "CC BY 4.0",
+  "descripcion": "Registros reales y anonimizados de estudiantes de pregrado, con su matrícula, su rendimiento en los dos primeros semestres y lo que pasó después: desertó, sigue matriculado o se graduó."
+ },
+ "mapeo": [
+  {
+   "campo": "id_estudiante",
+   "origen": "Número de fila de la fuente (IPP-0001…). La fuente es anónima.",
+   "tipo": "directo"
+  },
+  {
+   "campo": "nivel_formacion",
+   "origen": "Siempre pregrado: todos los programas de la fuente lo son.",
+   "tipo": "directo"
+  },
+  {
+   "campo": "estado_matricula",
+   "origen": "Siempre activo: en el corte (fin del primer año) todos estaban matriculados.",
+   "tipo": "directo"
+  },
+  {
+   "campo": "semestre",
+   "origen": "Siempre 3: la fuente describe los semestres 1 y 2, así que el estudiante va a entrar al tercero.",
+   "tipo": "supuesto"
+  },
+  {
+   "campo": "promedio_acumulado",
+   "origen": "Nota media de las materias aprobadas en los semestres 1 y 2. La escala portuguesa (0 a 20, se aprueba con 10) se pasa a la del contrato (0 a 5, se aprueba con 3,0) alineando la nota de aprobación. Quien no aprobó ninguna materia queda en 0,0.",
+   "tipo": "aproximado"
+  },
+  {
+   "campo": "materias_cursadas_periodo_anterior",
+   "origen": "Materias inscritas en el segundo semestre.",
+   "tipo": "directo"
+  },
+  {
+   "campo": "materias_reprobadas",
+   "origen": "Inscritas menos aprobadas en el segundo semestre (no presentarse cuenta como reprobar).",
+   "tipo": "directo"
+  },
+  {
+   "campo": "creditos_inscritos",
+   "origen": "Materias del segundo semestre × 2. La fuente no trae créditos; con esa equivalencia la carga máxima del contrato (12 materias) cabe en sus 25 créditos.",
+   "tipo": "aproximado"
+  },
+  {
+   "campo": "porcentaje_asistencia",
+   "origen": "La fuente no registra asistencia. Se usa el porcentaje de materias del segundo semestre en las que el estudiante se presentó a evaluación (0 si no se presentó a ninguna).",
+   "tipo": "aproximado"
+  },
+  {
+   "campo": "estrato",
+   "origen": "La fuente no tiene estrato. Se usa la escolaridad más alta de los padres en 6 bandas (1 = sin primaria completa … 6 = maestría o doctorado). Si no se conoce la de ninguno, 3.",
+   "tipo": "aproximado"
+  },
+  {
+   "campo": "trabaja",
+   "origen": "La fuente no dice si trabaja. Se marca «sí» a quien estudia en jornada nocturna.",
+   "tipo": "aproximado"
+  },
+  {
+   "campo": "deuda_matricula",
+   "origen": "Sí, cuando la fuente lo marca como deudor o con la matrícula sin pagar al día.",
+   "tipo": "directo"
+  },
+  {
+   "campo": "deserto",
+   "origen": "1 si el desenlace real fue «desertó»; 0 si se graduó o sigue matriculado.",
+   "tipo": "directo"
+  }
+ ]
+}

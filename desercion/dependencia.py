@@ -17,6 +17,7 @@ from .metricas import auc, pearson, spearman
 UMBRAL_CORRELACION = 0.8
 VIF_MODERADO = 5
 VIF_GRAVE = 10
+VIF_MAXIMO = 999.0
 TOPE_DOMINANCIA = 0.35  # [SUPUESTO, ajustable]
 
 # Cuando dos variables son casi la misma información, cuál se queda y por qué.
@@ -44,7 +45,8 @@ def vif(X):
         coef, *_ = np.linalg.lstsq(otras, y, rcond=None)
         residuo = y - otras @ coef
         r2 = 1 - residuo.var() / y.var() if y.var() > 0 else 0.0
-        resultado.append(float("inf") if r2 >= 1 else 1.0 / (1.0 - r2))
+        # Tope 999: dos variables que son la misma (r = 1) darían infinito, que no cabe en JSON ni en una gráfica.
+        resultado.append(VIF_MAXIMO if r2 >= 1 else min(VIF_MAXIMO, 1.0 / (1.0 - r2)))
     return np.array(resultado)
 
 

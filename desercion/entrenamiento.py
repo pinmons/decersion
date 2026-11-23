@@ -214,6 +214,8 @@ def etapa_datos_csv(est, res, ruta):
         "division": {"train": len(itr), "val": len(iva), "test": len(ite), "tasa_train": float(y[itr].mean()),
                      "tasa_val": float(y[iva].mean()), "tasa_test": float(y[ite].mean())},
         "resumen_campos": resumen_campos(validos, y),
+        # quiénes quedaron en prueba: la operación solo califica a quienes el modelo nunca vio
+        "ids_prueba": [validos[i]["id_estudiante"] for i in ite],
     }
 
 
@@ -247,6 +249,13 @@ def etapa_dependencia(est, res, imprimir=True):
     # [SUPUESTO] deuda ausente → 1 (valor prudente: no reduce el riesgo). Se confirma con el signo aprendido.
     X_todo = matriz(est["registros"], candidatas, deuda_si_falta=1)
     Xtr = X_todo[est["itr"]]
+    # Una variable que vale lo mismo para todos no distingue a nadie (y rompe correlaciones y VIF).
+    constantes = [n for j, n in enumerate(candidatas) if Xtr[:, j].std() == 0]
+    if constantes:
+        print("Variables constantes en estos datos (se quitan antes de medir):", ", ".join(constantes))
+        candidatas = [n for n in candidatas if n not in constantes]
+        X_todo = matriz(est["registros"], candidatas, deuda_si_falta=1)
+        Xtr = X_todo[est["itr"]]
     antes = dep.diagnostico(Xtr, candidatas)
     print("Variables candidatas:", ", ".join(candidatas))
     print("Pares con |correlación de Pearson| > 0.8:")
@@ -256,6 +265,8 @@ def etapa_dependencia(est, res, imprimir=True):
     for n, v in antes["vif"].items():
         print(f"   {n:38s} {v:7.2f}  {dep.clasificar_vif(v)}")
     finales, decisiones = dep.resolver_colinealidad(Xtr, candidatas)
+    decisiones = [{"par": [n], "se_quita": n, "motivo": "Vale lo mismo para todos los estudiantes de estos datos: "
+                   "no puede distinguir a nadie."} for n in constantes] + decisiones
     for d in decisiones:
         print(f"Decisión: se quita '{d['se_quita']}'" + (f", se queda '{d['se_queda']}'" if "se_queda" in d else "")
               + f". {d['motivo']}")
@@ -554,7 +565,7 @@ def etapa_evaluacion(est, res, imprimir=True):
 def guardar_modelos(est, res):
     DIR_MODELOS.mkdir(parents=True, exist_ok=True)
     comun = {"variables": est["nombres"], "escalador": est["escalador"].a_dict(), "ajuste_prior": est["ajuste"],
-             "aviso": "Entrenado con datos SINTÉTICOS. No representa el desempeño con estudiantes reales.",
+             "aviso": res.get("aviso_modelo", "Entrenado con datos SINTÉTICOS. No representa el desempeño con estudiantes reales."),
              "semilla": SEMILLA}
     log = {**comun, "tipo": "logistica", "pesos": est["log"].w.tolist(), "sesgo": float(est["log"].b),
            "l2_por_variable": est["l2_por_variable"].tolist(), "tarjeta": est["tarjeta"],
@@ -596,8 +607,18 @@ def main(argv=None):
     p = argparse.ArgumentParser(description="Entrena los modelos del sistema de alerta temprana (datos sintéticos).")
     p.add_argument("--hasta", choices=ETAPAS, default=ETAPAS[-1], help="última etapa a ejecutar")
     p.add_argument("--csv", help="entrenar con datos reales: CSV con las 12 columnas del contrato + deserto (0/1)")
+    p.add_argument("--nombre", help="guarda la corrida aparte, en reportes/<nombre>/ y modelos_entrenados/<nombre>/, "
+                                    "sin tocar los modelos ni las páginas de la corrida principal")
     args = p.parse_args(argv)
     est, res = {}, {"semilla": SEMILLA, "aviso": "Todas las métricas se midieron con datos SINTÉTICOS."}
+    if args.nombre:
+        from . import figuras, reporte
+        global DIR_REPORTES, DIR_MODELOS
+        DIR_REPORTES, DIR_MODELOS = RAIZ / "reportes" / args.nombre, RAIZ / "modelos_entrenados" / args.nombre
+        DIR_REPORTES.mkdir(parents=True, exist_ok=True)
+        reporte.DIR_REPORTES = DIR_REPORTES
+        figuras.AVISO = f" (datos: {args.nombre})"
+        res["aviso_modelo"] = f"Entrenado con los datos de la corrida «{args.nombre}»."
     funciones = {"datos": etapa_datos, "dependencia": etapa_dependencia, "entrenamiento": etapa_entrenamiento,
                  "control": etapa_control, "evaluacion": etapa_evaluacion}
     t0 = time.time()
@@ -614,7 +635,7 @@ def main(argv=None):
     generar_reportes(json.loads((DIR_REPORTES / "resultados.json").read_text(encoding="utf-8")))
     if args.hasta == ETAPAS[-1]:
         from .publicar import publicar_para_web
-        publicar_para_web()
+        publicar_para_web(args.nombre)
     print(f"\nListo en {time.time() - t0:.0f} s. Resultados en reportes/resultados.json")
 
 

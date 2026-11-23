@@ -392,8 +392,10 @@
         html(`<div class="tabla-envoltura"><table><thead><tr><th>Métrica en prueba</th>${nombres.map((n) => `<th class="n">${esc(n)}</th>`).join("")}</tr></thead><tbody>
           ${fila("Log-loss (menor es mejor)", "log_loss", (v) => num(v, 3))}${fila("Brier (menor es mejor)", "brier", (v) => num(v, 3))}
           ${fila("Desertores detectados en alto", "recall", (v) => pct(v, 0))}${fila("Desertan de verdad entre los de alto", "precision", (v) => pct(v, 0))}
+          ${fila("F1 (equilibrio de las dos anteriores, de 0 a 1)", "f1", (v) => num(v, 2))}
           ${fila("Estudiantes en alto", "fraccion_alto", (v) => pct(v, 0))}${fila("Accuracy", "accuracy", (v) => pct(v, 0))}</tbody></table></div>`),
-        `La accuracy engaña: un sistema que dijera «nadie deserta» acertaría el ${pct(1 - ev.tasa_test, 0)} sin detectar a nadie.`] },
+        `La accuracy engaña: un sistema que dijera «nadie deserta» acertaría el ${pct(1 - ev.tasa_test, 0)} sin detectar a nadie.`,
+        `Estas son las notas con datos simulados. Las del modelo reentrenado con estudiantes reales, con qué significa cada una, están en <a href="modelo.html">Modelo</a>.`] },
       { id: "e-calibracion", titulo: "¿Las probabilidades dicen la verdad?", nodos: [
         figura(grafLineas({ series: [{ nombre: "calibración perfecta", color: "var(--tenue)", punteado: true, valores: [[0, 0], [1, 1]] },
           ...nombres.map((n, i) => ({ nombre: n, color: `var(--serie-${i + 1})`, puntos: true, valores: ev.calibracion[n].map((x) => [x[0], x[1]]) }))],

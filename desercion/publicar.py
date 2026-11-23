@@ -12,7 +12,23 @@ ORIGEN = RAIZ / "reportes"
 DESTINO = RAIZ / "public" / "reportes"
 
 
-def publicar_para_web():
+def publicar_corrida(nombre):
+    """Copia a public/reportes/<nombre>/ los resultados y los pesos de una corrida aparte."""
+    origen, destino = ORIGEN / nombre, DESTINO / nombre
+    (destino / "modelos").mkdir(parents=True, exist_ok=True)
+    n = 0
+    for archivo in list(origen.glob("*.png")) + [origen / "resultados.json"]:
+        shutil.copy2(archivo, destino / archivo.name)
+        n += 1
+    for archivo in (RAIZ / "modelos_entrenados" / nombre).glob("*.json"):
+        shutil.copy2(archivo, destino / "modelos" / archivo.name)
+        n += 1
+    print(f"Web: {n} archivos copiados a public/reportes/{nombre}/")
+
+
+def publicar_para_web(nombre=None):
+    if nombre:
+        return publicar_corrida(nombre)
     DESTINO.mkdir(parents=True, exist_ok=True)
     n = 0
     for patron in ("*.png", "*.md", "resultados.json"):

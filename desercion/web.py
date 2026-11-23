@@ -3,6 +3,8 @@
     POST /api/evaluar   {"entrada": {...12 campos...}, "modo": "reglas"|"aprendido",
                          "modelo": "logistica"|"red_neuronal"}
                         → la salida de sistema.evaluar() + `puntos_por_variable` + `en_riesgo`
+    GET  /api/estudiantes?modelo=logistica|red_neuronal|reglas
+                        → lee la base de datos real y devuelve un resultado por estudiante
     GET  /api/rondas    → corre la ronda 3c (modo reglas) y la ronda 4 y devuelve PASA/FALLA
 
 La página nunca recalcula el modelo en JavaScript: siempre pregunta aquí, así no puede
@@ -31,9 +33,10 @@ def responder_evaluar(cuerpo):
             return 400, {"decision": "error", "motivo": "cuerpo_invalido", "detalle": "Se esperaba un objeto JSON."}
         modo = cuerpo.get("modo", "reglas")
         modelo = cuerpo.get("modelo", "logistica")
-        if modo not in MODOS or modelo not in MODELOS:
+        origen = cuerpo.get("origen") or None   # "real" = pesos entrenados con la base real
+        if modo not in MODOS or modelo not in MODELOS or origen not in (None, "real"):
             return 400, {"decision": "error", "motivo": "modo_no_valido", "detalle": f"{modo}/{modelo}"}
-        salida = evaluar(cuerpo.get("entrada"), modo=modo, modelo=modelo)
+        salida = evaluar(cuerpo.get("entrada"), modo=modo, modelo=modelo, origen=origen)
         salida = dict(salida)
         if salida.get("decision") == "resultado":
             if modo == "reglas":
@@ -49,6 +52,17 @@ def responder_evaluar(cuerpo):
         return 200, salida
     except Exception as ex:  # garantía: nunca propagar excepción
         return 500, {"decision": "error", "motivo": "error_interno", "detalle": type(ex).__name__}
+
+
+def responder_estudiantes(modelo="logistica"):
+    """Corre la operación sobre la base de datos real. Devuelve (código HTTP, diccionario)."""
+    try:
+        from .operacion import MODELOS_OPERACION, procesar
+        if modelo not in MODELOS_OPERACION:
+            return 400, {"error": "modelo_no_valido", "detalle": str(modelo)}
+        return 200, procesar(modelo)
+    except Exception as ex:
+        return 500, {"error": "No se pudo leer la base de datos", "detalle": f"{type(ex).__name__}: {ex}"}
 
 
 def responder_rondas():

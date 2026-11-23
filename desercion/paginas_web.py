@@ -60,12 +60,13 @@ FAVICON = ("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox
            "fill='%23f2b23a'/%3E%3Ccircle cx='16' cy='23' r='3.4' fill='%234fb57a'/%3E%3C/svg%3E")
 FUENTES = ("https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400"
            "&family=Literata:ital,opsz,wght@0,7..72,400..800;1,7..72,400..600&display=swap")
-SCRIPTS = ["util", "recorrido", "evaluador", "aprendizaje", "proceso", "reporte", "principal"]
+SCRIPTS = ["util", "recorrido", "evaluador", "aprendizaje", "proceso", "reporte", "operacion", "principal"]
 
 
 def _pagina(archivo, titulo, descripcion, pagina, seccion, cuerpo):
-    nav = [("index.html", "Inicio", "inicio"), ("evaluar.html", "Evaluar", "evaluar"),
-           ("proceso.html", "Cómo se construyó", "proceso"), ("reporte.html", "Reporte", "reporte"), ("pruebas.html", "Pruebas", "pruebas")]
+    nav = [("index.html", "Inicio", "inicio"), ("estudiantes.html", "Estudiantes", "estudiantes"), ("modelo.html", "Modelo", "modelo"),
+           ("evaluar.html", "Evaluar", "evaluar"), ("proceso.html", "Cómo se construyó", "proceso"),
+           ("reporte.html", "Reporte", "reporte"), ("pruebas.html", "Pruebas", "pruebas")]
     enlaces = "\n        ".join(
         f'<a href="{h}"{" aria-current=\"page\"" if seccion == s else ""}>{t}</a>' for h, t, s in nav)
     scripts = "\n  ".join(f'<script src="js/{n}.js" defer></script>' for n in SCRIPTS)
@@ -102,9 +103,10 @@ def _pagina(archivo, titulo, descripcion, pagina, seccion, cuerpo):
   </main>
   <footer class="pie">
     <div class="envoltura">
-      <p>Prototipo académico. Los modelos están implementados desde cero en NumPy y se entrenaron con datos
-        sintéticos: las métricas no representan el desempeño con estudiantes reales. Los oráculos de las pruebas son
-        borradores que debe firmar el equipo.</p>
+      <p>Prototipo académico. Los modelos están implementados desde cero en NumPy. Se construyeron con datos
+        sintéticos (Evaluar, Cómo se construyó, Reporte y Pruebas) y se reentrenaron con una base real y pública de
+        4 424 estudiantes del Instituto Politécnico de Portalegre (Estudiantes y Modelo). No se usa para decidir sobre
+        estudiantes reales. Los oráculos de las pruebas son borradores que debe firmar el equipo.</p>
     </div>
   </footer>
   <div id="globo" class="globo" role="tooltip" hidden></div>
@@ -136,9 +138,12 @@ def inicio():
           <p class="aviso"><strong>Prototipo con datos sintéticos.</strong> Los modelos aprendieron de
             <span data-cifra="n_validos">20 000</span> estudiantes simulados. Sirve para ver y discutir el proceso,
             no para decidir sobre estudiantes reales.</p>
+          <p class="aviso"><strong>Ya opera con una base de datos real.</strong> El mismo código se reentrenó con
+            4 424 estudiantes reales y ahora lee esa base y califica solo a cada estudiante.</p>
           <div class="acciones">
-            <a class="boton boton-tinta" href="evaluar.html">Evaluar a un estudiante</a>
-            <a class="boton" href="proceso.html">Ver cómo se construyó</a>
+            <a class="boton boton-tinta" href="estudiantes.html">Ver a los estudiantes</a>
+            <a class="boton" href="modelo.html">Cómo le va al modelo</a>
+            <a class="boton" href="evaluar.html">Evaluar a uno a mano</a>
           </div>
         </div>
         <figure class="portada-casos" aria-labelledby="casos-titulo">
@@ -213,6 +218,74 @@ def evaluar():
     return _pagina("evaluar.html", "Evaluar a un estudiante",
                    "Planilla con los 12 datos del contrato y ficha de seguimiento con el nivel de riesgo.",
                    "evaluar", "evaluar", cuerpo)
+
+
+SELECTOR_MODELO = """<fieldset class="selector-modo selector-operacion">
+            <legend>Quién califica</legend>
+            <div class="segmentado" role="radiogroup" aria-label="Modelo">
+              <label><input type="radio" name="modelo-operacion" value="logistica" checked><span>Regresión logística</span></label>
+              <label><input type="radio" name="modelo-operacion" value="red_neuronal"><span>Red neuronal</span></label>
+              <label><input type="radio" name="modelo-operacion" value="reglas"><span>Reglas del contrato</span></label>
+            </div>
+          </fieldset>"""
+
+
+def estudiantes():
+    cuerpo = f"""    <section class="seccion seccion-primera">
+      <div class="envoltura">
+        <header class="seccion-encabezado">
+          <h1>Estudiantes en seguimiento</h1>
+          <p>Nadie llena una planilla aquí. El sistema lee la base de datos real, revisa cada registro contra el contrato
+            y le da a cada estudiante su resultado: qué tan alto es su riesgo, por qué y en qué se le puede ayudar.</p>
+        </header>
+        <section class="tuberia-zona" aria-label="Proceso automático">
+          <div class="tuberia-cabeza">
+          {SELECTOR_MODELO}
+            <button type="button" class="boton" id="btn-leer">Volver a leer la base</button>
+          </div>
+          <ol id="tuberia" class="tuberia"><li class="tubo tubo-espera">Conectando con la base de datos…</li></ol>
+          <p class="nota" id="estado-lectura" aria-live="polite">Leyendo la base de datos y calificando a cada estudiante…</p>
+        </section>
+        <div class="filtros">
+          <div id="chips" class="chips" role="group" aria-label="Filtrar por resultado"></div>
+          <div class="filtros-busqueda">
+            <label class="oculto" for="buscar">Buscar por código</label>
+            <input type="search" id="buscar" placeholder="Buscar por código (IPP-0042)" autocomplete="off">
+            <label class="oculto" for="programa">Programa</label>
+            <select id="programa"><option value="">Todos los programas</option></select>
+          </div>
+        </div>
+        <div class="seguimiento">
+          <div class="lista-zona">
+            <ol id="lista" class="lista-estudiantes"></ol>
+            <p class="nota" id="cuenta-lista"></p>
+            <button type="button" class="boton" id="btn-mas" hidden>Ver 25 más</button>
+          </div>
+          <article class="ficha" id="ficha-estudiante" aria-live="polite"><p class="ficha-resumen">Elija un estudiante de la lista.</p></article>
+        </div>
+      </div>
+    </section>"""
+    return _pagina("estudiantes.html", "Estudiantes en seguimiento",
+                   "La base de datos real se lee sola y cada estudiante recibe su nivel de riesgo, el porqué y en qué mejorar.",
+                   "estudiantes", "estudiantes", cuerpo)
+
+
+def modelo():
+    cuerpo = f"""    <section class="seccion seccion-primera">
+      <div class="envoltura">
+        <header class="seccion-encabezado">
+          <h1>Cómo le va al modelo</h1>
+          <p>Sus notas con estudiantes reales que nunca había visto, qué significa cada una y cómo se entrenó.</p>
+        </header>
+        <div class="selector-estudiante">
+          {SELECTOR_MODELO}
+        </div>
+        <div class="cuerpo modelo-cuerpo" id="contenido"><p class="nota">Cargando los resultados…</p></div>
+      </div>
+    </section>"""
+    return _pagina("modelo.html", "Cómo le va al modelo",
+                   "AUC, F1, detección y precisión del modelo con datos reales, qué significa cada una y cómo se entrenó.",
+                   "modelo", "modelo", cuerpo)
 
 
 def proceso():
@@ -297,7 +370,8 @@ def reporte():
 
 
 def generar():
-    paginas = {"index.html": inicio(), "evaluar.html": evaluar(), "proceso.html": proceso(), "reporte.html": reporte()}
+    paginas = {"index.html": inicio(), "estudiantes.html": estudiantes(), "modelo.html": modelo(), "evaluar.html": evaluar(),
+               "proceso.html": proceso(), "reporte.html": reporte()}
     for i, (clave, _, _) in enumerate(PASOS):
         paginas[f"{clave}.html"] = paso(i)
     for nombre, html in paginas.items():

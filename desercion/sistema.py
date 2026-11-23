@@ -14,7 +14,7 @@ MODOS = ("reglas", "aprendido")
 MODELOS = ("logistica", "red_neuronal")
 
 
-def evaluar_con_traza(entrada, modo="reglas", modelo="logistica"):
+def evaluar_con_traza(entrada, modo="reglas", modelo="logistica", origen=None):
     """Igual que `evaluar`, pero devuelve (salida, traza S1→S2→S3) como el arnés original."""
     try:
         if modo not in MODOS:
@@ -26,12 +26,15 @@ def evaluar_con_traza(entrada, modo="reglas", modelo="logistica"):
         if modo == "reglas":
             return reglas.calificar(entrada)
         from . import inferencia  # import diferido: el modo reglas no necesita NumPy
-        return inferencia.calificar(entrada, modelo)
+        return inferencia.calificar(entrada, modelo, origen)
     except Exception as ex:  # red de seguridad: nunca propagar excepción
         return ({"decision": "error", "motivo": "error_interno", "detalle": type(ex).__name__},
                 {"S1": "error_interno", "S2": "-", "S3": "-"})
 
 
-def evaluar(entrada, modo="reglas", modelo="logistica"):
-    """Evalúa un registro de estudiante. Devuelve solo la salida (diccionario)."""
-    return evaluar_con_traza(entrada, modo, modelo)[0]
+def evaluar(entrada, modo="reglas", modelo="logistica", origen=None):
+    """Evalúa un registro de estudiante. Devuelve solo la salida (diccionario).
+
+    `origen="real"` usa los pesos entrenados con la base real (modelos_entrenados/real/).
+    """
+    return evaluar_con_traza(entrada, modo, modelo, origen)[0]

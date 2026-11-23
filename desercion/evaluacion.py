@@ -16,7 +16,7 @@ import numpy as np
 from . import figuras
 from . import tarjeta_puntaje as tp
 from .contrato import aplica_r34
-from .metricas import auc, brier, clasificacion, curva_calibracion, entropia_cruzada, sigmoide
+from .metricas import auc, brier, clasificacion, curva_calibracion, curva_roc, entropia_cruzada, sigmoide
 from .reglas import calificar as calificar_reglas
 
 NIVELES = ("bajo", "medio", "alto")
@@ -38,6 +38,9 @@ def _metricas(y, prob, niveles):
         confusion[n]["fraccion_estudiantes"] = total / len(y)
     return {"log_loss": entropia_cruzada(y, prob), "brier": brier(y, prob), "auc": auc(y, prob),
             "accuracy": alto["accuracy"], "recall": alto["recall"], "precision": alto["precision"],
+            "f1": alto["f1"], "especificidad": alto["especificidad"],
+            "matriz": {k: alto[k] for k in ("vp", "fp", "fn", "vn")},
+            "f1_medio_alto": medio_alto["f1"],
             "recall_medio_alto": medio_alto["recall"], "precision_medio_alto": medio_alto["precision"],
             "accuracy_medio_alto": medio_alto["accuracy"],
             "fraccion_alto": float((niveles == "alto").mean()), "confusion": confusion}
@@ -84,6 +87,7 @@ def evaluar_en_test(est, dir_reportes):
                          zip(modelos, (p_reglas, p_log, p_red))], dir_reportes / "calibracion.png")
     return {"modelos": modelos, "auc_techo": techo, "n_test": int(len(y)), "tasa_test": float(y.mean()),
             "calibracion": {n: curva_calibracion(y, p) for n, p in zip(modelos, (p_reglas, p_log, p_red))},
+            "roc": {n: curva_roc(y, p) for n, p in zip(modelos, (p_reglas, p_log, p_red))},
             "conclusion": conclusion(modelos, techo)}
 
 
@@ -91,7 +95,7 @@ def _imprimir(modelos, techo, tasa):
     nombres = list(modelos)
     filas = [("Log-loss (↓)", "log_loss", "{:.4f}"), ("Brier (↓)", "brier", "{:.4f}"), ("AUC-ROC (↑)", "auc", "{:.4f}"),
              ("Accuracy (alto = riesgo)", "accuracy", "{:.1%}"), ("Recall desertores (alto)", "recall", "{:.1%}"),
-             ("Precisión (alto)", "precision", "{:.1%}"), ("Recall (medio + alto)", "recall_medio_alto", "{:.1%}"),
+             ("Precisión (alto)", "precision", "{:.1%}"), ("F1 (alto)", "f1", "{:.3f}"), ("Recall (medio + alto)", "recall_medio_alto", "{:.1%}"),
              ("Precisión (medio + alto)", "precision_medio_alto", "{:.1%}"),
              ("% de estudiantes en alto", "fraccion_alto", "{:.1%}")]
     print(f"{'Métrica':28s}" + "".join(f"{n:>24s}" for n in nombres))
@@ -123,6 +127,8 @@ def conclusion(modelos, techo):
     partes.append(f"La línea base por reglas queda {'cerca' if dif < 0.03 else 'por debajo'} "
                   f"(AUC {r['auc']:.3f}, {dif:+.3f} frente a la logística) y su probabilidad (puntaje/100) está mal "
                   f"calibrada (Brier {r['brier']:.3f} vs {l['brier']:.3f}).")
+    if techo is None:
+        partes.append("Se midió con estudiantes reales que ningún modelo vio al entrenar.")
     if techo is not None:
         partes.append(f"Ningún modelo puede pasar de ~{techo:.3f} de AUC porque el resto es ruido de la simulación.")
         partes.append("Todo se midió con datos SINTÉTICOS: no representa el desempeño con estudiantes reales.")

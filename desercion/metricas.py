@@ -63,12 +63,31 @@ def clasificacion(y, positivo):
     positivo = np.asarray(positivo).astype(bool)
     vp = int((y & positivo).sum()); fp = int((~y & positivo).sum())
     fn = int((y & ~positivo).sum()); vn = int((~y & ~positivo).sum())
+    recall = vp / (vp + fn) if vp + fn else float("nan")
+    precision = vp / (vp + fp) if vp + fp else float("nan")
     return {
         "accuracy": (vp + vn) / len(y),
-        "recall": vp / (vp + fn) if vp + fn else float("nan"),
-        "precision": vp / (vp + fp) if vp + fp else float("nan"),
+        "recall": recall,
+        "precision": precision,
+        # F1: media armónica de precisión y recall = 2·VP / (2·VP + FP + FN)
+        "f1": 2 * vp / (2 * vp + fp + fn) if 2 * vp + fp + fn else float("nan"),
+        "especificidad": vn / (vn + fp) if vn + fp else float("nan"),
         "vp": vp, "fp": fp, "fn": fn, "vn": vn,
     }
+
+
+def curva_roc(y, puntaje, max_puntos=60):
+    """Puntos (tasa de falsas alarmas, tasa de detección) al bajar el umbral. Empates juntos."""
+    y = np.asarray(y).astype(bool)
+    puntaje = np.asarray(puntaje, float)
+    orden = np.argsort(-puntaje, kind="mergesort")
+    ys, ps = y[orden], puntaje[orden]
+    vp, fp = np.cumsum(ys), np.cumsum(~ys)
+    cortes = np.flatnonzero(np.append(ps[1:] != ps[:-1], True))  # último de cada grupo de empates
+    if len(cortes) > max_puntos:
+        cortes = cortes[np.unique(np.linspace(0, len(cortes) - 1, max_puntos).astype(int))]
+    n1, n0 = max(1, int(y.sum())), max(1, int((~y).sum()))
+    return [[0.0, 0.0]] + [[float(fp[i] / n0), float(vp[i] / n1)] for i in cortes]
 
 
 def pearson(X):

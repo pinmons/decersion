@@ -28,6 +28,32 @@ Techo teórico (AUC de la probabilidad real simulada): 0.846. Pruebas: rondas 1�
 ronda 4 (modo aprendido) logística **45/45** y red neuronal **45/45**. Detalle en
 [reportes/reporte_entrenamiento.md](reportes/reporte_entrenamiento.md).
 
+## Operación con una base de datos real
+
+El mismo código se reentrenó con una base real y pública: **4 424 estudiantes** del Instituto Politécnico de
+Portalegre (Realinho et al., 2021, UCI, https://doi.org/10.24432/C5MC89, CC BY 4.0). Esa corrida vive aparte
+(`modelos_entrenados/real/`, `reportes/real/`) y no toca los modelos sintéticos ni las rondas.
+
+| Métrica en prueba (625 estudiantes reales) | Reglas | Logística | Red neuronal |
+|---|---|---|---|
+| AUC-ROC | 0.883 | 0.876 | 0.916 |
+| F1 (nivel alto) | 0.55 | 0.72 | 0.75 |
+| Recall de desertores (nivel alto) | 40 % | 71 % | 69 % |
+| Precisión (nivel alto) | 91 % | 73 % | 83 % |
+
+- `base_datos/registro_academico.sqlite` hace de registro académico. `GET /api/estudiantes` la lee, pasa cada
+  registro por el Paso 1 y el modelo, y devuelve un resultado por estudiante con el porqué y en qué mejorar.
+- En la web: **Estudiantes** (vista general y ficha de cada uno) y **Modelo** (AUC, F1, detección, precisión,
+  matriz de aciertos, curva ROC y cómo se entrenó).
+- La base no trae asistencia, estrato ni si el estudiante trabaja: son aproximaciones `[SUPUESTO]`, descritas en
+  `desercion/datos_reales.py` y en la página Modelo. No se usa para decidir sobre estudiantes reales.
+
+```bash
+python -m desercion.datos_reales                                                        # fuente → CSV del contrato
+python -m desercion.entrenamiento --csv datos/reales/estudiantes_reales.csv --nombre real  # entrena aparte (~30 s)
+python -m desercion.operacion                                                           # arma la base y la copia para la web
+```
+
 ## Instalación
 
 ```bash
@@ -110,6 +136,9 @@ desercion/
   tarjeta_puntaje.py    pesos → puntos 0–100 y cortes
   evaluacion.py         métricas en test
   reporte.py, figuras.py, publicar.py, web.py
+  datos_reales.py       base real (UCI) → esquema del contrato, con sus supuestos
+  operacion.py          base SQLite → Paso 1 → modelo → un resultado por estudiante
+base_datos/             registro académico real en SQLite (lo lee la API)
 pruebas/                arnés de las rondas 1–4, casos U01–U15 y su oráculo, verificaciones
 modelos_entrenados/     pesos en JSON (los lee la API)
 reportes/               gráficas, datos_resumen.md, reporte_entrenamiento.md, resultados.json

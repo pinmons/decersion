@@ -21,11 +21,15 @@ DIR_MODELOS = RAIZ / "modelos_entrenados"
 _CACHE = {}
 
 
-def cargar(nombre):
-    if nombre not in _CACHE:
-        ruta = DIR_MODELOS / f"{nombre}.json"
-        _CACHE[nombre] = json.loads(ruta.read_text(encoding="utf-8")) if ruta.exists() else None
-    return _CACHE[nombre]
+ORIGENES = (None, "real")  # None = corrida principal (datos sintéticos); "real" = base real
+
+
+def cargar(nombre, origen=None):
+    clave = (origen, nombre)
+    if clave not in _CACHE:
+        ruta = (DIR_MODELOS / origen if origen else DIR_MODELOS) / f"{nombre}.json"
+        _CACHE[clave] = json.loads(ruta.read_text(encoding="utf-8")) if ruta.exists() else None
+    return _CACHE[clave]
 
 
 def _sigmoide(z):
@@ -79,12 +83,15 @@ def _calificar_red(e, m):
     return puntaje, prob, detalle
 
 
-def calificar(e, modelo="logistica"):
-    """Pasos 2 y 3 del modo aprendido. Devuelve (salida, traza)."""
-    if modelo not in ("logistica", "red_neuronal"):
+def calificar(e, modelo="logistica", origen=None):
+    """Pasos 2 y 3 del modo aprendido. Devuelve (salida, traza).
+
+    `origen` elige con qué datos se entrenaron los pesos: None (sintéticos) o "real".
+    """
+    if modelo not in ("logistica", "red_neuronal") or origen not in ORIGENES:
         return ({"decision": "error", "motivo": "modelo_no_valido", "detalle": str(modelo)},
                 {"S1": "valido", "S2": "-", "S3": "-"})
-    m = cargar(modelo)
+    m = cargar(modelo, origen)
     if m is None:
         return ({"decision": "error", "motivo": "modelo_no_disponible",
                  "detalle": "Falta modelos_entrenados/. Ejecute: python -m desercion.entrenamiento"},

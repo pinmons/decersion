@@ -22,6 +22,8 @@
       </a>
       <nav aria-label="Secciones">
         <a href="index.html" aria-current="page">Inicio</a>
+        <a href="estudiantes.html">Estudiantes</a>
+        <a href="modelo.html">Modelo</a>
         <a href="evaluar.html">Evaluar</a>
         <a href="proceso.html">Cómo se construyó</a>
         <a href="reporte.html">Reporte</a>
@@ -43,9 +45,12 @@
           <p class="aviso"><strong>Prototipo con datos sintéticos.</strong> Los modelos aprendieron de
             <span data-cifra="n_validos">20 000</span> estudiantes simulados. Sirve para ver y discutir el proceso,
             no para decidir sobre estudiantes reales.</p>
+          <p class="aviso"><strong>Ya opera con una base de datos real.</strong> El mismo código se reentrenó con
+            4 424 estudiantes reales y ahora lee esa base y califica solo a cada estudiante.</p>
           <div class="acciones">
-            <a class="boton boton-tinta" href="evaluar.html">Evaluar a un estudiante</a>
-            <a class="boton" href="proceso.html">Ver cómo se construyó</a>
+            <a class="boton boton-tinta" href="estudiantes.html">Ver a los estudiantes</a>
+            <a class="boton" href="modelo.html">Cómo le va al modelo</a>
+            <a class="boton" href="evaluar.html">Evaluar a uno a mano</a>
           </div>
         </div>
         <figure class="portada-casos" aria-labelledby="casos-titulo">
@@ -78,9 +83,10 @@
   </main>
   <footer class="pie">
     <div class="envoltura">
-      <p>Prototipo académico. Los modelos están implementados desde cero en NumPy y se entrenaron con datos
-        sintéticos: las métricas no representan el desempeño con estudiantes reales. Los oráculos de las pruebas son
-        borradores que debe firmar el equipo.</p>
+      <p>Prototipo académico. Los modelos están implementados desde cero en NumPy. Se construyeron con datos
+        sintéticos (Evaluar, Cómo se construyó, Reporte y Pruebas) y se reentrenaron con una base real y pública de
+        4 424 estudiantes del Instituto Politécnico de Portalegre (Estudiantes y Modelo). No se usa para decidir sobre
+        estudiantes reales. Los oráculos de las pruebas son borradores que debe firmar el equipo.</p>
     </div>
   </footer>
   <div id="globo" class="globo" role="tooltip" hidden></div>
@@ -90,6 +96,7 @@
   <script src="js/aprendizaje.js" defer></script>
   <script src="js/proceso.js" defer></script>
   <script src="js/reporte.js" defer></script>
+  <script src="js/operacion.js" defer></script>
   <script src="js/principal.js" defer></script>
 </body>
 </html>

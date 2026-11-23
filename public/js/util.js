@@ -132,7 +132,8 @@
     }
     for (const mk of marcas) {
       svg.appendChild(s("line", { x1: X(mk.x), x2: X(mk.x), y1: m.arr, y2: alto - m.aba, stroke: "var(--tenue)", "stroke-dasharray": "3 3" }));
-      svg.appendChild(s("text", { x: X(mk.x) + 5, y: m.arr + 10, class: "etiqueta-svg", texto: mk.etiqueta }));
+      const alFinal = X(mk.x) > ancho - m.der - 110;  // cerca del borde derecho la etiqueta va a la izquierda de la raya
+      svg.appendChild(s("text", { x: X(mk.x) + (alFinal ? -5 : 5), y: m.arr + 10, "text-anchor": alFinal ? "end" : "start", class: "etiqueta-svg", texto: mk.etiqueta }));
     }
     for (const se of series) {
       const d = se.valores.map((p, i) => `${i ? "L" : "M"}${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join("");

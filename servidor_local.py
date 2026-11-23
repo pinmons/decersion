@@ -11,7 +11,9 @@ from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from desercion.web import responder_evaluar, responder_rondas, LIMITE_CUERPO
+from urllib.parse import parse_qs, urlparse
+
+from desercion.web import responder_estudiantes, responder_evaluar, responder_rondas, LIMITE_CUERPO
 
 PUBLICO = Path(__file__).resolve().parent / "public"
 
@@ -41,6 +43,9 @@ class Manejador(SimpleHTTPRequestHandler):
         ruta = self.path.split("?")[0]
         if ruta == "/api/rondas":
             return self._json(*responder_rondas())
+        if ruta == "/api/estudiantes":
+            modelo = (parse_qs(urlparse(self.path).query).get("modelo") or ["logistica"])[0]
+            return self._json(*responder_estudiantes(modelo))
         if ruta == "/api/evaluar":
             return self._json(405, {"error": "Use POST"})
         return super().do_GET()
