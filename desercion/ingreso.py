@@ -2,13 +2,16 @@
 
     python -m desercion.ingreso      # entrena y guarda modelos_entrenados/real/ingreso.json
 
-Por qué existe. El contrato manda abstenerse cuando un estudiante de semestre 2 o más aparece sin
-materias cursadas (regla C4): no se inventan notas. En la base real eso le pasa a 180 estudiantes,
-todos de un mismo programa cuyo historial no está cargado. Mandar 180 casos a revisión manual no
-es operar: la abstención del contrato se respeta (no hay resultado definitivo), y mientras llega
-el historial este modelo da una alerta provisional con lo que SÍ se sabe desde la matrícula:
-edad, notas de admisión, beca, deuda, jornada y escolaridad del hogar. Sirve igual para un
-estudiante recién llegado.
+Por qué existe. El contrato manda abstenerse cuando falta un dato obligatorio o el registro se
+contradice: no se inventan notas. En la base de la UPV eso le pasa, sobre todo, a quien no tiene
+ninguna nota del primer cuatrimestre. Mandar esos casos a revisión manual no es operar: la
+abstención del contrato se respeta (no hay resultado definitivo), y mientras el registro completa
+el dato este modelo da una alerta provisional con lo que SÍ se sabe desde la matrícula: nota de
+acceso a la universidad, en qué opción eligió la titulación, dedicación (tiempo completo o parcial)
+y créditos matriculados. Sirve igual para un estudiante recién llegado.
+
+La nota de acceso falta en algunos registros (otras vías de acceso). No se inventa: se usa la media
+de entrenamiento y una marca «sin nota de acceso», que el modelo aprende como un dato más.
 
 Es la misma regresión logística desde cero (modelos/logistica.py), entrenada con los estudiantes
 históricos y medida con los de operación que sí tienen resultado del contrato (nunca los vio).
@@ -21,12 +24,21 @@ import numpy as np
 from . import RAIZ
 
 RUTA_MODELO = RAIZ / "modelos_entrenados" / "real" / "ingreso.json"
-VARIABLES = ["edad_ingreso", "nota_admision", "nota_previa", "becado", "deuda_matricula", "trabaja", "estrato"]
+VARIABLES = ["nota_acceso", "sin_nota_acceso", "preferencia", "tiempo_parcial", "ects"]
+PREFERENCIA_SI_FALTA = 1   # [SUPUESTO] sin dato de preferencia = la eligió en primera opción (lo más común)
 _CACHE = {}
 
 
+def _datos(extra, media_nota):
+    """Extras de la base → las variables del modelo (con la marca de nota faltante)."""
+    nota = extra.get("nota_acceso")
+    return {"nota_acceso": media_nota if nota is None else float(nota), "sin_nota_acceso": float(nota is None),
+            "preferencia": float(extra.get("preferencia") or PREFERENCIA_SI_FALTA),
+            "tiempo_parcial": float(extra.get("tiempo_parcial") or 0), "ects": float(extra.get("ects") or 0)}
+
+
 def _vector(datos):
-    return np.array([float(datos[v] or 0) for v in VARIABLES], dtype=float)
+    return np.array([float(datos[v]) for v in VARIABLES], dtype=float)
 
 
 def _sigmoide(z):
@@ -55,7 +67,9 @@ def entrenar_y_guardar():
 
     historico = [f for f in filas if f["conjunto"] == "historico"]
     prueba = [f for f in filas if f["conjunto"] == "operacion" and valido(f)]
-    X, y = np.array([_vector(f) for f in historico]), np.array([f["deserto"] for f in historico])
+    notas = [f["nota_acceso"] for f in historico if f["nota_acceso"] is not None]
+    media_nota = float(np.mean(notas))
+    X, y = np.array([_vector(_datos(f, media_nota)) for f in historico]), np.array([f["deserto"] for f in historico])
     itr, iva, _ = dividir_estratificado(y, fracciones=(0.85, 0.15, 0.0), semilla=SEMILLA)
     esc = Escalador().ajustar(X[itr])
     Xs = esc.transformar(X)
@@ -65,13 +79,14 @@ def entrenar_y_guardar():
     def puntajes(M):
         return np.clip(np.rint(100 * _sigmoide(modelo.logit(esc.transformar(M)) - ajuste)), 0, 100).astype(int)
 
-    cortes = tp.elegir_cortes(puntajes(X[iva]), y[iva])
-    Xp, yp = np.array([_vector(f) for f in prueba]), np.array([f["deserto"] for f in prueba])
+    cortes = tp.elegir_cortes(puntajes(X[iva]), y[iva], prioridad="fraccion")
+    Xp, yp = np.array([_vector(_datos(f, media_nota)) for f in prueba]), np.array([f["deserto"] for f in prueba])
     pp = puntajes(Xp)
     alto = clasificacion(yp, pp >= cortes["corte_alto"])
     metricas = {"n_prueba": len(prueba), "auc": auc(yp, pp), "recall": alto["recall"], "precision": alto["precision"],
                 "f1": alto["f1"], "accuracy": alto["accuracy"]}
-    datos = {"tipo": "ingreso", "variables": VARIABLES, "escalador": esc.a_dict(), "pesos": modelo.w.tolist(),
+    datos = {"tipo": "ingreso", "variables": VARIABLES, "media_nota_acceso": media_nota,
+             "escalador": esc.a_dict(), "pesos": modelo.w.tolist(),
              "sesgo": float(modelo.b), "ajuste_prior": ajuste,
              "cortes": {"corte_medio": cortes["corte_medio"], "corte_alto": cortes["corte_alto"]},
              "n_entrenamiento": int(len(itr)), "n_validacion": int(len(iva)), "epocas": info["epocas_corridas"],
@@ -92,26 +107,24 @@ def cargar():
 
 
 def _texto(variable, d):
-    if variable == "deuda_matricula":
-        return "Tiene deuda o mora de matrícula"
-    if variable == "becado":
-        return "No tiene beca"
-    if variable == "edad_ingreso":
-        return f"Entró a los {int(d['edad_ingreso'])} años"
-    if variable == "nota_admision":
-        return f"Nota de admisión de {d['nota_admision']:.0f} sobre 200"
-    if variable == "nota_previa":
-        return f"Nota del estudio anterior de {d['nota_previa']:.0f} sobre 200"
-    if variable == "trabaja":
-        return "Estudia de noche (se asume que trabaja)"
-    return f"Hogar con escolaridad en la banda {int(d['estrato'])} de 6"
+    coma = lambda x, n=1: f"{x:.{n}f}".replace(".", ",")
+    if variable == "nota_acceso":
+        return f"Nota de acceso de {coma(d['nota_acceso'], 2)} sobre 14"
+    if variable == "sin_nota_acceso":
+        return "Sin nota de acceso registrada (entró por otra vía)"
+    if variable == "preferencia":
+        return f"Eligió esta titulación como opción {int(d['preferencia'])}"
+    if variable == "tiempo_parcial":
+        return "Matriculado a tiempo parcial"
+    return f"Matrícula de {coma(d['ects'])} créditos ECTS en el primer cuatrimestre"
 
 
-def calificar(datos):
-    """datos: diccionario con VARIABLES. Devuelve el resultado provisional, o None si no hay modelo."""
+def calificar(extra):
+    """extra: los datos de matrícula de la base. Devuelve el resultado provisional, o None si no hay modelo."""
     m = cargar()
-    if m is None or any(datos.get(v) is None for v in VARIABLES):
+    if m is None:
         return None
+    datos = _datos(extra, m["media_nota_acceso"])
     xs = (_vector(datos) - np.asarray(m["escalador"]["media"])) / np.asarray(m["escalador"]["desviacion"])
     aportes = xs * np.asarray(m["pesos"])
     prob = float(_sigmoide(aportes.sum() + m["sesgo"] - m["ajuste_prior"]))
@@ -119,7 +132,8 @@ def calificar(datos):
     c = m["cortes"]
     nivel = "alto" if puntaje >= c["corte_alto"] else "medio" if puntaje >= c["corte_medio"] else "bajo"
     orden = sorted(zip(m["variables"], aportes), key=lambda t: -t[1])
-    porque = [{"variable": v, "peso": round(float(a), 2), "texto": _texto(v, datos)} for v, a in orden if a >= 0.05]
+    porque = [{"variable": v, "peso": round(float(a), 2), "texto": _texto(v, datos)} for v, a in orden
+              if a >= 0.05 and not (v == "nota_acceso" and datos["sin_nota_acceso"])]
     return {"nivel": nivel, "puntaje": puntaje, "probabilidad": round(prob, 4), "cortes": dict(c), "porque": porque}
 
 

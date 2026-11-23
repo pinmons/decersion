@@ -1,0 +1,53 @@
+{
+ "tipo": "ingreso",
+ "variables": [
+  "nota_acceso",
+  "sin_nota_acceso",
+  "preferencia",
+  "tiempo_parcial",
+  "ects"
+ ],
+ "media_nota_acceso": 10.335705373687462,
+ "escalador": {
+  "media": [
+   10.322279011929357,
+   0.04611482591653217,
+   1.7917915609868573,
+   0.011759280608715702,
+   29.780262854507725
+  ],
+  "desviacion": [
+   1.9069997478936098,
+   0.20973375681377915,
+   1.7982767722690056,
+   0.10780074177982521,
+   3.5019870014530587
+  ]
+ },
+ "pesos": [
+  -0.5658020788598895,
+  -0.6159621960905288,
+  0.14099314671020705,
+  0.2690554381345523,
+  0.0820226466851839
+ ],
+ "sesgo": -0.2518477654666236,
+ "ajuste_prior": 2.053759596047493,
+ "cortes": {
+  "corte_medio": 7,
+  "corte_alto": 14
+ },
+ "n_entrenamiento": 4337,
+ "n_validacion": 765,
+ "epocas": 300,
+ "metricas_prueba": {
+  "n_prueba": 901,
+  "auc": 0.712065357568679,
+  "recall": 0.5048543689320388,
+  "precision": 0.24074074074074073,
+  "f1": 0.32601880877742945,
+  "accuracy": 0.7613762486126526
+ },
+ "semilla": 2026,
+ "aviso": "Resultado provisional: solo usa datos de la matrícula. Es más débil que el modelo principal."
+}

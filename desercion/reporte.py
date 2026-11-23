@@ -5,6 +5,7 @@
 Si existe pruebas/resultados/resultados_ronda4.json, también incluye el resumen de la ronda 4.
 """
 import json
+from pathlib import Path
 
 from . import RAIZ
 from .variables import NOMBRES_LEGIBLES
@@ -323,23 +324,60 @@ def reporte_entrenamiento(res):
     return "\n".join(out) + "\n"
 
 
+# Supuestos que solo valen para la corrida sintética (no se listan cuando se entrena con un CSV).
+_SOLO_SINTETICOS = {2, 3, 4, 5}
+_SUPUESTOS_CSV = {
+    17: "Objetivo de cortes: alto ≥ 70 % de recall con ≤ 25 % de estudiantes; en bajo ≤ 10 % de los desertores. Con datos "
+        "reales, si no se puede, se respeta el 25 % en alto y el resto de la detección queda en medio.",
+    21: "Tope de dominancia 35 % de la importancia por permutación, medido por GRUPO de variables correlacionadas "
+        "(|r| ≥ 0,5); se decide en train con un margen de 2 puntos, y el freno se detiene antes de que el modelo deje de "
+        "ganarle (por 0,01 de AUC en train) a la mejor variable sola.",
+}
+
+
 def _reporte_csv(res):
-    """Versión corta del reporte cuando se entrenó con un CSV (no hay fórmula ni techo simulados)."""
+    """Versión del reporte cuando se entrenó con un CSV (no hay fórmula ni techo simulados)."""
     ev, co, en = res["evaluacion"], res["control"], res["entrenamiento"]
     m = ev["modelos"]
-    out = ["# Reporte de entrenamiento – datos cargados desde CSV", "", _aviso(res), "",
-           _tabla(["Métrica en test", *m.keys()],
-                  [[nom, *(fmt.format(v[k]) for v in m.values())] for nom, k, fmt in (
-                      ("Log-loss", "log_loss", "{:.4f}"), ("Brier", "brier", "{:.4f}"), ("AUC-ROC", "auc", "{:.4f}"),
-                      ("Recall (alto)", "recall", "{:.1%}"), ("Precisión (alto)", "precision", "{:.1%}"),
-                      ("% en alto", "fraccion_alto", "{:.1%}"))]), "",
-           f"**Conclusión.** {ev['conclusion']}", "",
-           f"Cortes: medio ≥ {en['cortes']['corte_medio']}, alto ≥ {en['cortes']['corte_alto']}. {en['cortes']['nota']}", "",
-           "Importancia por permutación (logística): " + ", ".join(
-               f"{_leg(n)} {_p(x)}" for n, x in zip(co["importancia_test"]["variables"], co["importancia_test"]["logistica_pct"])), "",
-           "![Curvas](curvas_perdida.png)", "", "![Importancia](importancia_permutacion.png)", "", "![Calibración](calibracion.png)", ""]
-    out += _seccion_ronda4()
-    out += ["## Supuestos [SUPUESTO]", ""] + [f"{i}. {s}" for i, s in enumerate(SUPUESTOS, 1)]
+    filas = (("Log-loss", "log_loss", "{:.4f}"), ("Brier", "brier", "{:.4f}"), ("AUC-ROC", "auc", "{:.4f}"),
+             ("F1 (alto)", "f1", "{:.3f}"), ("Recall (alto)", "recall", "{:.1%}"), ("Precisión (alto)", "precision", "{:.1%}"),
+             ("% en alto", "fraccion_alto", "{:.1%}"))
+    out = ["# Reporte de entrenamiento – base real", "", _aviso(res), "",
+           f"Prueba: {ev['n_test']} estudiantes que ningún modelo vio (tasa de deserción {_p(ev['tasa_test'])}).", "",
+           _tabla(["Métrica en test", *m.keys()], [[nom, *(fmt.format(v[k]) for v in m.values())] for nom, k, fmt in filas]), "",
+           f"**Conclusión.** {ev['conclusion']}", ""]
+    if ev.get("sin_evidentes"):
+        se, evd = ev["sin_evidentes"], ev["evidentes"]
+        out += [f"### Sin los casos evidentes ({se['n']} estudiantes, tasa {_p(se['tasa'])})", "",
+                f"Casos evidentes = no aprobó ninguna materia del periodo anterior: {evd['n']} en prueba, de los que desertó el "
+                f"{_p(evd['tasa'])}.", "",
+                _tabla(["Métrica sin evidentes", *se["modelos"].keys()],
+                       [[nom, *(fmt.format(v[k]) for v in se["modelos"].values())] for nom, k, fmt in filas]), ""]
+    if ev.get("una_variable"):
+        u = ev["una_variable"]
+        out += [f"**Contra una sola variable.** La mejor variable sola en prueba es `{u['mejor']}` (AUC {u['auc_mejor']:.4f})"
+                + (f"; sin casos evidentes, `{u['sin_evidentes']['mejor']}` ({u['sin_evidentes']['auc_mejor']:.4f})"
+                   if u.get("sin_evidentes") else "") + ".", ""]
+    it = co["importancia_test"]
+    out += [f"Cortes: medio ≥ {en['cortes']['corte_medio']}, alto ≥ {en['cortes']['corte_alto']}. {en['cortes']['nota']}", "",
+            "Importancia por permutación en prueba, por variable:", "",
+            _tabla(["Variable", "Logística", "Red neuronal"],
+                   [[_leg(n), _p(a), _p(b)] for n, a, b in zip(it["variables"], it["logistica_pct"], it["red_pct"])]), ""]
+    if it.get("grupos"):
+        out += [f"Por grupo de variables correlacionadas (lo que mide el tope de {_p(co['tope'], 0)}):", "",
+                _tabla(["Grupo", "Logística", "Red neuronal"],
+                       [[" + ".join(_leg(n) for n in g["variables"]), _p(g["logistica_pct"]), _p(g["red_pct"])]
+                        for g in it["grupos"]]), "",
+                "Tope cumplido: logística " + ("sí" if it["cumple_tope"]["logistica"] else "**no**") + ", red neuronal "
+                + ("sí" if it["cumple_tope"]["red"] else "**no**") + ".", ""]
+    out += ["![Curvas](curvas_perdida.png)", "", "![Importancia](importancia_permutacion.png)", "", "![Calibración](calibracion.png)", ""]
+    out += ["## Pruebas de estrés (ronda 4, modelos de la corrida principal)", ""] + _seccion_ronda4()[2:]
+    supuestos = [_SUPUESTOS_CSV.get(i, t) for i, t in enumerate(SUPUESTOS) if i not in _SOLO_SINTETICOS]
+    out += ["## Supuestos [SUPUESTO]", ""] + [f"{i}. {t}" for i, t in enumerate(supuestos, 1)]
+    if Path(res.get("datos", {}).get("archivo", "")).name == "estudiantes_reales.csv":
+        from .datos_reales import FUENTE, SUPUESTOS_MAPEO
+        out += ["", f"## De la fuente al contrato ({FUENTE['institucion']})", "", FUENTE["poblacion"], "",
+                _tabla(["Campo", "De dónde sale", "Tipo"], [[f"`{c}`", o, t] for c, o, t in SUPUESTOS_MAPEO])]
     return "\n".join(out) + "\n"
 
 

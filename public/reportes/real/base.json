@@ -1,83 +1,86 @@
 {
  "archivo": "registro_academico.sqlite",
  "motor": "SQLite",
- "total": 4424,
- "historico": 3537,
- "operacion": 887,
+ "total": 6142,
+ "historico": 5102,
+ "operacion": 1040,
+ "reserva": 0,
+ "muestra": false,
  "fuente": {
-  "nombre": "Predict Students' Dropout and Academic Success",
-  "institucion": "Instituto Politécnico de Portalegre (Portugal)",
-  "autores": "Realinho, Vieira Martins, Machado y Baptista (2021)",
-  "repositorio": "UCI Machine Learning Repository",
-  "doi": "https://doi.org/10.24432/C5MC89",
+  "nombre": "StudentDropoutDataset",
+  "institucion": "Universitat Politècnica de València (España)",
+  "autores": "Igualde-Sáez, Garcia-Sabater, Benlloch-Dualde, Soriano Jiménez y Maheut (2025)",
+  "repositorio": "Zenodo",
+  "doi": "https://doi.org/10.5281/zenodo.17239943",
   "licencia": "CC BY 4.0",
-  "descripcion": "Registros reales y anonimizados de estudiantes de pregrado, con su matrícula, su rendimiento en los dos primeros semestres y lo que pasó después: desertó, sigue matriculado o se graduó."
+  "descripcion": "Registros reales y anonimizados de estudiantes de la UPV (cursos 2021-22 y 2022-23 en esta corrida): matrícula, notas por asignatura, días conectados al wifi del campus, actividad en el aula virtual y si abandonó la titulación (dos cursos seguidos sin matricularse).",
+  "poblacion": "Primer año de grado, cohortes 2021 y 2022, con lo que se sabía al terminar el primer cuatrimestre."
  },
  "mapeo": [
   {
    "campo": "id_estudiante",
-   "origen": "Número de fila de la fuente (IPP-0001…). La fuente es anónima.",
+   "origen": "Código propio por cohorte (UPV21-0001…). La fuente solo trae un identificador cifrado.",
    "tipo": "directo"
   },
   {
    "campo": "nivel_formacion",
-   "origen": "Siempre pregrado: todos los programas de la fuente lo son.",
+   "origen": "Siempre pregrado: solo entran titulaciones de grado (180 créditos o más).",
    "tipo": "directo"
   },
   {
    "campo": "estado_matricula",
-   "origen": "Siempre activo: en el corte (fin del primer año) todos estaban matriculados.",
+   "origen": "Siempre activo: quien ya había anulado toda su matrícula antes de febrero no entra (ya se fue; no hay nada que predecir).",
    "tipo": "directo"
   },
   {
    "campo": "semestre",
-   "origen": "Siempre 3: la fuente describe los semestres 1 y 2, así que el estudiante va a entrar al tercero.",
+   "origen": "Siempre 2: se usa solo lo que se sabía al terminar el primer cuatrimestre, para avisar temprano.",
    "tipo": "supuesto"
   },
   {
    "campo": "promedio_acumulado",
-   "origen": "Nota media de las materias aprobadas en los semestres 1 y 2. La escala portuguesa (0 a 20, se aprueba con 10) se pasa a la del contrato (0 a 5, se aprueba con 3,0) alineando la nota de aprobación. Quien no aprobó ninguna materia queda en 0,0.",
+   "origen": "Nota media de las asignaturas APROBADAS del primer cuatrimestre, como la nota media del expediente en España. La escala española (0 a 10, se aprueba con 5) se pasa a la del contrato (0 a 5, se aprueba con 3,0) alineando el aprobado. Quien no aprobó ninguna queda en 0,0; quien no tiene ninguna nota, sin dato.",
    "tipo": "aproximado"
   },
   {
    "campo": "materias_cursadas_periodo_anterior",
-   "origen": "Materias inscritas en el segundo semestre.",
-   "tipo": "directo"
+   "origen": "Asignaturas del primer cuatrimestre en las que estaba matriculado. La fuente no dice de qué cuatrimestre es cada asignatura: se deduce de cuándo tiene actividad el aula virtual de esa asignatura (80 % o más entre septiembre y enero = primer cuatrimestre). Las anuales no cuentan.",
+   "tipo": "aproximado"
   },
   {
    "campo": "materias_reprobadas",
-   "origen": "Inscritas menos aprobadas en el segundo semestre (no presentarse cuenta como reprobar).",
+   "origen": "De esas, las suspendidas o sin nota (no presentarse cuenta como reprobar).",
    "tipo": "directo"
   },
   {
    "campo": "creditos_inscritos",
-   "origen": "Materias del segundo semestre × 2. La fuente no trae créditos; con esa equivalencia la carga máxima del contrato (12 materias) cabe en sus 25 créditos.",
+   "origen": "Créditos ECTS del primer cuatrimestre (las anuales cuentan la mitad) × 2/3, para que la carga habitual (30 ECTS) quede en 20 y la máxima del contrato (25) en 37,5 ECTS. No se usan los del segundo cuatrimestre: se pueden cambiar en febrero, después del corte.",
    "tipo": "aproximado"
   },
   {
    "campo": "porcentaje_asistencia",
-   "origen": "La fuente no registra asistencia. Se usa el porcentaje de materias del segundo semestre en las que el estudiante se presentó a evaluación (0 si no se presentó a ninguna).",
+   "origen": "La fuente no registra asistencia. Se usa la presencia de septiembre a enero como el promedio de tres porcentajes: días conectado al wifi del campus (sobre 78), días que entró al aula virtual de cada asignatura (sobre 65.5) y tareas o cuestionarios entregados por asignatura (sobre 16). Cada referencia es lo que alcanza el 5 % más presente; tope de 100. Quien no tiene registro de wifi (la fuente no dice si no fue o si no se registró) se mide solo con el aula virtual.",
    "tipo": "aproximado"
   },
   {
    "campo": "estrato",
-   "origen": "La fuente no tiene estrato. Se usa la escolaridad más alta de los padres en 6 bandas (1 = sin primaria completa … 6 = maestría o doctorado). Si no se conoce la de ninguno, 3.",
-   "tipo": "aproximado"
+   "origen": "Sin dato: la fuente trae los estudios del padre y de la madre como letras anonimizadas sin significado publicado, así que no se pueden ordenar. Se pone 3 a todos; al no variar, el modelo no lo usa.",
+   "tipo": "supuesto"
   },
   {
    "campo": "trabaja",
-   "origen": "La fuente no dice si trabaja. Se marca «sí» a quien estudia en jornada nocturna.",
+   "origen": "Se marca «sí» a quien está matriculado a tiempo parcial. La fuente no dice si trabaja.",
    "tipo": "aproximado"
   },
   {
    "campo": "deuda_matricula",
-   "origen": "Sí, cuando la fuente lo marca como deudor o con la matrícula sin pagar al día.",
-   "tipo": "directo"
+   "origen": "Sin informar (es opcional en el contrato). La fuente marca impagos, pero ninguno de los estudiantes con impago figura como abandono: la etiqueta los trata aparte y el dato enseñaría lo contrario de lo real.",
+   "tipo": "supuesto"
   },
   {
    "campo": "deserto",
-   "origen": "1 si el desenlace real fue «desertó»; 0 si se graduó o sigue matriculado.",
-   "tipo": "directo"
+   "origen": "1 si la fuente lo marca como abandono («A»: dos cursos seguidos sin matricularse en la titulación); 0 si no. La letra no está documentada: se dedujo de los datos.",
+   "tipo": "supuesto"
   }
  ]
 }

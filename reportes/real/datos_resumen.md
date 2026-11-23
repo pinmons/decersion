@@ -4,17 +4,18 @@
 
 | Concepto | Valor |
 |---|---|
-| Filas leídas | 4424 |
-| Válidas con etiqueta | 4162 |
-| Descartadas | 262 |
-| Tasa de deserción | 31.8 % |
-| Sin deuda informada | 0 |
+| Filas leídas | 6142 |
+| Válidas con etiqueta | 6003 |
+| Descartadas | 139 |
+| Tasa de deserción | 11.4 % |
+| Sin deuda informada | 6003 |
 
 ## Descartes por motivo
 
 | Motivo | Filas |
 |---|---|
-| abstener(datos_contradictorios) | 180 |
-| error(fuera_de_rango) | 82 |
+| abstener(campo_faltante) | 104 |
+| abstener(datos_contradictorios) | 31 |
+| error(fuera_de_rango) | 4 |
 
 ![Distribuciones](distribuciones.png)
