@@ -38,49 +38,62 @@ dedicación y créditos. Nada posterior entra al modelo. Esa corrida vive aparte
 `reportes/real/`) y no toca los modelos sintéticos ni las rondas.
 
 > La base anterior (Instituto Politécnico de Portalegre, UCI 697) se descartó: el modelo dependía en un 85 % de la
-> tasa de reprobación, y esa variable casi era la respuesta (sola daba AUC 0,891, más que el modelo; el 94 % de quien
-> reprobó todo ya se había ido).
+> tasa de reprobación, y esa variable casi era la respuesta.
 
-| Métrica en prueba (901 estudiantes reales, abandona el 11 %) | Reglas | Logística | Red neuronal |
+**Contrato ampliado.** Con los 12 campos del contrato el modelo real apenas le ganaba a una sola variable (AUC 0,743
+frente a 0,728). El modelo real recibe ahora, en el mismo registro, lo que la base sabe al cerrar el primer
+cuatrimestre: **notas** (nota media y mínima, no presentadas), **actividad** (días en el campus de septiembre a
+noviembre y de diciembre a enero, días en el aula virtual y entregas por asignatura), **matrícula y admisión** (nota de
+acceso, de bachillerato, opción, vía de ingreso) y la **tasa de abandono de su titulación** entre los estudiantes de
+entrenamiento. Lo que falta se imputa con la mediana de entrenamiento más una indicadora «sin dato» (guardadas en el
+JSON del modelo) y la ficha lo dice. El contrato de 12 campos, el modo reglas, «Probar un caso» y las rondas no cambian.
+Todo en [CONTRATO_AMPLIADO.md](CONTRATO_AMPLIADO.md).
+
+Los **334 estudiantes con impago** no entran: la fuente no marca a ninguno como abandono (0 de 334) aunque el 69 % no
+aprobó nada; con ellos el modelo aprendía que «no tener nota de acceso» protege. Quedan 5 808 (abandona el 12 %).
+
+| En prueba (864 estudiantes reales, abandona el 12 %) | Reglas | Logística | Red neuronal |
 |---|---|---|---|
-| AUC-ROC | 0,729 | 0,743 | 0,742 |
-| F1 (nivel alto) | 0,38 | 0,38 | 0,39 |
-| Detección (recall, nivel alto) | 48 % | 62 % | 60 % |
-| Precisión (nivel alto) | 31 % | 27 % | 29 % |
-| % de estudiantes en alto | 17 % | 26 % | 24 % |
-| **Sin los casos evidentes** (811; quien no aprobó nada): AUC | 0,675 | 0,703 | 0,703 |
-| Sin los casos evidentes: F1 | 0,26 | 0,30 | 0,31 |
+| AUC-ROC | 0,713 | 0,798 | 0,807 |
+| F1 (nivel alto) | 0,38 | 0,48 | 0,46 |
+| Detección (recall, nivel alto) | 40 % | 63 % | 66 % |
+| Precisión (nivel alto) | 37 % | 38 % | 36 % |
+| % de estudiantes en alto | 13 % | 20 % | 22 % |
+| **Sin los casos evidentes** (801; quien no aprobó nada): AUC | 0,589 | 0,723 | 0,740 |
+| Sin los casos evidentes: F1 | 0,09 | 0,33 | 0,33 |
+| Con solo los 12 campos (misma población y división): AUC | – | 0,753 | 0,754 |
 
-- **Contra una sola variable.** La mejor variable sola es la tasa de reprobación (AUC 0,729; 0,678 sin los
-  evidentes). Los modelos le ganan por poco (0,015 y 0,026): es lo que aportan las demás variables.
-- **De qué depende.** Importancia por permutación en prueba, medida por grupo de variables correlacionadas
-  (promedio y tasa de reprobación cuentan juntas): rendimiento del primer cuatrimestre 48 % (logística) y 48 % (red),
-  presencia 36 %, asignaturas cursadas 12–13 %, tiempo parcial 3–4 %. **El tope de 35 % no se cumple**: bajarlo más
-  hacía que el modelo adivinara peor que la tasa de reprobación sola, y el freno se detiene ahí. Por variable, la que
-  más pesa es la presencia (39 %).
-- **Por qué la precisión es baja.** Solo abandona el 11 %. Para no marcar en alto a más de un cuarto de la cohorte,
-  el nivel alto detecta al 62 % de los que abandonan y en él abandona el 27 % (2,4 veces la tasa base); el resto de
-  la detección queda en medio. En bajo abandona el 4 %.
-- **Casos evidentes.** En la UPV quien no aprueba nada abandona solo en un 34–36 %: no son evidentes, así que los
-  modelos aprenden con todos (sin `--sin-evidentes`). La nota sin ellos se da aparte, y es la honesta.
-- `base_datos/registro_academico.sqlite` hace de registro académico. `GET /api/estudiantes` la lee, pasa cada
-  registro por el Paso 1 y el modelo, y devuelve un resultado por estudiante con el porqué y en qué mejorar. En
-  operación hay 1 040: los 901 de prueba y los 139 que el contrato no deja pasar.
-- **Nadie queda en revisión manual.** 135 registros hacen que el contrato se abstenga (104 sin ninguna nota del
-  primer cuatrimestre, 31 con presencia de 1 % o menos); para ellos `desercion/ingreso.py` da un resultado
-  **provisional** con la matrícula: nota de acceso, opción, dedicación y créditos (AUC 0,712, F1 0,33). Los 4 con un
-  dato fuera de rango se devuelven al registro.
-- **Límites.** La base no registra asistencia ni si el estudiante trabaja: la asistencia es la presencia en el
-  campus (wifi) y el aula virtual, y el trabajo, la matrícula a tiempo parcial. El estrato no se pudo construir (los
-  estudios de los padres vienen como letras anonimizadas) y la deuda no se usa (la etiqueta trata aparte a los
-  impagos). Qué letra es abandono («A») se dedujo de los datos. Todo está en `desercion/datos_reales.py`
-  (`SUPUESTOS_MAPEO`) y en la página Modelo. No se usa para decidir sobre estudiantes reales.
+- **Contra una sola variable.** La mejor sola es la tasa de reprobación (AUC 0,718); sin los evidentes, la tasa de
+  abandono de la titulación (0,706). El modelo les gana por 0,080 y 0,017 (logística) y por 0,089 y 0,034 (red).
+- **Qué aporta cada fuente** (nuestra logística entrenada solo con esas variables, AUC en prueba): notas 0,732,
+  actividad 0,659, matrícula y admisión 0,718, titulación 0,709, todo menos las notas 0,769, todo 0,815 (sin el freno
+  del tope). Ninguna fuente sola llega.
+- **De qué depende** (importancia por permutación en prueba, por fuente): titulación 36 % (logística) y 35 % (red),
+  notas 31 % y 22 %, actividad 18 % y 23 %, matrícula y admisión 15 % y 20 %. **El tope de 35 % no se cumple por poco**
+  (la titulación, 35,6 % y 35,3 %). Frenarla más pasa el peso a las notas; el freno ya cuesta 0,018 de AUC (0,815 →
+  0,798 en la logística).
+- **Verificación.** Con las mismas variables, división e imputación, nuestra logística sin restricción de signo da
+  0,8215 y la de scikit-learn 0,8214. La restricción de signo de las variables ampliadas (para que los porqués tengan
+  sentido) y el tope cuestan juntos 0,024.
+- **Precisión.** Solo abandona el 12 %: en alto abandona el 38 % (3,2 veces la tasa del grupo), en medio el 8 % y en
+  bajo el 4 %. La precisión es baja aunque el modelo ordene bien.
+- **Aviso antes de las notas.** `desercion/ingreso.py` usa matrícula, admisión, actividad y titulación, sin notas
+  (AUC 0,761, F1 0,40, detecta el 59 %). Da el resultado provisional de los 56 registros que el contrato no califica
+  (36 sin notas, 20 con presencia de 1 % o menos). Nadie queda a revisión manual.
+- `base_datos/registro_academico.sqlite` (1,1 MB) hace de registro académico; `GET /api/estudiantes` responde ~1 MB con
+  920 estudiantes (los 864 de prueba y los 56 que el contrato no deja pasar), cada uno con su porqué y en qué mejorar
+  en lenguaje llano («Entró al aula virtual 7 días por asignatura; lo usual son 36»).
+- **Límites.** La base no registra asistencia ni si el estudiante trabaja (se aproximan con la presencia y la matrícula
+  a tiempo parcial); el estrato no se pudo construir; la deuda no se usa; qué letra es abandono se dedujo de los datos.
+  Todo está en `desercion/datos_reales.py` (`SUPUESTOS_MAPEO`) y en la página Modelo. No se usa para decidir sobre
+  estudiantes reales.
 
 ```bash
 python -m desercion.datos_reales                                                       # extracto → CSV del contrato
 python -m desercion.datos_reales --extraer                                             # rehace el extracto (baja ~270 MB de Zenodo)
-python -m desercion.entrenamiento --csv datos/reales/estudiantes_reales.csv --nombre real  # entrena aparte (~2 min)
-python -m desercion.operacion                                                          # arma la base, entrena el modelo de ingreso y deja la copia para la web
+python -m desercion.entrenamiento --csv datos/reales/estudiantes_reales.csv --nombre real  # entrena aparte con el contrato ampliado (~3 min)
+# --solo-contrato: entrena solo con los 12 campos aunque el CSV traiga los ampliados (para comparar)
+python -m desercion.operacion                                                          # arma la base, entrena el aviso antes de las notas y deja la copia para la web
 ```
 
 ## Instalación
@@ -153,6 +166,8 @@ El entrenamiento no corre en Vercel: se hace en local, y los pesos (`modelos_ent
 contexto/               trabajo previo (solo lectura): contrato, casos, oráculos, v1–v3
 desercion/
   contrato.py           esquema E, Paso 1, R3.4
+  contrato_ampliado.py  campos extra del modelo real: validación, imputación con indicadora, tasa por titulación
+  textos.py             porqués y mejoras en lenguaje llano (operación y aviso antes de las notas)
   reglas.py             Pasos 2 y 3 por reglas (línea base)
   sistema.py            evaluar(entrada, modo, modelo)
   inferencia.py         modo aprendido (solo NumPy)
@@ -167,7 +182,7 @@ desercion/
   reporte.py, figuras.py, publicar.py, web.py
   datos_reales.py       base real (UPV, Zenodo) → extracto → esquema del contrato, con sus supuestos
   operacion.py          base SQLite → Paso 1 → modelo → un resultado por estudiante
-  ingreso.py            resultado provisional para quien no tiene historial académico
+  ingreso.py            aviso antes de las notas: resultado provisional sin notas
   paginas_web.py        plantilla común; paginas/ tiene el HTML de inicio, estudiantes, modelo y proceso
 base_datos/             registro académico real en SQLite (lo lee la API)
 pruebas/                arnés de las rondas 1–4, casos U01–U15 y su oráculo, verificaciones

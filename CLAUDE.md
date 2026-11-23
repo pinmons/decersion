@@ -23,6 +23,10 @@ trabajo previo está en `contexto/` y es de solo lectura.
 - La corrida con la base real (UPV, Zenodo; primer año de grado al cerrar el primer cuatrimestre) va aparte: `--nombre real`, `modelos_entrenados/real/`,
   `reportes/real/`. Nunca reemplaza a la sintética, que es la que prueban las rondas. Las páginas Estudiantes y
   Modelo usan la real; sus límites (asistencia y trabaja aproximados, estrato y deuda sin dato, letra de abandono deducida) se dicen siempre.
+- El modelo real usa un **contrato ampliado** (`desercion/contrato_ampliado.py`, `CONTRATO_AMPLIADO.md`): los 12 campos
+  más notas, actividad, admisión y titulación, todos opcionales. El contrato de 12 campos no cambia y las rondas no lo
+  usan. Lo que falta se imputa con la mediana de entrenamiento + indicadora (en el JSON del modelo) y se dice «sin dato».
+  Los estudiantes con impago no entran en la base real (su etiqueta no marca abandono).
 - Nada escribe dentro de `contexto/`: los resultados van a `reportes/` o `pruebas/resultados/`.
 
 ## Entorno
@@ -59,6 +63,7 @@ trabajo previo está en `contexto/` y es de solo lectura.
 - Entrenar: `python -m desercion.entrenamiento` (datos reales: `--csv archivo.csv`)
 - Base real: `python -m desercion.datos_reales` (`--extraer` rehace el extracto desde Zenodo), luego
   `python -m desercion.entrenamiento --csv datos/reales/estudiantes_reales.csv --nombre real` y
-  `python -m desercion.operacion` (arma `base_datos/` y la copia de la web)
+  `python -m desercion.operacion` (arma `base_datos/`, el aviso antes de las notas y la copia de la web). Con
+  `--solo-contrato` el entrenamiento ignora los campos ampliados (para comparar).
 - App local: `streamlit run app.py`
 - Web local (como en Vercel): `python servidor_local.py` (o `vercel dev`)
