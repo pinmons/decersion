@@ -19,14 +19,15 @@ import time
 from datetime import datetime, timezone
 
 from . import RAIZ
-from .contrato import CAMPOS, paso1_validar
+from . import ingreso
+from .contrato import ACCION_POR_NIVEL, CAMPOS, paso1_validar
 from .web import responder_evaluar
 
 RUTA_BD = RAIZ / "base_datos" / "registro_academico.sqlite"
 DIR_WEB = RAIZ / "public" / "reportes" / "real"
 MODELOS_OPERACION = ("logistica", "red_neuronal", "reglas")
 BOOLEANOS = ("trabaja", "deuda_matricula")
-EXTRAS = ("deserto", "desenlace", "programa", "edad_ingreso", "becado")
+EXTRAS = ("deserto", "desenlace", "programa", "edad_ingreso", "becado", "nota_admision", "nota_previa")
 
 ESQUEMA_SQL = """
 CREATE TABLE estudiantes (
@@ -35,6 +36,7 @@ CREATE TABLE estudiantes (
     creditos_inscritos INTEGER, materias_cursadas_periodo_anterior INTEGER, materias_reprobadas INTEGER,
     porcentaje_asistencia REAL, estrato INTEGER, trabaja INTEGER, deuda_matricula INTEGER,
     deserto INTEGER, desenlace TEXT, programa TEXT, edad_ingreso INTEGER, becado INTEGER,
+    nota_admision REAL, nota_previa REAL,
     conjunto TEXT NOT NULL CHECK (conjunto IN ('historico', 'operacion'))
 );
 CREATE INDEX por_conjunto ON estudiantes (conjunto);
@@ -166,7 +168,9 @@ def procesar(modelo="logistica"):
     t_lectura = time.perf_counter()
     modo = "reglas" if modelo == "reglas" else "aprendido"
     estudiantes, cortes = [], None
-    conteo = {"resultado": 0, "abstener": 0, "error": 0}
+    conteo = {"resultado": 0, "abstener": 0, "error": 0, "provisional": 0}
+    niveles_provisional = {n: {"n": 0, "desertaron": 0} for n in ("bajo", "medio", "alto")}
+    sin_historial = {}
     niveles = {n: {"n": 0, "desertaron": 0} for n in ("bajo", "medio", "alto")}
     matriz = {"vp": 0, "fp": 0, "fn": 0, "vn": 0}
     for registro, extra in cohorte:
@@ -189,15 +193,46 @@ def procesar(modelo="logistica"):
             matriz[clave] += 1
         else:
             fila.update(motivo=salida.get("motivo"), campo=salida.get("campo") or ", ".join(salida.get("campos", [])))
+            # Sin historial académico (regla C4): el contrato se abstiene, y el modelo de ingreso da una alerta
+            # provisional con los datos de la matrícula. Nadie tiene que revisar el caso a mano.
+            if salida["decision"] == "abstener" and registro.get("materias_cursadas_periodo_anterior") == 0:
+                prov = ingreso.calificar({**extra, **registro})
+                if prov:
+                    conteo["abstener"] -= 1
+                    conteo["provisional"] += 1
+                    sin_historial[extra["programa"]] = sin_historial.get(extra["programa"], 0) + 1
+                    niveles_provisional[prov["nivel"]]["n"] += 1
+                    niveles_provisional[prov["nivel"]]["desertaron"] += extra["deserto"]
+                    mejorar = ([{"variable": "deuda_matricula", "texto": MEJORAS["deuda_matricula"]}]
+                               if registro.get("deuda_matricula") else [])
+                    if prov["nivel"] != "bajo":
+                        mejorar.append({"variable": "ingreso", "texto": "Asignarle un tutor de primer año mientras llega su historial."})
+                    fila.update(decision="provisional", nivel=prov["nivel"], puntaje=prov["puntaje"],
+                                probabilidad=prov["probabilidad"], porque=prov["porque"], mejorar=mejorar,
+                                accion=ACCION_POR_NIVEL[prov["nivel"]],
+                                ingreso={"edad": extra["edad_ingreso"], "nota_admision": extra["nota_admision"],
+                                         "nota_previa": extra["nota_previa"]})
         estudiantes.append(fila)
     orden = {"alto": 0, "medio": 1, "bajo": 2}
+    for f in estudiantes:
+        f.pop("accion", None) if f["decision"] == "error" else None
     estudiantes.sort(key=lambda f: (orden.get(f.get("nivel"), 3), -(f.get("puntaje") or 0), f["id"]))
     t_fin = time.perf_counter()
     return {
         "ejecucion": {"fecha": datetime.now(timezone.utc).isoformat(timespec="seconds"), "modelo": modelo,
                       "ms_lectura": round(1000 * (t_lectura - t0), 1), "ms_modelo": round(1000 * (t_fin - t_lectura), 1),
-                      "leidos": len(cohorte), "calificados": conteo["resultado"], "a_revision": conteo["abstener"],
-                      "con_error": conteo["error"]},
+                      "leidos": len(cohorte), "calificados": conteo["resultado"], "provisionales": conteo["provisional"],
+                      "a_revision": conteo["abstener"], "con_error": conteo["error"]},
+        # Lo que el sistema le pide al registro académico, una sola vez por causa (no un caso por estudiante).
+        "avisos": [{"tipo": "falta_historial", "programa": p, "n": n,
+                    "texto": f"Falta cargar el historial académico de {n} estudiantes de {p}. "
+                             "Mientras llega, tienen un resultado provisional."}
+                   for p, n in sorted(sin_historial.items(), key=lambda t: -t[1])]
+                  + ([{"tipo": "fuera_de_rango", "n": conteo["error"],
+                       "texto": f"{conteo['error']} registros traen un dato fuera del rango del contrato y se devolvieron "
+                                "al registro para corregir."}] if conteo["error"] else []),
+        "niveles_provisional": niveles_provisional, "cortes_provisional": (ingreso.cargar() or {}).get("cortes"),
+        "ingreso": (ingreso.cargar() or {}).get("metricas_prueba"),
         "base": resumen_bd(), "cortes": cortes, "niveles": niveles, "matriz": matriz,
         "programas": sorted({f["programa"] for f in estudiantes}), "estudiantes": estudiantes,
     }
@@ -212,10 +247,13 @@ def publicar_copia():
     base = {**resumen_bd(), "mapeo": [{"campo": c, "origen": o, "tipo": t} for c, o, t in SUPUESTOS_MAPEO]}
     (DIR_WEB / "base.json").write_text(json.dumps(base, ensure_ascii=False, indent=1), encoding="utf-8")
     e = corrida["ejecucion"]
-    print(f"Operación: {e['leidos']} leídos → {e['calificados']} calificados, {e['a_revision']} a revisión, "
+    print(f"Operación: {e['leidos']} leídos → {e['calificados']} calificados, {e['provisionales']} provisionales, "
+          f"{e['a_revision']} a revisión, "
           f"{e['con_error']} con error ({e['ms_lectura'] + e['ms_modelo']:.0f} ms). Copia en public/reportes/real/")
 
 
 if __name__ == "__main__":
     construir_bd()
+    ingreso.entrenar_y_guardar()
+    ingreso._CACHE.clear()
     publicar_copia()

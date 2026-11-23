@@ -9,6 +9,7 @@ cada paso lo dibuja public/js/proceso.js con los datos reales de public/reportes
 from html import escape
 
 from . import RAIZ
+from .paginas import estudiantes as paginas_estudiantes, inicio as paginas_inicio, modelo as paginas_modelo, proceso as paginas_proceso
 
 PUBLICO = RAIZ / "public"
 
@@ -60,16 +61,18 @@ FAVICON = ("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox
            "fill='%23f2b23a'/%3E%3Ccircle cx='16' cy='23' r='3.4' fill='%234fb57a'/%3E%3C/svg%3E")
 FUENTES = ("https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400"
            "&family=Literata:ital,opsz,wght@0,7..72,400..800;1,7..72,400..600&display=swap")
-SCRIPTS = ["util", "recorrido", "evaluador", "aprendizaje", "proceso", "reporte", "operacion", "principal"]
+SCRIPTS = ["util", "recorrido", "evaluador", "aprendizaje", "proceso", "reporte"]  # comunes; "principal" va al final
 
 
-def _pagina(archivo, titulo, descripcion, pagina, seccion, cuerpo):
-    nav = [("index.html", "Inicio", "inicio"), ("estudiantes.html", "Estudiantes", "estudiantes"), ("modelo.html", "Modelo", "modelo"),
-           ("evaluar.html", "Evaluar", "evaluar"), ("proceso.html", "Cómo se construyó", "proceso"),
-           ("reporte.html", "Reporte", "reporte"), ("pruebas.html", "Pruebas", "pruebas")]
+def _pagina(archivo, titulo, descripcion, pagina, seccion, cuerpo, estilos=(), scripts=()):
+    # Cuatro secciones (ley de Hick). El reporte y las pruebas se abren desde «Cómo se hizo».
+    nav = [("estudiantes.html", "Estudiantes", "estudiantes"), ("modelo.html", "Modelo", "modelo"),
+           ("evaluar.html", "Probar un caso", "evaluar"), ("proceso.html", "Cómo se hizo", "proceso")]
+    seccion = {"reporte": "proceso", "pruebas": "proceso"}.get(seccion, seccion)
     enlaces = "\n        ".join(
         f'<a href="{h}"{" aria-current=\"page\"" if seccion == s else ""}>{t}</a>' for h, t, s in nav)
-    scripts = "\n  ".join(f'<script src="js/{n}.js" defer></script>' for n in SCRIPTS)
+    scripts = "\n  ".join(f'<script src="js/{n}.js" defer></script>' for n in [*SCRIPTS, *scripts, "principal"])
+    hojas = "".join(f'\n  <link rel="stylesheet" href="{h}">' for h in ["estilos-pasos.css", *estilos])
     return f"""<!doctype html>
 <html lang="es">
 <head>
@@ -81,7 +84,7 @@ def _pagina(archivo, titulo, descripcion, pagina, seccion, cuerpo):
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="{FUENTES}">
-  <link rel="stylesheet" href="estilos.css">
+  <link rel="stylesheet" href="estilos.css">{hojas}
 </head>
 <body data-pagina="{pagina}">
   <!-- Generado por python -m desercion.paginas_web: edite la plantilla, no este archivo. -->
@@ -126,48 +129,10 @@ def _lista_pasos(actual=None, con_descripcion=False):
 
 
 def inicio():
-    cuerpo = f"""    <section class="portada">
-      <div class="envoltura portada-rejilla">
-        <div class="portada-texto">
-          <h1>Detectar a tiempo a quién se le está haciendo cuesta arriba la universidad.</h1>
-          <p class="entrada">Entre el segundo y el cuarto semestre de pregrado es cuando más estudiantes se van. Este
-            prototipo lee el registro académico y socioeconómico de un estudiante y le dice a bienestar universitario
-            qué tan alto es su riesgo de desertar y qué hacer: seguimiento, tutoría o remisión.</p>
-          <p class="entrada">Cuando los datos están mal, los rechaza. Cuando no le corresponde decidir, se abstiene y le
-            pasa el caso a una persona.</p>
-          <p class="aviso"><strong>Prototipo con datos sintéticos.</strong> Los modelos aprendieron de
-            <span data-cifra="n_validos">20 000</span> estudiantes simulados. Sirve para ver y discutir el proceso,
-            no para decidir sobre estudiantes reales.</p>
-          <p class="aviso"><strong>Ya opera con una base de datos real.</strong> El mismo código se reentrenó con
-            4 424 estudiantes reales y ahora lee esa base y califica solo a cada estudiante.</p>
-          <div class="acciones">
-            <a class="boton boton-tinta" href="estudiantes.html">Ver a los estudiantes</a>
-            <a class="boton" href="modelo.html">Cómo le va al modelo</a>
-            <a class="boton" href="evaluar.html">Evaluar a uno a mano</a>
-          </div>
-        </div>
-        <figure class="portada-casos" aria-labelledby="casos-titulo">
-          <figcaption id="casos-titulo">Tres casos típicos del contrato, calificados ahora mismo por el modelo aprendido</figcaption>
-          <ol id="casos-portada" class="casos-lista">
-            <li class="caso-cargando">Consultando el sistema…</li>
-          </ol>
-        </figure>
-      </div>
-    </section>
-    <section class="seccion">
-      <div class="envoltura">
-        <header class="seccion-encabezado">
-          <h2>Cómo se construyó, paso a paso</h2>
-          <p>Cada paso tiene su propia página, con las gráficas hechas a partir de la ejecución real del entrenamiento.</p>
-        </header>
-        <ol class="tarjetas-pasos">
-{_lista_pasos(con_descripcion=True)}
-        </ol>
-      </div>
-    </section>"""
+    cuerpo = paginas_inicio.cuerpo(_lista_pasos(con_descripcion=True))
     return _pagina("index.html", "Alerta temprana de deserción",
                    "Prototipo de un sistema de alerta temprana de deserción universitaria para semestres 2 a 4.",
-                   "inicio", "inicio", cuerpo)
+                   "inicio", "inicio", cuerpo, paginas_inicio.ESTILOS, paginas_inicio.SCRIPTS)
 
 
 def evaluar():
@@ -220,90 +185,24 @@ def evaluar():
                    "evaluar", "evaluar", cuerpo)
 
 
-SELECTOR_MODELO = """<fieldset class="selector-modo selector-operacion">
-            <legend>Quién califica</legend>
-            <div class="segmentado" role="radiogroup" aria-label="Modelo">
-              <label><input type="radio" name="modelo-operacion" value="logistica" checked><span>Regresión logística</span></label>
-              <label><input type="radio" name="modelo-operacion" value="red_neuronal"><span>Red neuronal</span></label>
-              <label><input type="radio" name="modelo-operacion" value="reglas"><span>Reglas del contrato</span></label>
-            </div>
-          </fieldset>"""
-
-
 def estudiantes():
-    cuerpo = f"""    <section class="seccion seccion-primera">
-      <div class="envoltura">
-        <header class="seccion-encabezado">
-          <h1>Estudiantes en seguimiento</h1>
-          <p>Nadie llena una planilla aquí. El sistema lee la base de datos real, revisa cada registro contra el contrato
-            y le da a cada estudiante su resultado: qué tan alto es su riesgo, por qué y en qué se le puede ayudar.</p>
-        </header>
-        <section class="tuberia-zona" aria-label="Proceso automático">
-          <div class="tuberia-cabeza">
-          {SELECTOR_MODELO}
-            <button type="button" class="boton" id="btn-leer">Volver a leer la base</button>
-          </div>
-          <ol id="tuberia" class="tuberia"><li class="tubo tubo-espera">Conectando con la base de datos…</li></ol>
-          <p class="nota" id="estado-lectura" aria-live="polite">Leyendo la base de datos y calificando a cada estudiante…</p>
-        </section>
-        <div class="filtros">
-          <div id="chips" class="chips" role="group" aria-label="Filtrar por resultado"></div>
-          <div class="filtros-busqueda">
-            <label class="oculto" for="buscar">Buscar por código</label>
-            <input type="search" id="buscar" placeholder="Buscar por código (IPP-0042)" autocomplete="off">
-            <label class="oculto" for="programa">Programa</label>
-            <select id="programa"><option value="">Todos los programas</option></select>
-          </div>
-        </div>
-        <div class="seguimiento">
-          <div class="lista-zona">
-            <ol id="lista" class="lista-estudiantes"></ol>
-            <p class="nota" id="cuenta-lista"></p>
-            <button type="button" class="boton" id="btn-mas" hidden>Ver 25 más</button>
-          </div>
-          <article class="ficha" id="ficha-estudiante" aria-live="polite"><p class="ficha-resumen">Elija un estudiante de la lista.</p></article>
-        </div>
-      </div>
-    </section>"""
+    cuerpo = paginas_estudiantes.cuerpo()
     return _pagina("estudiantes.html", "Estudiantes en seguimiento",
                    "La base de datos real se lee sola y cada estudiante recibe su nivel de riesgo, el porqué y en qué mejorar.",
-                   "estudiantes", "estudiantes", cuerpo)
+                   "estudiantes", "estudiantes", cuerpo, paginas_estudiantes.ESTILOS, paginas_estudiantes.SCRIPTS)
 
 
 def modelo():
-    cuerpo = f"""    <section class="seccion seccion-primera">
-      <div class="envoltura">
-        <header class="seccion-encabezado">
-          <h1>Cómo le va al modelo</h1>
-          <p>Sus notas con estudiantes reales que nunca había visto, qué significa cada una y cómo se entrenó.</p>
-        </header>
-        <div class="selector-estudiante">
-          {SELECTOR_MODELO}
-        </div>
-        <div class="cuerpo modelo-cuerpo" id="contenido"><p class="nota">Cargando los resultados…</p></div>
-      </div>
-    </section>"""
+    cuerpo = paginas_modelo.cuerpo()
     return _pagina("modelo.html", "Cómo le va al modelo",
                    "AUC, F1, detección y precisión del modelo con datos reales, qué significa cada una y cómo se entrenó.",
-                   "modelo", "modelo", cuerpo)
+                   "modelo", "modelo", cuerpo, paginas_modelo.ESTILOS, paginas_modelo.SCRIPTS)
 
 
 def proceso():
-    cuerpo = f"""    <section class="seccion seccion-primera">
-      <div class="envoltura">
-        <header class="seccion-encabezado">
-          <h1>Cómo se construyó</h1>
-          <p>Nueve pasos, de las reglas escritas a mano a una red neuronal que aprende sus pesos. Cada número y cada gráfica salen
-            de la ejecución real del entrenamiento (semilla 2026). Si prefiere leerlo todo de corrido, está el
-            <a href="reporte.html">reporte completo</a>.</p>
-        </header>
-        <ol class="tarjetas-pasos">
-{_lista_pasos(con_descripcion=True)}
-        </ol>
-      </div>
-    </section>"""
+    cuerpo = paginas_proceso.cuerpo(_lista_pasos(con_descripcion=True))
     return _pagina("proceso.html", "Cómo se construyó", "Los ocho pasos del prototipo, cada uno en su página.",
-                   "proceso", "proceso", cuerpo)
+                   "proceso", "proceso", cuerpo, paginas_proceso.ESTILOS, paginas_proceso.SCRIPTS)
 
 
 def paso(i):

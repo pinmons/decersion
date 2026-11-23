@@ -1,0 +1,36 @@
+/* Vista Modelo. Los tokens y las piezas comunes están en estilos.css. */
+/* notas del modelo */
+.modelo-cuerpo { margin-top: 20px; }
+.veredicto { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 24px; align-items: center; }
+@media (max-width: 560px) { .veredicto { grid-template-columns: 1fr; } }
+.veredicto-cifra { font-family: var(--letra-titulo); font-size: clamp(4.2rem, 11vw, 7rem); font-weight: 700; line-height: 0.9; color: var(--acento); letter-spacing: -0.03em; }
+.veredicto p { font-size: var(--paso1); color: var(--tinta); line-height: 1.5; max-width: 46ch; }
+.marca { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px 2px 8px; border-radius: 999px; font: 700 0.82rem/1.5 var(--letra-texto); color: var(--tinta); background: var(--hoja-2); white-space: nowrap; vertical-align: middle; }
+.marca i { font-style: normal; font-size: 0.95rem; line-height: 1; }
+.marca-excelente, .marca-bueno { background: var(--bajo-fondo); } .marca-excelente i, .marca-bueno i { color: var(--bajo); }
+.marca-aceptable { background: var(--medio-fondo); } .marca-aceptable i { color: var(--medio); }
+.marca-debil { background: var(--alto-fondo); } .marca-debil i { color: var(--alto); }
+.tejas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 900px) { .tejas { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .tejas { grid-template-columns: 1fr; } }
+.teja { background: var(--papel); border: 1px solid var(--renglon); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.teja header { display: flex; flex-direction: column; }
+.teja h3 { font-size: var(--paso1); }
+.teja-sub { font-size: var(--paso-1); color: var(--tinta-2); }
+.teja-fila { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 10px; }
+.teja-valor { font-family: var(--letra-titulo); font-size: 2.5rem; font-weight: 650; line-height: 1; letter-spacing: -0.02em; }
+.teja p { font-size: 0.9rem; }
+.medidor { position: relative; height: 8px; background: var(--hoja-2); border-radius: 4px; }
+.medidor i { position: absolute; inset: 0 auto 0 0; border-radius: 4px; background: var(--bajo); }
+.medidor i.medidor-aceptable { background: var(--medio); } .medidor i.medidor-debil { background: var(--alto); }
+.medidor u { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--tinta-2); border-radius: 1px; }
+.leyenda-notas { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; max-width: none; }
+.gofre { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 24px; align-items: center; }
+@media (max-width: 760px) { .gofre { grid-template-columns: 1fr; } }
+.gofre-cuenta { margin: 0; display: flex; flex-direction: column; }
+.gofre-cuenta div { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-block: 8px; border-bottom: 1px solid var(--renglon); }
+.gofre-cuenta dt { display: flex; gap: 8px; align-items: baseline; font-size: 0.92rem; }
+.gofre-cuenta dt i { width: 11px; height: 11px; border-radius: 2.5px; flex: none; transform: translateY(1px); }
+.gofre-cuenta dd { margin: 0; font-family: var(--letra-titulo); font-size: var(--paso2); font-weight: 650; }
+.etiqueta-mapeo { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 0.8rem; font-weight: 700; background: var(--bajo-fondo); white-space: nowrap; }
+.etiqueta-mapeo.aproximado { background: var(--medio-fondo); } .etiqueta-mapeo.supuesto { background: var(--humano-fondo); }

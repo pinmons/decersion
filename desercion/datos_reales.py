@@ -124,11 +124,12 @@ def mapear(fila, n):
     desenlace = {"Dropout": "deserto", "Graduate": "se_graduo", "Enrolled": "sigue_matriculado"}[fila["Target"].strip()]
     extra = {"deserto": int(desenlace == "deserto"), "desenlace": desenlace,
              "programa": PROGRAMAS.get(int(fila["Course"]), f"Programa {fila['Course']}"),
-             "edad_ingreso": int(_columna(fila, "Age at enrollment")), "becado": int(_columna(fila, "Scholarship"))}
+             "edad_ingreso": int(_columna(fila, "Age at enrollment")), "becado": int(_columna(fila, "Scholarship")),
+             "nota_admision": float(fila["Admission grade"]), "nota_previa": float(_columna(fila, "Previous qualification (grade)"))}
     return registro, extra
 
 
-EXTRAS = ["deserto", "desenlace", "programa", "edad_ingreso", "becado"]
+EXTRAS = ["deserto", "desenlace", "programa", "edad_ingreso", "becado", "nota_admision", "nota_previa"]
 
 
 def leer_fuente(ruta=RUTA_FUENTE):

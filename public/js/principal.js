@@ -2,7 +2,7 @@
    Punto de entrada: según la página (body[data-pagina]) monta la portada, la evaluación o un paso. */
 (function () {
   "use strict";
-  const { json, miles, iniciarEvaluador, iniciarPortada, montarPaso, montarReporte, iniciarEstudiantes, iniciarModelo } = window.SAT;
+  const { json, miles, iniciarEvaluador, iniciarPortada, montarPaso, montarReporte } = window.SAT;
 
   async function opcional(ruta) {
     try { return await json(ruta); } catch (e) { return null; }
@@ -20,12 +20,13 @@
   async function iniciar() {
     avisoArchivo();
     const pagina = document.body.dataset.pagina || "";
-    if (pagina === "estudiantes") return iniciarEstudiantes();
-    if (pagina === "modelo") return iniciarModelo();
+    if (pagina === "estudiantes") return window.SAT.iniciarEstudiantes();
+    if (pagina === "modelo") return window.SAT.iniciarModelo();
     const R = await opcional("reportes/resultados.json");
     if (R) document.querySelectorAll('[data-cifra="n_validos"]').forEach((e) => { e.textContent = miles(R.datos.n_validos); });
 
-    if (pagina === "inicio") return iniciarPortada();
+    if (pagina === "inicio") return (window.SAT.iniciarInicio || iniciarPortada)();
+    if (pagina === "proceso" && window.SAT.iniciarProceso) return window.SAT.iniciarProceso(R);
     if (pagina === "evaluar") return iniciarEvaluador(R);
     if (pagina === "reporte") {
       const [sup, r4] = await Promise.all([opcional("reportes/supuestos.json"), opcional("reportes/resultados_ronda4.json")]);
