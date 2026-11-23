@@ -19,6 +19,9 @@ VIF_MODERADO = 5
 VIF_GRAVE = 10
 VIF_MAXIMO = 999.0
 TOPE_DOMINANCIA = 0.35  # [SUPUESTO, ajustable]
+# Dos variables con |r| ≥ 0.5 cuentan como un mismo grupo para el tope [SUPUESTO]: si dicen casi lo mismo,
+# al desordenar una la otra la suple, y cada una por separado parece pesar poco aunque juntas lo decidan todo.
+UMBRAL_GRUPO = 0.5
 
 # Cuando dos variables son casi la misma información, cuál se queda y por qué.
 PREFERENCIAS = {
@@ -122,6 +125,55 @@ def importancia_permutacion(funcion_puntaje, X, y, repeticiones=5, semilla=2026)
         medias.append(float(np.mean(caidas)))
         desv.append(float(np.std(caidas)))
     return np.array(medias), np.array(desv), base
+
+
+def grupos_correlacionados(X, nombres, umbral=UMBRAL_GRUPO):
+    """Grupos de variables unidas por |Pearson| ≥ umbral (componentes conexas). Lista de listas de índices."""
+    r = pearson(X)
+    k = len(nombres)
+    grupo = list(range(k))
+
+    def raiz(i):
+        while grupo[i] != i:
+            i = grupo[i]
+        return i
+    for i in range(k):
+        for j in range(i + 1, k):
+            if abs(r[i, j]) >= umbral:
+                grupo[raiz(j)] = raiz(i)
+    salida = {}
+    for i in range(k):
+        salida.setdefault(raiz(i), []).append(i)
+    return sorted(salida.values(), key=lambda g: g[0])
+
+
+def importancia_permutacion_grupos(funcion_puntaje, X, y, grupos, repeticiones=5, semilla=2026):
+    """Como importancia_permutacion, pero desordena juntas (con la misma permutación) las columnas de cada grupo."""
+    rng = np.random.default_rng(semilla)
+    base = auc(y, funcion_puntaje(X))
+    medias, desv = [], []
+    for g in grupos:
+        caidas = []
+        for _ in range(repeticiones):
+            Xp = X.copy()
+            Xp[:, g] = Xp[rng.permutation(len(Xp))][:, g]
+            caidas.append(base - auc(y, funcion_puntaje(Xp)))
+        medias.append(float(np.mean(caidas)))
+        desv.append(float(np.std(caidas)))
+    return np.array(medias), np.array(desv), base
+
+
+def una_variable(X, y, nombres, signos=None):
+    """AUC de cada variable usada sola como puntaje. El sentido (sube o baja el riesgo) se fija con `signos`
+    (calculados en train) o, si no se dan, con estos mismos datos. Devuelve (aucs, signos, nombre de la mejor)."""
+    aucs, sentido = [], []
+    for j in range(X.shape[1]):
+        a = auc(y, X[:, j])
+        s = (1 if a >= 0.5 else -1) if signos is None else signos[j]
+        sentido.append(s)
+        aucs.append(a if s == 1 else 1 - a)
+    mejor = int(np.argmax(aucs))
+    return np.array(aucs), sentido, nombres[mejor]
 
 
 def porcentajes(importancias):

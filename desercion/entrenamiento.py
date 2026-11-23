@@ -36,7 +36,7 @@ from .metricas import (auc, entropia_cruzada, pesos_por_clase, pesos_muestra, si
 from .modelos.logistica import RegresionLogistica
 from .modelos.red_neuronal import RedNeuronal
 from .preprocesamiento import dividir_estratificado, Escalador
-from .variables import CANDIDATAS, NOMBRES_LEGIBLES, matriz
+from .variables import CANDIDATAS, NOMBRES_LEGIBLES, caso_evidente, matriz
 
 DIR_REPORTES = RAIZ / "reportes"
 DIR_MODELOS = RAIZ / "modelos_entrenados"
@@ -53,6 +53,9 @@ CONFIG_RED = {"capas": [16, 8], "l2": 1e-4, "tasa_aprendizaje": 1e-3, "dropout":
 # Si la pérdida de validación no baja al menos esto, no cuenta como mejora.
 MEJORA_MINIMA = 1e-5
 MARGEN_TOPE = 0.02  # [SUPUESTO] margen bajo el tope por ruido de muestreo
+PRIORIDAD_CORTES = "recall"  # con --csv (datos reales) pasa a "fraccion": ver tarjeta_puntaje.elegir_cortes
+SIN_EVIDENTES = False  # --sin-evidentes: los modelos aprenden sin quien no aprobó ninguna materia
+MARGEN_UNA_VARIABLE = 0.01  # [SUPUESTO] el modelo debe ganarle por al menos esto a la mejor variable sola (AUC train)
 COLAPSO_AUC = 0.10  # [SUPUESTO] quitar una variable y perder > 0.10 de AUC = dependencia excesiva
 
 
@@ -137,12 +140,12 @@ def crear_logistica(k, config=CONFIG_LOGISTICA, l2_por_variable=None, signos=Non
                               l2_por_variable=l2_por_variable, signos=signos, semilla=semilla)
 
 
-def crear_red(k, config=CONFIG_RED, semilla=SEMILLA, nombres=None):
+def crear_red(k, config=CONFIG_RED, semilla=SEMILLA, nombres=None, freno_entrada=None):
     signos = None
     if config.get("monotonas") and nombres is not None:
         signos = [config["monotonas"].get(n, 0) for n in nombres]
     return RedNeuronal(k, capas=tuple(config["capas"]), l2=config["l2"], tasa_aprendizaje=config["tasa_aprendizaje"],
-                       dropout=config["dropout"], signos_entrada=signos, semilla=semilla)
+                       dropout=config["dropout"], signos_entrada=signos, freno_entrada=freno_entrada, semilla=semilla)
 
 
 # ====================================================================== Fase 2 – datos
@@ -203,6 +206,16 @@ def etapa_datos_csv(est, res, ruta):
     print(f"Registros válidos con etiqueta: {len(validos)} | descartados: {n_desc} | tasa de deserción: {_pct(y.mean())}")
     print("Descartes por motivo:", dict(sorted(motivos.items())))
     itr, iva, ite = dividir_estratificado(y, semilla=SEMILLA)
+    evidente = np.array([caso_evidente(r) for r in validos])
+    res["datos_evidentes"] = {"n": int(evidente.sum()), "fraccion": float(evidente.mean()),
+                              "tasa_desercion": float(y[evidente].mean()) if evidente.any() else None,
+                              "excluidos_del_aprendizaje": bool(SIN_EVIDENTES)}
+    print(f"Casos evidentes (no aprobaron ninguna materia): {evidente.sum()} ({_pct(evidente.mean())}); "
+          f"de ellos desertó el {_pct(y[evidente].mean())}.")
+    if SIN_EVIDENTES:
+        itr, iva = itr[~evidente[itr]], iva[~evidente[iva]]
+        print("Los modelos aprenden y se validan SIN ellos: ahí no hay nada que predecir. La prueba los conserva "
+              "y las notas se dan con y sin ellos.")
     print(f"División estratificada: train {len(itr)} | val {len(iva)} | test {len(ite)}")
     figuras.distribuciones(validos, y, DIR_REPORTES / "distribuciones.png")
     est.update(registros=validos, y=y, prob_real=None, itr=itr, iva=iva, ite=ite)
@@ -301,7 +314,7 @@ def partes(est, X=None):
 
 def tarjeta_y_cortes(modelo, escalador, nombres, X_raw_val, y_val):
     tarjeta = tp.construir(modelo.w, modelo.b, escalador.media, escalador.desviacion, nombres)
-    cortes = tp.elegir_cortes(tp.puntaje(tarjeta, X_raw_val), y_val)
+    cortes = tp.elegir_cortes(tp.puntaje(tarjeta, X_raw_val), y_val, prioridad=PRIORIDAD_CORTES)
     return tarjeta, cortes
 
 
@@ -324,7 +337,7 @@ def etapa_entrenamiento(est, res, imprimir=True):
 
     ajuste = ajuste_prior(info_log["pesos_clase"])
     tarjeta, cortes = tarjeta_y_cortes(log, est["escalador"], nombres, est["X_raw"][est["iva"]], yva)
-    cortes_red = tp.elegir_cortes(puntaje_red(red, Xva, ajuste), yva)
+    cortes_red = tp.elegir_cortes(puntaje_red(red, Xva, ajuste), yva, prioridad=PRIORIDAD_CORTES)
     deuda_j = nombres.index("deuda_matricula") if "deuda_matricula" in nombres else None
     deuda_si_falta = 1 if deuda_j is None or tarjeta["beta"][deuda_j] >= 0 else 0
 
@@ -385,35 +398,65 @@ def etapa_control(est, res, imprimir=True):
     # La decisión se toma con TRAIN (14 000 registros): en validación (3 000) la importancia es
     # demasiado ruidosa (en una primera versión dio 33.5 % en validación y 37.7 % en test).
     # Se exige quedar 2 puntos por debajo del tope como margen por ese ruido [SUPUESTO].
+    # El tope se mide por GRUPO de variables correlacionadas (|r| ≥ 0.5): si promedio y tasa de reprobación dicen
+    # casi lo mismo, al desordenar una la otra la suple y cada una parece pesar poco. Una variable sin pareja es un
+    # grupo de una sola (con datos sintéticos, el tope por grupo es el mismo tope por variable de antes).
+    # Piso: el freno se detiene antes de que el modelo deje de ganarle a la mejor variable sola [SUPUESTO]: un
+    # modelo «repartido» que adivina peor que una sola variable no sirve.
     tope = dep.TOPE_DOMINANCIA
     objetivo = tope - MARGEN_TOPE
     Xtr, ytr = est["Xs"][est["itr"]], est["y"][est["itr"]]
     log = est["log"]
     c = np.ones(k)
+    grupos = dep.grupos_correlacionados(Xtr, nombres)
+    nombres_g = [" + ".join(nombres[i] for i in g) for g in grupos]
+    aucs_una, signos_una, mejor_una = dep.una_variable(Xtr, ytr, nombres)
+    piso = float(aucs_una.max()) + MARGEN_UNA_VARIABLE
+    print(f"Grupos de variables correlacionadas (|r| ≥ {dep.UMBRAL_GRUPO}, en train): "
+          + " · ".join(f"[{n}]" for n in nombres_g))
+    print(f"Mejor variable sola en train: {mejor_una} (AUC {aucs_una.max():.4f}). Piso del freno: AUC train ≥ {piso:.4f}.")
 
     def medir(modelo):
         pct = dep.porcentajes(dep.importancia_permutacion(modelo.logit, Xtr, ytr)[0])
-        return pct, auc(yva, modelo.logit(Xva))
+        pct_g = dep.porcentajes(dep.importancia_permutacion_grupos(modelo.logit, Xtr, ytr, grupos)[0])
+        return pct, pct_g, auc(yva, modelo.logit(Xva)), auc(ytr, modelo.logit(Xtr))
 
-    pct_tr, auc_va = medir(log)
-    antes = {"pct_train": pct_tr.tolist(), "auc_val": auc_va, "multiplicadores": c.tolist()}
-    pasos_tope = []
+    pct_tr, pct_g, auc_va, auc_tr = medir(log)
+    antes = {"pct_train": pct_tr.tolist(), "grupos_pct_train": pct_g.tolist(), "auc_val": auc_va, "auc_train": auc_tr,
+             "multiplicadores": c.tolist()}
+    pasos_tope, freno_log = [], None
+    # El freno puede ir pasando el exceso de un grupo a otro; al final se queda la versión más repartida
+    # (menor máximo por grupo) de todas las que respetan el piso.
+    mejor = (pct_g.max(), log, c.copy(), pct_tr, pct_g, auc_va, auc_tr, 0)
     print(f"Tope de dominancia: {tope * 100:.0f} % de la importancia total [SUPUESTO]. Se decide con la importancia "
-          f"en TRAIN y se exige ≤ {objetivo * 100:.0f} % (margen por ruido de muestreo).")
-    print("Importancia por permutación en train (logística): " +
-          " · ".join(f"{nombres[j]} {_pct(pct_tr[j])}" for j in np.argsort(-pct_tr)))
-    while pct_tr.max() > objetivo and len(pasos_tope) < 15:
-        j = int(pct_tr.argmax())
-        c[j] *= 2
+          f"en TRAIN, por grupo, y se exige ≤ {objetivo * 100:.0f} % (margen por ruido de muestreo).")
+    print("Importancia por permutación en train (logística), por grupo: " +
+          " · ".join(f"{nombres_g[g]} {_pct(pct_g[g])}" for g in np.argsort(-pct_g)))
+    while pct_g.max() > objetivo and len(pasos_tope) < 15:
+        g = int(pct_g.argmax())
+        c[grupos[g]] *= 2
         log_nuevo, _ = reentrenar_logistica(est, todas, l2_por_variable=c)
-        pct_tr, auc_va = medir(log_nuevo)
-        pasos_tope.append({"variable": nombres[j], "multiplicador_l2": float(c[j]), "l2_efectivo": float(c[j] * CONFIG_LOGISTICA["l2"]),
-                           "peso": float(log_nuevo.w[j]), "max_pct_train": float(pct_tr.max()),
-                           "variable_max": nombres[int(pct_tr.argmax())], "auc_val": auc_va})
-        print(f"   {nombres[j]} sobre el objetivo → L2 ×{c[j]:.0f} en esa variable (λ = {c[j] * CONFIG_LOGISTICA['l2']:.3f}) "
-              f"→ peso {log_nuevo.w[j]:+.3f} | máx. ahora {nombres[int(pct_tr.argmax())]} {_pct(pct_tr.max())} | "
-              f"AUC val {auc_va:.4f}")
-        log = log_nuevo
+        n_pct, n_pct_g, n_va, n_tr = medir(log_nuevo)
+        paso = {"variable": nombres[grupos[g][0]], "grupo": [nombres[i] for i in grupos[g]],
+                "multiplicador_l2": float(c[grupos[g][0]]), "l2_efectivo": float(c[grupos[g][0]] * CONFIG_LOGISTICA["l2"]),
+                "peso": float(log_nuevo.w[grupos[g][0]]), "max_pct_train": float(n_pct_g.max()),
+                "variable_max": nombres_g[int(n_pct_g.argmax())], "auc_val": n_va, "auc_train": n_tr}
+        if n_tr < piso:
+            c[grupos[g]] /= 2
+            freno_log = paso
+            print(f"   {nombres_g[g]}: con L2 ×{paso['multiplicador_l2']:.0f} el AUC de train baja a {n_tr:.4f}, por debajo "
+                  f"del piso ({piso:.4f}). Se detiene el freno en el paso anterior.")
+            break
+        pasos_tope.append(paso)
+        print(f"   {nombres_g[g]} sobre el objetivo → L2 ×{paso['multiplicador_l2']:.0f} en ese grupo | máx. ahora "
+              f"{paso['variable_max']} {_pct(n_pct_g.max())} | AUC train {n_tr:.4f} · val {n_va:.4f}")
+        log, pct_tr, pct_g, auc_va, auc_tr = log_nuevo, n_pct, n_pct_g, n_va, n_tr
+        if pct_g.max() < mejor[0]:
+            mejor = (pct_g.max(), log, c.copy(), pct_tr, pct_g, auc_va, auc_tr, len(pasos_tope))
+    _, log, c, pct_tr, pct_g, auc_va, auc_tr, paso_elegido = mejor
+    if pasos_tope and paso_elegido < len(pasos_tope):
+        print(f"   Se queda la versión del paso {paso_elegido} (la más repartida: máx. por grupo {_pct(pct_g.max())}).")
+    pasos_tope = pasos_tope[:paso_elegido]
     metr_antes = metricas_test_logistica(est, est["log"], todas, ajuste)
     if pasos_tope:
         est["log"] = log
@@ -426,21 +469,78 @@ def etapa_control(est, res, imprimir=True):
                                     tarjeta=est["tarjeta"], cortes=est["cortes"], deuda_si_falta=est["deuda_si_falta"])
         print("Se reemplaza la logística por la versión con el tope aplicado y se recalculan tarjeta y cortes "
               f"(nuevos cortes: medio ≥ {est['cortes']['corte_medio']}, alto ≥ {est['cortes']['corte_alto']}).")
-    else:
-        print("Ninguna variable supera el tope: no hace falta penalización extra.")
+    elif freno_log is None:
+        print("Ningún grupo supera el tope: no hace falta penalización extra.")
     metr_despues = metricas_test_logistica(est, log, todas, ajuste)
     antes.update({"auc_test": metr_antes["auc"], "log_loss_test": metr_antes["log_loss"]})
-    despues = {"pct_train": pct_tr.tolist(), "auc_val": auc_va, "multiplicadores": c.tolist(),
-               "auc_test": metr_despues["auc"], "log_loss_test": metr_despues["log_loss"]}
+    despues = {"pct_train": pct_tr.tolist(), "grupos_pct_train": pct_g.tolist(), "auc_val": auc_va, "auc_train": auc_tr,
+               "multiplicadores": c.tolist(), "auc_test": metr_despues["auc"], "log_loss_test": metr_despues["log_loss"],
+               "cumple": bool(pct_g.max() <= objetivo), "detenido_por_piso": freno_log}
     if pasos_tope:
         print(f"Costo de repartir el peso (medido en test al final): AUC {metr_antes['auc']:.4f} → {metr_despues['auc']:.4f} "
               f"({metr_despues['auc'] - metr_antes['auc']:+.4f}) | log-loss {metr_antes['log_loss']:.4f} → "
               f"{metr_despues['log_loss']:.4f} ({metr_despues['log_loss'] - metr_antes['log_loss']:+.4f})")
 
+    # El mismo tope para la red neuronal: si un grupo pasa del objetivo, se frenan (decaimiento desacoplado) solo
+    # los pesos que salen de esas entradas y se vuelve a entrenar. Mismo piso que la logística.
+    def medir_red(r):
+        return (dep.porcentajes(dep.importancia_permutacion_grupos(r.logit, Xtr, ytr, grupos)[0]),
+                auc(yva, r.logit(Xva)), auc(ytr, r.logit(Xtr)))
+    red, f_red, pasos_red, freno_red = est["red"], np.zeros(k), [], None
+    pct_red_g, auc_red_va, auc_red_tr = medir_red(red)
+    antes_red = {"grupos_pct_train": pct_red_g.tolist(), "auc_val": auc_red_va, "auc_train": auc_red_tr}
+    print("\nImportancia por permutación en train (red), por grupo: " +
+          " · ".join(f"{nombres_g[g]} {_pct(pct_red_g[g])}" for g in np.argsort(-pct_red_g)))
+    hist_red = info_red = None
+    mejor_red = (pct_red_g.max(), red, None, None, f_red.copy(), pct_red_g, auc_red_va, auc_red_tr, 0)
+    while pct_red_g.max() > objetivo and len(pasos_red) < 10:
+        g = int(pct_red_g.argmax())
+        previo = f_red.copy()
+        f_red[grupos[g]] = 1e-3 if f_red[grupos[g][0]] == 0 else min(0.5, f_red[grupos[g][0]] * 3)
+        nueva, h, inf = entrenar(crear_red(k, nombres=nombres, freno_entrada=f_red), Xtr, ytr, Xva, yva, CONFIG_RED)
+        n_pct_g, n_va, n_tr = medir_red(nueva)
+        paso = {"variable": nombres[grupos[g][0]], "grupo": [nombres[i] for i in grupos[g]],
+                "freno": float(f_red[grupos[g][0]]), "max_pct_train": float(n_pct_g.max()),
+                "variable_max": nombres_g[int(n_pct_g.argmax())], "auc_val": n_va, "auc_train": n_tr}
+        if n_tr < piso:
+            f_red = previo
+            freno_red = paso
+            print(f"   {nombres_g[g]}: con freno {paso['freno']:.4f} el AUC de train baja a {n_tr:.4f}, por debajo del "
+                  f"piso ({piso:.4f}). Se detiene el freno en el paso anterior.")
+            break
+        pasos_red.append(paso)
+        print(f"   {nombres_g[g]} sobre el objetivo → freno {paso['freno']:.4f} por paso en esas entradas | máx. ahora "
+              f"{paso['variable_max']} {_pct(n_pct_g.max())} | AUC train {n_tr:.4f} · val {n_va:.4f}")
+        red, hist_red, info_red, pct_red_g, auc_red_va, auc_red_tr = nueva, h, inf, n_pct_g, n_va, n_tr
+        if pct_red_g.max() < mejor_red[0]:
+            mejor_red = (pct_red_g.max(), red, hist_red, info_red, f_red.copy(), pct_red_g, auc_red_va, auc_red_tr,
+                         len(pasos_red))
+    _, red, hist_red, info_red, f_red, pct_red_g, auc_red_va, auc_red_tr, paso_red = mejor_red
+    if pasos_red and paso_red < len(pasos_red):
+        print(f"   Se queda la red del paso {paso_red} (la más repartida: máx. por grupo {_pct(pct_red_g.max())}).")
+    pasos_red = pasos_red[:paso_red]
+    if pasos_red:
+        est["red"] = red
+        est["cortes_red"] = tp.elegir_cortes(puntaje_red(red, Xva, ajuste), yva, prioridad=PRIORIDAD_CORTES)
+        res["entrenamiento"].update(cortes_red=est["cortes_red"], historial_red=hist_red, info_red=info_red)
+        print(f"Se reemplaza la red por la versión con el tope aplicado (cortes: medio ≥ {est['cortes_red']['corte_medio']}, "
+              f"alto ≥ {est['cortes_red']['corte_alto']}).")
+    elif freno_red is None:
+        print("   La red no supera el tope: no hace falta freno extra.")
+    res["tope_red"] = {"antes": antes_red, "pasos": pasos_red, "freno": f_red.tolist(),
+                       "despues": {"grupos_pct_train": pct_red_g.tolist(), "auc_val": auc_red_va, "auc_train": auc_red_tr,
+                                   "cumple": bool(pct_red_g.max() <= objetivo), "detenido_por_piso": freno_red}}
+    res["grupos"] = {"umbral": dep.UMBRAL_GRUPO, "indices": grupos, "nombres": [[nombres[i] for i in g] for g in grupos],
+                     "una_variable_train": {"auc": aucs_una.tolist(), "signos": signos_una, "mejor": mejor_una,
+                                            "piso": piso}}
+    est["grupos"], est["signos_una"] = grupos, signos_una
+
     # Importancia final en TEST (lo que se reporta), para la logística y la red
     imp_te, imp_te_sd, auc_base = dep.importancia_permutacion(log.logit, Xte, yte)
     imp_red, imp_red_sd, auc_red = dep.importancia_permutacion(est["red"].logit, Xte, yte)
     pct_te, pct_red = dep.porcentajes(imp_te), dep.porcentajes(imp_red)
+    g_log = dep.porcentajes(dep.importancia_permutacion_grupos(log.logit, Xte, yte, grupos)[0])
+    g_red = dep.porcentajes(dep.importancia_permutacion_grupos(est["red"].logit, Xte, yte, grupos)[0])
     print(f"\nImportancia por permutación en TEST (caída de AUC, 5 permutaciones; AUC base logística {auc_base:.4f}, "
           f"red {auc_red:.4f}):")
     print(f"{'variable':38s} {'logística':>16s} {'red neuronal':>16s}")
@@ -450,6 +550,12 @@ def etapa_control(est, res, imprimir=True):
         j = int(np.argmax(p))
         print(f"   {nombre}: variable más importante {nombres[j]} con {_pct(p[j])} → "
               f"{'dentro del tope' if p[j] <= tope else 'SUPERA el tope (se reporta)'}")
+    print("Por grupo (lo que mide el tope): " + " · ".join(
+        f"[{nombres_g[g]}] logística {_pct(g_log[g])}, red {_pct(g_red[g])}" for g in range(len(grupos))))
+    for nombre, p in (("logística", g_log), ("red neuronal", g_red)):
+        g = int(np.argmax(p))
+        print(f"   {nombre}: grupo más importante [{nombres_g[g]}] con {_pct(p[g])} → "
+              f"{'dentro del tope' if p[g] <= tope else 'SUPERA el tope (se reporta)'}")
     figuras.importancias([("Logística", pct_te), ("Red neuronal", pct_red)], [nombres, nombres],
                          DIR_REPORTES / "importancia_permutacion.png", tope)
 
@@ -543,7 +649,10 @@ def etapa_control(est, res, imprimir=True):
         "l2_por_variable": est["l2_por_variable"].tolist(),
         "importancia_test": {"variables": nombres, "logistica": imp_te.tolist(), "logistica_desv": imp_te_sd.tolist(),
                              "logistica_pct": pct_te.tolist(), "red": imp_red.tolist(), "red_desv": imp_red_sd.tolist(),
-                             "red_pct": pct_red.tolist(), "auc_base_logistica": auc_base, "auc_base_red": auc_red},
+                             "red_pct": pct_red.tolist(), "auc_base_logistica": auc_base, "auc_base_red": auc_red,
+                             "grupos": [{"variables": [nombres[i] for i in g], "logistica_pct": float(g_log[n]),
+                                         "red_pct": float(g_red[n])} for n, g in enumerate(grupos)],
+                             "cumple_tope": {"logistica": bool(g_log.max() <= tope), "red": bool(g_red.max() <= tope)}},
         "ablacion": ablacion, "ablacion_base": base,
         "estabilidad": {"pesos_media": pesos_b.mean(0).tolist(), "pesos_desv": pesos_b.std(0).tolist(),
                         "pct_logistica_media": pct_b.mean(0).tolist(), "pct_logistica_desv": pct_b.std(0).tolist(),
@@ -607,10 +716,16 @@ def main(argv=None):
     p = argparse.ArgumentParser(description="Entrena los modelos del sistema de alerta temprana (datos sintéticos).")
     p.add_argument("--hasta", choices=ETAPAS, default=ETAPAS[-1], help="última etapa a ejecutar")
     p.add_argument("--csv", help="entrenar con datos reales: CSV con las 12 columnas del contrato + deserto (0/1)")
+    p.add_argument("--sin-evidentes", action="store_true", help="los modelos aprenden sin los casos evidentes "
+                   "(quien no aprobó ninguna materia); la prueba los conserva")
     p.add_argument("--nombre", help="guarda la corrida aparte, en reportes/<nombre>/ y modelos_entrenados/<nombre>/, "
                                     "sin tocar los modelos ni las páginas de la corrida principal")
     args = p.parse_args(argv)
     est, res = {}, {"semilla": SEMILLA, "aviso": "Todas las métricas se midieron con datos SINTÉTICOS."}
+    global SIN_EVIDENTES, PRIORIDAD_CORTES
+    SIN_EVIDENTES = bool(args.sin_evidentes)
+    if args.csv:
+        PRIORIDAD_CORTES = "fraccion"
     if args.nombre:
         from . import figuras, reporte
         global DIR_REPORTES, DIR_MODELOS

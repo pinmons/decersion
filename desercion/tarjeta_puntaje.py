@@ -62,12 +62,16 @@ def logit_desde_puntos(tarjeta, total_puntos):
     return tarjeta["logit_base"] + np.asarray(total_puntos) / tarjeta["escala"]
 
 
-def elegir_cortes(puntajes, y, objetivo=OBJETIVO_CORTES):
+def elegir_cortes(puntajes, y, objetivo=OBJETIVO_CORTES, prioridad="recall"):
     """Elige corte_alto y corte_medio sobre puntajes enteros de VALIDACIÓN.
 
     alto  = el corte más alto que todavía captura ≥ recall_alto_min de los desertores
             (así se marca a la menor cantidad posible de estudiantes); luego se comprueba que
             no deje más de fraccion_alto_max de los estudiantes en alto.
+            Si las dos cosas no caben a la vez, `prioridad` decide: "recall" (corrida sintética)
+            conserva el 70 %; "fraccion" (datos reales, donde la deserción es baja y el modelo más
+            débil) conserva el tope de estudiantes en alto y deja el resto de la detección en medio
+            [SUPUESTO: una lista de alto riesgo con la mitad de la cohorte no se puede atender].
     medio = el corte más alto (< alto) que deja en bajo como máximo desertores_en_bajo_max
             de los desertores.
     """
@@ -81,6 +85,10 @@ def elegir_cortes(puntajes, y, objetivo=OBJETIVO_CORTES):
     cumplen_recall = [t for t in candidatos if t[1] >= objetivo["recall_alto_min"]]
     corte_alto, recall_alto, frac_alto = max(cumplen_recall, key=lambda t: t[0])
     factible = frac_alto <= objetivo["fraccion_alto_max"]
+    if not factible and prioridad == "fraccion":
+        caben = [t for t in candidatos if t[2] <= objetivo["fraccion_alto_max"] and t[1] > 0]
+        if caben:
+            corte_alto, recall_alto, frac_alto = min(caben, key=lambda t: t[0])
 
     corte_medio = 0
     for c in range(corte_alto - 1, -1, -1):
@@ -99,8 +107,12 @@ def elegir_cortes(puntajes, y, objetivo=OBJETIVO_CORTES):
             "desertores_en_bajo": desertores_bajo,
         },
         "objetivo_cumplido": bool(factible),
+        "prioridad": prioridad,
         "nota": ("Se cumplen las dos condiciones del nivel alto." if factible else
-                 "No se pueden cumplir las dos condiciones a la vez: se priorizó el recall (≥ 70 %)."),
+                 "No se pueden cumplir las dos condiciones a la vez: se priorizó el recall (≥ 70 %)." if prioridad == "recall"
+                 else f"No se pueden cumplir las dos condiciones a la vez: se priorizó no pasar del "
+                      f"{objetivo['fraccion_alto_max']:.0%} de estudiantes en alto (detecta {recall_alto:.0%}); "
+                      "el resto de la detección queda en medio."),
     }
 
 

@@ -18,6 +18,7 @@ from . import tarjeta_puntaje as tp
 from .contrato import aplica_r34
 from .metricas import auc, brier, clasificacion, curva_calibracion, curva_roc, entropia_cruzada, sigmoide
 from .reglas import calificar as calificar_reglas
+from .variables import caso_evidente
 
 NIVELES = ("bajo", "medio", "alto")
 
@@ -81,6 +82,29 @@ def evaluar_en_test(est, dir_reportes):
         "regresión logística": _metricas(y, p_log, n_log),
         "red neuronal (MLP)": _metricas(y, p_red, n_red),
     }
+    # Las mismas notas sin los casos evidentes (quien no aprobó nada): ahí se ve si el modelo predice de verdad.
+    evid = np.array([caso_evidente(r) for r in regs])
+    aparte = {}
+    if evid.any() and (~evid).sum() >= 50 and 0 < y[~evid].sum() < (~evid).sum():
+        ternas = list(zip(modelos, (p_reglas, p_log, p_red), (n_reglas, n_log, n_red)))
+        aparte = {
+            "sin_evidentes": {"n": int((~evid).sum()), "tasa": float(y[~evid].mean()),
+                              "modelos": {n: _metricas(y[~evid], p[~evid], np.asarray(niv)[~evid]) for n, p, niv in ternas}},
+            "evidentes": {"n": int(evid.sum()), "tasa": float(y[evid].mean()),
+                          "fraccion_alto": {n: float((np.asarray(niv)[evid] == "alto").mean()) for n, _, niv in ternas}},
+        }
+    # Contra qué hay que ganar: cada variable sola usada como puntaje (con el sentido fijado en train).
+    una = None
+    if est.get("signos_una") is not None:
+        from .dependencia import una_variable
+        a_todos, _, mejor = una_variable(X_raw, y, est["nombres"], est["signos_una"])
+        una = {"variables": list(est["nombres"]), "auc": a_todos.tolist(), "mejor": mejor, "auc_mejor": float(a_todos.max())}
+        if aparte:
+            a_sin, _, mejor_sin = una_variable(X_raw[~evid], y[~evid], est["nombres"], est["signos_una"])
+            una["sin_evidentes"] = {"auc": a_sin.tolist(), "mejor": mejor_sin, "auc_mejor": float(a_sin.max())}
+        print(f"Mejor variable sola en test: {mejor} (AUC {a_todos.max():.4f})"
+              + (f"; sin casos evidentes: {una['sin_evidentes']['mejor']} ({una['sin_evidentes']['auc_mejor']:.4f})"
+                 if aparte else ""))
     techo = None if est.get("prob_real") is None else auc(y, est["prob_real"][ite])
     _imprimir(modelos, techo, float(y.mean()))
     figuras.calibracion([(n, curva_calibracion(y, p)) for n, p in
@@ -88,7 +112,7 @@ def evaluar_en_test(est, dir_reportes):
     return {"modelos": modelos, "auc_techo": techo, "n_test": int(len(y)), "tasa_test": float(y.mean()),
             "calibracion": {n: curva_calibracion(y, p) for n, p in zip(modelos, (p_reglas, p_log, p_red))},
             "roc": {n: curva_roc(y, p) for n, p in zip(modelos, (p_reglas, p_log, p_red))},
-            "conclusion": conclusion(modelos, techo)}
+            "conclusion": conclusion(modelos, techo), "una_variable": una, **aparte}
 
 
 def _imprimir(modelos, techo, tasa):

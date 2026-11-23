@@ -43,6 +43,13 @@ NOMBRES_LEGIBLES = {
 }
 
 
+def caso_evidente(registro):
+    """No aprobó ninguna materia el periodo anterior. Con ese dato ya se sabe que está en riesgo:
+    no hace falta un modelo para verlo, y si el modelo aprende de estos casos termina dependiendo
+    de una sola variable (la tasa de reprobación)."""
+    return registro["materias_reprobadas"] >= registro["materias_cursadas_periodo_anterior"]
+
+
 def valor(registro, nombre, deuda_si_falta=1):
     """Valor numérico de una variable. Si falta la deuda (opcional) se usa `deuda_si_falta`."""
     if nombre == "tasa_reprobacion":

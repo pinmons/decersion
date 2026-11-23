@@ -35,7 +35,7 @@ from ..metricas import sigmoide
 
 class RedNeuronal:
     def __init__(self, n_variables, capas=(16, 8), l2=1e-4, tasa_aprendizaje=1e-3,
-                 dropout=0.2, signos_entrada=None, semilla=0):
+                 dropout=0.2, signos_entrada=None, freno_entrada=None, semilla=0):
         self.rng = np.random.default_rng(semilla)
         tamanos = [n_variables, *capas, 1]
         self.W = [self.rng.normal(0, np.sqrt(2.0 / tamanos[i]), (tamanos[i], tamanos[i + 1]))
@@ -46,6 +46,10 @@ class RedNeuronal:
             self._proyectar()
         self.b = [np.zeros(t) for t in tamanos[1:]]
         self.l2 = l2
+        # Freno por variable de entrada (0 = ninguno): fracción en que se encogen, en cada paso, los pesos que salen
+        # de esa entrada. Es decaimiento DESACOPLADO (como AdamW): una L2 metida en el gradiente no frena con Adam,
+        # porque Adam divide cada gradiente por su propio tamaño. Lo usa el tope de dominancia.
+        self.freno = np.zeros(n_variables) if freno_entrada is None else np.clip(np.asarray(freno_entrada, float), 0, 1)
         self.eta = tasa_aprendizaje
         self.dropout = dropout
         self.capas = list(capas)
@@ -100,6 +104,8 @@ class RedNeuronal:
             m_hat = self.m[i] / (1 - beta1 ** self.t)
             v_hat = self.v[i] / (1 - beta2 ** self.t)
             p -= self.eta * m_hat / (np.sqrt(v_hat) + eps)
+        if self.freno.any():
+            self.W[0] *= (1 - self.freno)[:, None]
         self._proyectar()
 
     @property
