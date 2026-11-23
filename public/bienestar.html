@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Bandeja de Bienestar</title>
+  <meta name="description" content="Los estudiantes que Bienestar contacta esta semana, el porqué de cada uno y el registro de lo que pasó.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=&#x27;http://www.w3.org/2000/svg&#x27; viewBox=&#x27;0 0 32 32&#x27;%3E%3Crect width=&#x27;32&#x27; height=&#x27;32&#x27; rx=&#x27;6&#x27; fill=&#x27;%232350a8&#x27;/%3E%3Ccircle cx=&#x27;16&#x27; cy=&#x27;9&#x27; r=&#x27;3.4&#x27; fill=&#x27;%23e05a4f&#x27;/%3E%3Ccircle cx=&#x27;16&#x27; cy=&#x27;16&#x27; r=&#x27;3.4&#x27; fill=&#x27;%23f2b23a&#x27;/%3E%3Ccircle cx=&#x27;16&#x27; cy=&#x27;23&#x27; r=&#x27;3.4&#x27; fill=&#x27;%234fb57a&#x27;/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&amp;family=Literata:ital,opsz,wght@0,7..72,400..800;1,7..72,400..600&amp;display=swap">
+  <link rel="stylesheet" href="estilos-bienestar.css">
+</head>
+<body class="app" data-pagina="bienestar">
+  <!-- Generado por python -m desercion.paginas_web: edite la plantilla, no este archivo. -->
+  <a class="app-saltar" href="#ap-principal">Ir a la lista de estudiantes</a>
+  <header class="app-barra">
+    <button type="button" class="app-boton-menu" id="ap-boton-menu" aria-controls="ap-menu" aria-expanded="false">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <span class="app-oculto">Menú</span>
+    </button>
+    <div class="app-marca">
+      <svg class="app-logo" viewBox="0 0 12 30" aria-hidden="true"><rect width="12" height="30" rx="6" fill="currentColor"/><circle cx="6" cy="7" r="3" fill="#e05a4f"/><circle cx="6" cy="15" r="3" fill="#f2b23a"/><circle cx="6" cy="23" r="3" fill="#4fb57a"/></svg>
+      <div><b>Bienestar Universitario</b><span>Alerta temprana de deserción</span></div>
+    </div>
+    <div class="app-barra-der">
+      <span class="app-lectura" id="ap-lectura">Leyendo la base…</span>
+      <span class="app-usuario" title="Usuario de demostración"><i aria-hidden="true">CB</i><span>Consejería de Bienestar</span></span>
+    </div>
+  </header>
+  <div class="app-cuerpo">
+    <nav class="app-menu" id="ap-menu" aria-label="Menú de la bandeja">
+      <p class="app-menu-grupo">Casos</p>
+      <button type="button" data-vista="agenda"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/><path d="M9 14.5l2 2 4-4"/></svg><span>Hoy</span><b id="n-agenda"></b></button>
+      <button type="button" data-vista="avisos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10v4h3l6 4V6L7 10z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a7.5 7.5 0 0 1 0 11"/></svg><span>Avisos de profesores</span><b id="n-avisos"></b></button>
+      <button type="button" data-vista="semana" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 13l2.5-7h11L20 13v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M4 13h4.5l1 2h5l1-2H20"/></svg><span>Esta semana</span><b id="n-semana"></b></button>
+      <button type="button" data-vista="seguimiento"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l2.5 2"/></svg><span>En seguimiento</span><b id="n-seguimiento"></b></button>
+      <button type="button" data-vista="cerrado"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M8.5 12.2l2.3 2.3 4.7-4.8"/></svg><span>Cerrados</span><b id="n-cerrado"></b></button>
+      <p class="app-menu-grupo">Consultar</p>
+      <button type="button" data-vista="directorio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="9" r="3"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M16 6.2a3 3 0 0 1 0 5.6M18 19a5.5 5.5 0 0 0-2.4-4.5"/></svg><span>Todos los estudiantes</span><b id="n-directorio"></b></button>
+      <button type="button" data-vista="informe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h16"/><path d="M7 16v-5M12 16V7M17 16v-8"/></svg><span>Informe</span></button>
+      <a class="app-menu-final" href="aviso-docente.html" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-4 9 4-9 4z"/><path d="M7 11v4c0 1.5 2.2 3 5 3s5-1.5 5-3v-4M21 9v5"/></svg><span>Formulario para profesores</span></a>
+      <a href="estudiantes.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 6l-6 6 6 6M4 12h16"/></svg><span>Sitio del proyecto</span></a>
+    </nav>
+    <main class="app-principal" id="ap-principal">
+      <div class="app-encabezado">
+        <div>
+          <h1 id="ap-titulo">Por contactar esta semana</h1>
+          <p id="ap-subtitulo">Cargando…</p>
+        </div>
+        <div class="app-avance" id="ap-avance" hidden>
+          <span id="ap-avance-texto"></span>
+          <div class="app-avance-barra" aria-hidden="true"><i id="ap-avance-relleno"></i></div>
+        </div>
+      </div>
+      <div class="app-acciones-informe" id="ap-acciones-informe" hidden>
+        <button type="button" class="boton-sec" id="ap-csv">Descargar casos (Excel)</button>
+        <button type="button" class="boton-sec" id="ap-imprimir">Imprimir</button>
+      </div>
+      <section class="app-informe" id="ap-informe" aria-label="Informe" hidden></section>
+      <div class="app-herramientas" id="ap-herramientas">
+        <label class="app-oculto" for="ap-buscar">Buscar por código</label>
+        <input type="search" id="ap-buscar" placeholder="Buscar por código" autocomplete="off">
+        <label class="app-oculto" for="ap-programa">Programa</label>
+        <select id="ap-programa"><option value="">Todos los programas</option></select>
+        <label class="app-oculto" for="ap-nivel">Nivel de riesgo</label>
+        <select id="ap-nivel" hidden>
+          <option value="">Todos los niveles</option><option value="alto">Riesgo alto</option><option value="medio">Riesgo medio</option>
+          <option value="bajo">Riesgo bajo</option><option value="devuelto">Devueltos al registro</option>
+        </select>
+        <button type="button" class="boton-sec boton-wa" id="ap-campana" hidden>Invitar por WhatsApp a los pendientes</button>
+      </div>
+      <div class="app-tabla-zona" id="ap-tabla-zona">
+        <table class="app-tabla">
+          <thead><tr id="ap-cabeza"></tr></thead>
+          <tbody id="ap-filas"></tbody>
+        </table>
+        <p class="app-vacio" id="ap-vacio" hidden></p>
+        <div class="app-mas" id="ap-mas-zona" hidden><span id="ap-mas-texto"></span><button type="button" class="boton-sec" id="ap-mas">Ver 50 más</button></div>
+      </div>
+      <footer class="app-pie">
+        <p id="ap-alcance"></p>
+        <p>Prototipo: lo que registre se guarda solo en este navegador. En una institución quedaría en su base de datos,
+          a la vista de todo el equipo de Bienestar. <button type="button" class="app-enlace" id="ap-borrar">Borrar lo registrado</button></p>
+      </footer>
+    </main>
+    <aside class="app-detalle" id="ap-detalle" aria-label="Caso del estudiante" hidden tabindex="-1"></aside>
+  </div>
+  <div class="app-aviso" id="ap-aviso" role="status" aria-live="polite" hidden></div>
+  <script src="js/util.js" defer></script>
+  <script src="js/bienestar.js" defer></script>
+</body>
+</html>

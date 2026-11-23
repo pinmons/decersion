@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Reportar a un estudiante</title>
+  <meta name="description" content="Formulario para que un profesor avise a Bienestar sobre un estudiante que le preocupa.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=&#x27;http://www.w3.org/2000/svg&#x27; viewBox=&#x27;0 0 32 32&#x27;%3E%3Crect width=&#x27;32&#x27; height=&#x27;32&#x27; rx=&#x27;6&#x27; fill=&#x27;%232350a8&#x27;/%3E%3Ccircle cx=&#x27;16&#x27; cy=&#x27;9&#x27; r=&#x27;3.4&#x27; fill=&#x27;%23e05a4f&#x27;/%3E%3Ccircle cx=&#x27;16&#x27; cy=&#x27;16&#x27; r=&#x27;3.4&#x27; fill=&#x27;%23f2b23a&#x27;/%3E%3Ccircle cx=&#x27;16&#x27; cy=&#x27;23&#x27; r=&#x27;3.4&#x27; fill=&#x27;%234fb57a&#x27;/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&amp;family=Literata:ital,opsz,wght@0,7..72,400..800;1,7..72,400..600&amp;display=swap">
+  <link rel="stylesheet" href="estilos-bienestar.css">
+</head>
+<body class="app doc" data-pagina="aviso-docente">
+  <!-- Generado por python -m desercion.paginas_web: edite la plantilla, no este archivo. -->
+  <header class="app-barra">
+    <div class="app-marca">
+      <svg class="app-logo" viewBox="0 0 12 30" aria-hidden="true"><rect width="12" height="30" rx="6" fill="currentColor"/><circle cx="6" cy="7" r="3" fill="#e05a4f"/><circle cx="6" cy="15" r="3" fill="#f2b23a"/><circle cx="6" cy="23" r="3" fill="#4fb57a"/></svg>
+      <div><b>Portal docente</b><span>Aviso a Bienestar Universitario</span></div>
+    </div>
+  </header>
+  <main class="doc-principal">
+    <form class="doc-tarjeta" id="doc-form" novalidate>
+      <h1>Reportar a un estudiante</h1>
+      <p class="doc-entrada">Si un estudiante le preocupa, avísele a Bienestar. Toma un minuto y una consejera lo contactará.</p>
+      <div class="doc-campo">
+        <label for="doc-codigo">Código del estudiante</label>
+        <input id="doc-codigo" list="doc-codigos" autocomplete="off" placeholder="Por ejemplo, UPV22-1241" required>
+        <datalist id="doc-codigos"></datalist>
+        <p class="doc-ayuda" id="doc-quien" aria-live="polite"></p>
+      </div>
+      <div class="doc-campo">
+        <label for="doc-asignatura">Asignatura</label>
+        <input id="doc-asignatura" autocomplete="off" placeholder="Por ejemplo, Cálculo I" required>
+      </div>
+      <fieldset class="doc-campo">
+        <legend>¿Qué está pasando? <span>Marque una o varias</span></legend>
+        <div class="doc-opciones">
+            <label class="doc-opcion"><input type="checkbox" name="motivo" value="No viene a clase"><span>No viene a clase</span></label>
+            <label class="doc-opcion"><input type="checkbox" name="motivo" value="Va perdiendo la asignatura"><span>Va perdiendo la asignatura</span></label>
+            <label class="doc-opcion"><input type="checkbox" name="motivo" value="No entrega los trabajos"><span>No entrega los trabajos</span></label>
+            <label class="doc-opcion"><input type="checkbox" name="motivo" value="Lo noto con problemas personales o de ánimo"><span>Lo noto con problemas personales o de ánimo</span></label>
+            <label class="doc-opcion"><input type="checkbox" name="motivo" value="Tiene problemas económicos"><span>Tiene problemas económicos</span></label>
+            <label class="doc-opcion"><input type="checkbox" name="motivo" value="Otro motivo"><span>Otro motivo</span></label>
+        </div>
+      </fieldset>
+      <div class="doc-campo">
+        <label for="doc-comentario">Comentario <span>(opcional)</span></label>
+        <textarea id="doc-comentario" rows="3" placeholder="Lo que ha notado y crea útil para Bienestar"></textarea>
+      </div>
+      <div class="doc-campo">
+        <label for="doc-nombre">Su nombre</label>
+        <input id="doc-nombre" autocomplete="name" placeholder="Para que Bienestar sepa a quién preguntar" required>
+      </div>
+      <p class="doc-error" id="doc-error" role="alert" hidden></p>
+      <button type="submit" class="det-principal">Enviar aviso a Bienestar</button>
+      <p class="doc-privado">Bienestar recibe el aviso y decide cómo acercarse al estudiante. El estudiante no ve este reporte.</p>
+    </form>
+    <div class="doc-tarjeta doc-enviado" id="doc-enviado" hidden tabindex="-1">
+      <h1>Aviso enviado</h1>
+      <p id="doc-resumen"></p>
+      <p class="doc-entrada">Gracias. Una consejera de Bienestar lo revisará y contactará al estudiante.</p>
+      <button type="button" class="boton-sec" id="doc-otro">Reportar a otro estudiante</button>
+    </div>
+    <p class="doc-pie">Prototipo: el aviso llega a la <a href="bienestar.html">Bandeja de Bienestar</a> abierta en este mismo navegador.</p>
+  </main>
+  <script src="js/util.js" defer></script>
+  <script src="js/aviso-docente.js" defer></script>
+</body>
+</html>

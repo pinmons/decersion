@@ -9,7 +9,7 @@ cada paso lo dibuja public/js/proceso.js con los datos reales de public/reportes
 from html import escape
 
 from . import RAIZ
-from .paginas import estudiantes as paginas_estudiantes, inicio as paginas_inicio, modelo as paginas_modelo, proceso as paginas_proceso
+from .paginas import bienestar as paginas_bienestar, estudiantes as paginas_estudiantes, inicio as paginas_inicio, modelo as paginas_modelo, proceso as paginas_proceso
 
 PUBLICO = RAIZ / "public"
 
@@ -195,6 +195,11 @@ def estudiantes():
                    "estudiantes", "estudiantes", cuerpo, paginas_estudiantes.ESTILOS, paginas_estudiantes.SCRIPTS)
 
 
+def bienestar():
+    # Es una aplicación aparte (sistema de información), sin la cabecera ni el pie del sitio.
+    return paginas_bienestar.pagina(FAVICON, FUENTES)
+
+
 def modelo():
     cuerpo = paginas_modelo.cuerpo()
     return _pagina("modelo.html", "Cómo le va al modelo",
@@ -278,7 +283,8 @@ def reporte():
 
 
 def generar():
-    paginas = {"index.html": inicio(), "estudiantes.html": estudiantes(), "modelo.html": modelo(), "evaluar.html": evaluar(),
+    paginas = {"index.html": inicio(), "estudiantes.html": estudiantes(), "bienestar.html": bienestar(),
+               "aviso-docente.html": paginas_bienestar.pagina_docente(FAVICON, FUENTES), "modelo.html": modelo(), "evaluar.html": evaluar(),
                "proceso.html": proceso(), "reporte.html": reporte()}
     for i, (clave, _, _) in enumerate(PASOS):
         paginas[f"{clave}.html"] = paso(i)
