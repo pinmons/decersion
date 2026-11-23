@@ -1,9 +1,9 @@
 {
  "archivo": "registro_academico.sqlite",
  "motor": "SQLite",
- "total": 6142,
- "historico": 5102,
- "operacion": 1040,
+ "total": 5808,
+ "historico": 4888,
+ "operacion": 920,
  "reserva": 0,
  "muestra": false,
  "fuente": {
@@ -14,10 +14,10 @@
   "doi": "https://doi.org/10.5281/zenodo.17239943",
   "licencia": "CC BY 4.0",
   "descripcion": "Registros reales y anonimizados de estudiantes de la UPV (cursos 2021-22 y 2022-23 en esta corrida): matrícula, notas por asignatura, días conectados al wifi del campus, actividad en el aula virtual y si abandonó la titulación (dos cursos seguidos sin matricularse).",
-  "poblacion": "Primer año de grado, cohortes 2021 y 2022, con lo que se sabía al terminar el primer cuatrimestre."
+  "poblacion": "Primer año de grado, cohortes 2021 y 2022, con lo que se sabía al terminar el primer cuatrimestre. Sin los 334 estudiantes con impago de matrícula: la fuente no marca a ninguno como abandono."
  },
  "limite": "Son estudiantes reales de primer año de la Universitat Politècnica de València (España), no de la universidad que use el sistema. La base no registra asistencia ni si el estudiante trabaja: la asistencia se aproxima con la presencia en el campus (wifi) y en el aula virtual, y el trabajo con la matrícula a tiempo parcial. El estrato no se pudo construir y qué letra marca el abandono se dedujo de los datos. Sirve para ver el modelo operar con personas reales, no para decidir sobre estudiantes.",
- "etiqueta": "«A» es la letra minoritaria (11 % en primer año de grado). Los «A» aprueban el 51 % de sus asignaturas del primer cuatrimestre frente al 79 % de los «B», tienen menos presencia (35 frente a 47 de 100), son cuatro veces más a menudo de tiempo parcial (4,9 % frente a 1,2 %) y, al extraer los datos, solo el 13–18 % seguía con matrícula activa, frente al 77 % de los «B».",
+ "etiqueta": "«A» es la letra minoritaria (12 % en primer año de grado, sin los impagos). Los «A» aprueban el 51 % de sus asignaturas del primer cuatrimestre frente al 83 % de los «B», tienen menos presencia (35 frente a 49 de 100), son seis veces más a menudo de tiempo parcial (4,9 % frente a 0,8 %) y, al extraer los datos, solo el 13–18 % seguía con matrícula activa, frente al 77 % de los «B» (esto último se midió en la fuente completa, antes de quitar los impagos).",
  "mapeo": [
   {
    "campo": "id_estudiante",
@@ -76,8 +76,68 @@
   },
   {
    "campo": "deuda_matricula",
-   "origen": "Sin informar (es opcional en el contrato). La fuente marca impagos, pero ninguno de los estudiantes con impago figura como abandono: la etiqueta los trata aparte y el dato enseñaría lo contrario de lo real.",
+   "origen": "Sin informar (es opcional en el contrato). La fuente marca impagos, pero ninguno de los 334 estudiantes con impago figura como abandono: la etiqueta los trata aparte. Por eso esos estudiantes no entran en la base (no se sabe si abandonaron) y el dato no se usa.",
    "tipo": "supuesto"
+  },
+  {
+   "campo": "nota_media_cuatrimestre",
+   "origen": "Media de TODAS las notas del primer cuatrimestre (también las suspendidas), en la escala original 0 a 10. Sin dato si no se presentó a ninguna.",
+   "tipo": "directo"
+  },
+  {
+   "campo": "nota_minima_cuatrimestre",
+   "origen": "La nota más baja entre las presentadas del primer cuatrimestre (0 a 10).",
+   "tipo": "directo"
+  },
+  {
+   "campo": "asignaturas_no_presentadas",
+   "origen": "Asignaturas del primer cuatrimestre sin nota.",
+   "tipo": "directo"
+  },
+  {
+   "campo": "dias_campus_sep_nov",
+   "origen": "Días conectado al wifi del campus en septiembre, octubre y noviembre. Sin dato si la fuente no tiene ningún registro de wifi del estudiante (no dice si no fue o si no se registró).",
+   "tipo": "directo"
+  },
+  {
+   "campo": "dias_campus_dic_ene",
+   "origen": "Lo mismo, en diciembre y enero (la época de exámenes).",
+   "tipo": "directo"
+  },
+  {
+   "campo": "dias_aula_virtual",
+   "origen": "Días que entró al aula virtual, promedio por asignatura del primer cuatrimestre (sept.–enero).",
+   "tipo": "directo"
+  },
+  {
+   "campo": "entregas_por_asignatura",
+   "origen": "Tareas y cuestionarios entregados en el aula virtual, promedio por asignatura (sept.–enero).",
+   "tipo": "directo"
+  },
+  {
+   "campo": "nota_acceso",
+   "origen": "Nota de acceso a la universidad, sobre 14.",
+   "tipo": "directo"
+  },
+  {
+   "campo": "nota_bachillerato",
+   "origen": "Nota media del bachillerato, sobre 10.",
+   "tipo": "directo"
+  },
+  {
+   "campo": "opcion_titulacion",
+   "origen": "En qué opción pidió la titulación (1 = primera).",
+   "tipo": "directo"
+  },
+  {
+   "campo": "tipo_ingreso",
+   "origen": "Vía de ingreso tal como la codifica la fuente («NAP» = acceso ordinario, 9 de cada 10).",
+   "tipo": "directo"
+  },
+  {
+   "campo": "titulacion",
+   "origen": "Titulación, renombrada T01…T45 de la más grande a la más chica (la fuente la trae cifrada). El modelo no usa el código: usa la tasa de abandono de esa titulación entre los estudiantes de entrenamiento.",
+   "tipo": "directo"
   },
   {
    "campo": "deserto",
