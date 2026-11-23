@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Cómo se construyó</title>
-  <meta name="description" content="Los ocho pasos del prototipo, cada uno en su página.">
+  <meta name="description" content="Los nueve pasos del prototipo, en cuatro partes.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%232350a8'/%3E%3Ccircle cx='16' cy='9' r='3.4' fill='%23e05a4f'/%3E%3Ccircle cx='16' cy='16' r='3.4' fill='%23f2b23a'/%3E%3Ccircle cx='16' cy='23' r='3.4' fill='%234fb57a'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -34,32 +34,85 @@
   <main id="principal">
     <section class="seccion seccion-primera">
       <div class="envoltura">
-        <header class="seccion-encabezado">
-          <h1>Cómo se construyó</h1>
-          <p>Nueve pasos, de las reglas escritas a mano a una red neuronal que aprende sus pesos. Cada número y cada gráfica salen
-            de la ejecución real del entrenamiento (semilla 2026). Si prefiere leerlo todo de corrido, está el
-            <a href="reporte.html">reporte completo</a>.</p>
+        <header class="seccion-encabezado indice-cabeza">
+          <h1>Cómo se hizo</h1>
+          <p>De las reglas escritas a mano a una red neuronal que aprende sus pesos, en nueve pasos y cuatro partes.
+            Cada número y cada gráfica salen de la ejecución real del entrenamiento con datos sintéticos (semilla 2026).</p>
         </header>
-        <ol class="tarjetas-pasos">
-<li><a href="contrato.html"><b class="paso-n">1</b><span class="paso-texto"><strong>El contrato</strong><span>Las reglas fijas que dicen qué datos entran, en qué orden se revisan y qué puede responder el sistema.</span><span class="para-que">Para qué: Que toda respuesta sea un resultado confiable, un error que se corrige en el origen o una remisión a una persona.</span></span></a></li>
-<li><a href="datos.html"><b class="paso-n">2</b><span class="paso-texto"><strong>Los datos</strong><span>La generación de 20 000 estudiantes simulados, cada uno con la marca de si desertó o no.</span><span class="para-que">Para qué: Tener con qué entrenar y medir los modelos, y dejar listo el camino para cambiar a datos reales.</span></span></a></li>
-<li><a href="variables.html"><b class="paso-n">3</b><span class="paso-texto"><strong>Las variables</strong><span>Elegir y preparar las variables que entran al modelo.</span><span class="para-que">Para qué: Que cada variable aporte información propia y todas compitan en igualdad de condiciones.</span></span></a></li>
-<li><a href="aprendizaje.html"><b class="paso-n">4</b><span class="paso-texto"><strong>Cómo aprende una neurona</strong><span>El entrenamiento de una regresión logística: una sola neurona que aprende un peso por variable.</span><span class="para-que">Para qué: Obtener pesos medidos que después se convierten en una tarjeta de puntos que un consejero entiende.</span></span></a></li>
-<li><a href="red.html"><b class="paso-n">5</b><span class="paso-texto"><strong>La red neuronal</strong><span>Una red neuronal de tres capas, entrenada con las técnicas del aprendizaje profundo.</span><span class="para-que">Para qué: Comprobar si un modelo más complejo predice mejor, y a qué costo en explicabilidad.</span></span></a></li>
-<li><a href="puntaje.html"><b class="paso-n">6</b><span class="paso-texto"><strong>De pesos a puntos</strong><span>Convertir los pesos aprendidos en puntos de 0 a 100 y elegir dónde empieza cada nivel.</span><span class="para-que">Para qué: Mantener la forma de las reglas (puntos, niveles y acción) pero con pesos aprendidos de los datos.</span></span></a></li>
-<li><a href="pesos.html"><b class="paso-n">7</b><span class="paso-texto"><strong>Cuánto pesa cada variable</strong><span>Medir cuánto depende el modelo de cada variable y repartir el peso si una domina.</span><span class="para-que">Para qué: Un modelo robusto y estable, con el estrato revisado aparte por ser una variable sensible.</span></span></a></li>
-<li><a href="resultados.html"><b class="paso-n">8</b><span class="paso-texto"><strong>Qué tan bien funciona</strong><span>La evaluación final con 3 000 estudiantes que ningún modelo había visto.</span><span class="para-que">Para qué: Comparar con honestidad las reglas, la neurona y la red, y saber cuánto confiar en cada una.</span></span></a></li>
-<li><a href="pruebas.html"><b class="paso-n">9</b><span class="paso-texto"><strong>Pruebas de estrés</strong><span>Casos diseñados para romper el sistema, con la respuesta esperada escrita aparte.</span><span class="para-que">Para qué: Encontrar y corregir las fallas antes de que lleguen a un estudiante real.</span></span></a></li>
-        </ol>
+        <div class="bento grupos">
+          <section class="celda c6 grupo" aria-labelledby="grupo-reglas">
+            <header class="grupo-cabeza">
+              <span class="rotulo">Parte 1 de 4</span>
+              <h2 id="grupo-reglas">Las reglas</h2>
+              <p>Qué entra, qué se revisa y qué puede responder el sistema.</p>
+            </header>
+            <div class="grupo-mini" id="mini-reglas">
+              <div class="mini-salidas" role="img" aria-label="Las tres respuestas del sistema: un nivel de riesgo, un error o una remisión a una persona">
+                <span class="mini-sello bajo">Bajo</span><span class="mini-sello medio">Medio</span><span class="mini-sello alto">Alto</span>
+                <span class="mini-sello alto mini-error">Error</span><span class="mini-sello humano">Persona</span>
+              </div>
+              <p class="mini-pie">Tres respuestas posibles: un nivel, un error o una persona.</p>
+            </div>
+            <ol class="grupo-pasos">
+                <li><a href="contrato.html"><b class="paso-n">1</b><span><strong>El contrato</strong><small>Que toda respuesta sea un resultado, un error o una remisión a una persona.</small></span></a></li>
+            </ol>
+          </section>
+          <section class="celda c6 grupo" aria-labelledby="grupo-datos">
+            <header class="grupo-cabeza">
+              <span class="rotulo">Parte 2 de 4</span>
+              <h2 id="grupo-datos">Los datos</h2>
+              <p>Con qué estudiantes aprende y qué variables usa.</p>
+            </header>
+            <div class="grupo-mini" id="mini-datos">
+              <p class="mini-pie">Cargando…</p>
+            </div>
+            <ol class="grupo-pasos">
+                <li><a href="datos.html"><b class="paso-n">2</b><span><strong>Los datos</strong><small>Tener miles de ejemplos con los que entrenar y medir.</small></span></a></li>
+                <li><a href="variables.html"><b class="paso-n">3</b><span><strong>Las variables</strong><small>Que cada variable aporte información propia.</small></span></a></li>
+            </ol>
+          </section>
+          <section class="celda c6 grupo" aria-labelledby="grupo-aprendizaje">
+            <header class="grupo-cabeza">
+              <span class="rotulo">Parte 3 de 4</span>
+              <h2 id="grupo-aprendizaje">El aprendizaje</h2>
+              <p>Cómo salen los pesos de los datos y no del ojo.</p>
+            </header>
+            <div class="grupo-mini" id="mini-aprendizaje">
+              <p class="mini-pie">Cargando…</p>
+            </div>
+            <ol class="grupo-pasos">
+                <li><a href="aprendizaje.html"><b class="paso-n">4</b><span><strong>Cómo aprende una neurona</strong><small>Seguir a un estudiante por la neurona, el error y la corrección.</small></span></a></li>
+                <li><a href="red.html"><b class="paso-n">5</b><span><strong>La red neuronal</strong><small>Probar si un modelo más complejo predice mejor.</small></span></a></li>
+                <li><a href="puntaje.html"><b class="paso-n">6</b><span><strong>De pesos a puntos</strong><small>Una tarjeta de 0 a 100 que un consejero entiende.</small></span></a></li>
+                <li><a href="pesos.html"><b class="paso-n">7</b><span><strong>Cuánto pesa cada variable</strong><small>Que ninguna variable decida sola.</small></span></a></li>
+            </ol>
+          </section>
+          <section class="celda c6 grupo" aria-labelledby="grupo-comprobacion">
+            <header class="grupo-cabeza">
+              <span class="rotulo">Parte 4 de 4</span>
+              <h2 id="grupo-comprobacion">La comprobación</h2>
+              <p>Qué tan bien funciona y cómo se intentó romperlo.</p>
+            </header>
+            <div class="grupo-mini" id="mini-comprobacion">
+              <p class="mini-pie">Cargando…</p>
+            </div>
+            <ol class="grupo-pasos">
+                <li><a href="resultados.html"><b class="paso-n">8</b><span><strong>Qué tan bien funciona</strong><small>Comparar con honestidad las reglas, la neurona y la red.</small></span></a></li>
+                <li><a href="pruebas.html"><b class="paso-n">9</b><span><strong>Pruebas de estrés</strong><small>Encontrar las fallas antes de que lleguen a un estudiante.</small></span></a></li>
+            </ol>
+          </section>
+        </div>
+        <p class="indice-otros">También puede <a href="reporte.html">leer el reporte completo de corrido</a> o
+          <a href="pruebas.html">correr las pruebas de estrés otra vez</a>.</p>
       </div>
     </section>
   </main>
   <footer class="pie">
     <div class="envoltura">
-      <p>Prototipo académico. Los modelos están implementados desde cero en NumPy. Se construyeron con datos
-        sintéticos (Evaluar, Cómo se construyó, Reporte y Pruebas) y se reentrenaron con una base real y pública de
-        4 424 estudiantes del Instituto Politécnico de Portalegre (Estudiantes y Modelo). No se usa para decidir sobre
-        estudiantes reales. Los oráculos de las pruebas son borradores que debe firmar el equipo.</p>
+      <p>Prototipo académico, con los modelos escritos desde cero en NumPy. «Estudiantes» y «Modelo» usan una base
+        real y pública (Instituto Politécnico de Portalegre) donde asistencia, estrato y trabajo son aproximaciones.
+        «Probar un caso» y «Cómo se hizo» usan el modelo construido con datos sintéticos. No se usa para decidir sobre
+        estudiantes reales.</p>
     </div>
   </footer>
   <div id="globo" class="globo" role="tooltip" hidden></div>

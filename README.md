@@ -43,15 +43,20 @@ Portalegre (Realinho et al., 2021, UCI, https://doi.org/10.24432/C5MC89, CC BY 4
 
 - `base_datos/registro_academico.sqlite` hace de registro académico. `GET /api/estudiantes` la lee, pasa cada
   registro por el Paso 1 y el modelo, y devuelve un resultado por estudiante con el porqué y en qué mejorar.
-- En la web: **Estudiantes** (vista general y ficha de cada uno) y **Modelo** (AUC, F1, detección, precisión,
-  matriz de aciertos, curva ROC y cómo se entrenó).
+- **Nadie queda en revisión manual.** 180 registros (todos de un programa cuyo historial académico no está en la
+  base) hacen que el contrato se abstenga; para ellos `desercion/ingreso.py` da un resultado **provisional** con los
+  datos de la matrícula (AUC 0.785, F1 0.61: más débil que el modelo principal, y la web lo dice). El hueco se le
+  pide al registro en un solo aviso. Los 82 con un dato fuera de rango se devuelven solos.
+- En la web, cuatro secciones: **Estudiantes** (proceso automático, tablero con gráficas, lista y ficha), **Modelo**
+  (AUC, F1, detección y precisión con su símbolo, aciertos, ROC, calibración y el entrenamiento reproducible),
+  **Probar un caso** y **Cómo se hizo** (los 9 pasos en cuatro partes; desde ahí se abren el reporte y las pruebas).
 - La base no trae asistencia, estrato ni si el estudiante trabaja: son aproximaciones `[SUPUESTO]`, descritas en
   `desercion/datos_reales.py` y en la página Modelo. No se usa para decidir sobre estudiantes reales.
 
 ```bash
 python -m desercion.datos_reales                                                        # fuente → CSV del contrato
 python -m desercion.entrenamiento --csv datos/reales/estudiantes_reales.csv --nombre real  # entrena aparte (~30 s)
-python -m desercion.operacion                                                           # arma la base y la copia para la web
+python -m desercion.operacion                                                           # arma la base, entrena el modelo de ingreso y deja la copia para la web
 ```
 
 ## Instalación
@@ -138,6 +143,8 @@ desercion/
   reporte.py, figuras.py, publicar.py, web.py
   datos_reales.py       base real (UCI) → esquema del contrato, con sus supuestos
   operacion.py          base SQLite → Paso 1 → modelo → un resultado por estudiante
+  ingreso.py            resultado provisional para quien no tiene historial académico
+  paginas_web.py        plantilla común; paginas/ tiene el HTML de inicio, estudiantes, modelo y proceso
 base_datos/             registro académico real en SQLite (lo lee la API)
 pruebas/                arnés de las rondas 1–4, casos U01–U15 y su oráculo, verificaciones
 modelos_entrenados/     pesos en JSON (los lee la API)

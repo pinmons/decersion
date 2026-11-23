@@ -32,9 +32,14 @@ trabajo previo está en `contexto/` y es de solo lectura.
 - Scripts en LF (lo garantiza `.gitattributes`).
 - Despliegue en Vercel: `api/` (funciones Python, solo NumPy) + `public/` (interfaz web
   estática). Streamlit (`app.py`) es para uso local; Vercel no puede ejecutarlo.
-- Páginas web: una por parte (inicio, evaluar, índice y un paso por página). Se generan con
-  `python -m desercion.paginas_web` (también lo hace `python -m desercion.publicar`); no editar los
-  `.html` de `public/` a mano.
+- Páginas web: se generan con `python -m desercion.paginas_web` (también lo hace `python -m desercion.publicar`);
+  no editar los `.html` de `public/` a mano. La plantilla común (cabecera, cuatro secciones de navegación, pie) está
+  en `desercion/paginas_web.py`; el HTML de inicio, estudiantes, modelo y el índice de pasos, en `desercion/paginas/`.
+  Cada vista tiene su hoja (`public/estilos-<vista>.css`) y su script (`public/js/<vista>.js`); `estilos.css` y
+  `util.js` son lo común (tokens, rejilla `.bento`/`.celda`, `.num`, `.rotulo`, gráficas SVG).
+- Diseño: una decisión por pantalla (ley de Hick), lo avanzado plegado, cifras en Literata (`.num`), rejilla bento
+  para tableros. Antes de dar por buena una vista se mide y se prueba en navegador real (1229×660 y 390 px, sin
+  desborde horizontal ni errores de consola).
 - Animaciones: seguir las skills `.claude/skills/animate` y `animation-performance` (solo transform y
   opacity, ease-out fuerte, una vez al entrar en pantalla, versión tranquila con reduced motion).
 - Diseño de la web: seguir la skill `.claude/skills/frontend-design` y la identidad ya definida en

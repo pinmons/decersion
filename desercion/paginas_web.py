@@ -106,10 +106,10 @@ def _pagina(archivo, titulo, descripcion, pagina, seccion, cuerpo, estilos=(), s
   </main>
   <footer class="pie">
     <div class="envoltura">
-      <p>Prototipo académico. Los modelos están implementados desde cero en NumPy. Se construyeron con datos
-        sintéticos (Evaluar, Cómo se construyó, Reporte y Pruebas) y se reentrenaron con una base real y pública de
-        4 424 estudiantes del Instituto Politécnico de Portalegre (Estudiantes y Modelo). No se usa para decidir sobre
-        estudiantes reales. Los oráculos de las pruebas son borradores que debe firmar el equipo.</p>
+      <p>Prototipo académico, con los modelos escritos desde cero en NumPy. «Estudiantes» y «Modelo» usan una base
+        real y pública (Instituto Politécnico de Portalegre) donde asistencia, estrato y trabajo son aproximaciones.
+        «Probar un caso» y «Cómo se hizo» usan el modelo construido con datos sintéticos. No se usa para decidir sobre
+        estudiantes reales.</p>
     </div>
   </footer>
   <div id="globo" class="globo" role="tooltip" hidden></div>
@@ -139,26 +139,27 @@ def evaluar():
     cuerpo = """    <section class="seccion seccion-primera">
       <div class="envoltura">
         <header class="seccion-encabezado">
-          <h1>Evaluar a un estudiante</h1>
-          <p>Llene la planilla con los 12 datos del contrato. La ficha de seguimiento se actualiza sola cuando están
-            completos los obligatorios y muestra el recorrido que hizo el registro por las reglas. Si prefiere, cargue un
-            ejemplo y modifíquelo.</p>
+          <h1>Probar un caso</h1>
+          <p>Mueva cualquier dato y mire cómo responde la ficha. Empieza con un estudiante de ejemplo ya calificado.</p>
         </header>
+        <div class="casos-rapidos" role="group" aria-label="Empezar con un caso">
+          <span class="rotulo">Empezar con</span>
+          <button type="button" class="chip-caso" data-caso="R01">un caso tranquilo</button>
+          <button type="button" class="chip-caso" data-caso="ejemplo" aria-pressed="true">uno intermedio</button>
+          <button type="button" class="chip-caso" data-caso="R03">uno crítico</button>
+          <button type="button" class="chip-caso chip-vacio" id="btn-limpiar">la planilla en blanco</button>
+        </div>
         <div class="evaluador">
           <form id="planilla" class="planilla" autocomplete="off" novalidate>
+            <div id="campos" class="campos"><p class="nota">Cargando la planilla…</p></div>
             <fieldset class="selector-modo">
-              <legend>Quién califica</legend>
+              <legend class="rotulo">Quién califica</legend>
               <div class="segmentado" role="radiogroup" aria-label="Modo del sistema">
-                <label><input type="radio" name="modo" value="reglas" id="modo-reglas"><span>Reglas del contrato</span></label>
-                <label><input type="radio" name="modo" value="logistica" id="modo-logistica" checked><span>Regresión logística</span></label>
+                <label><input type="radio" name="modo" value="logistica" id="modo-logistica" checked><span>Regresión logística <small>recomendado</small></span></label>
                 <label><input type="radio" name="modo" value="red_neuronal" id="modo-red"><span>Red neuronal</span></label>
+                <label><input type="radio" name="modo" value="reglas" id="modo-reglas"><span>Reglas del contrato</span></label>
               </div>
             </fieldset>
-            <div id="campos" class="campos"><p class="nota">Cargando la planilla…</p></div>
-            <div class="acciones">
-              <button type="button" class="boton boton-tinta" id="btn-ejemplo">Cargar un ejemplo</button>
-              <button type="button" class="boton" id="btn-limpiar">Limpiar planilla</button>
-            </div>
           </form>
           <article class="ficha" aria-labelledby="ficha-titulo" aria-live="polite">
             <header class="ficha-cabecera">
@@ -168,20 +169,20 @@ def evaluar():
                 <div><dt>Calificó</dt><dd id="ficha-modo">regresión logística</dd></div>
               </dl>
             </header>
-            <div id="sello" class="sello-zona"><p class="sello-vacio">Faltan 11 datos</p></div>
-            <p id="ficha-resumen" class="ficha-resumen">Llene la planilla para calificar al estudiante.</p>
+            <div id="sello" class="sello-zona"><p class="sello-vacio">Calificando…</p></div>
+            <p id="ficha-resumen" class="ficha-resumen">Consultando el sistema…</p>
             <div id="ficha-detalle" class="ficha-detalle" hidden>
               <section class="ficha-bloque"><h3>Puntaje de riesgo</h3><div id="regla-puntaje"></div></section>
-              <section class="ficha-bloque" id="bloque-sigmoide" hidden><h3>De puntos a probabilidad</h3><div id="sigmoide"></div></section>
-              <section class="ficha-bloque"><h3>Qué empuja el puntaje</h3><p class="nota" id="nota-influencia"></p><div id="influencia" class="influencia"></div></section>
+              <section class="ficha-bloque"><h3>Qué empuja el puntaje</h3><div id="influencia" class="influencia"></div><p class="nota" id="nota-influencia"></p></section>
+              <details class="ficha-bloque ficha-plegable" id="bloque-sigmoide" hidden><summary>De puntos a probabilidad</summary><div id="sigmoide"></div></details>
             </div>
-            <section class="ficha-bloque"><h3>Recorrido por el contrato</h3><div id="recorrido" class="recorrido"></div></section>
+            <details class="ficha-bloque ficha-plegable" id="bloque-recorrido"><summary>Recorrido por el contrato</summary><div id="recorrido" class="recorrido"></div></details>
           </article>
         </div>
       </div>
     </section>"""
-    return _pagina("evaluar.html", "Evaluar a un estudiante",
-                   "Planilla con los 12 datos del contrato y ficha de seguimiento con el nivel de riesgo.",
+    return _pagina("evaluar.html", "Probar un caso",
+                   "Planilla con los 12 datos del contrato y ficha de seguimiento que responde al mover cada dato.",
                    "evaluar", "evaluar", cuerpo)
 
 
@@ -201,7 +202,7 @@ def modelo():
 
 def proceso():
     cuerpo = paginas_proceso.cuerpo(_lista_pasos(con_descripcion=True))
-    return _pagina("proceso.html", "Cómo se construyó", "Los ocho pasos del prototipo, cada uno en su página.",
+    return _pagina("proceso.html", "Cómo se construyó", "Los nueve pasos del prototipo, en cuatro partes.",
                    "proceso", "proceso", cuerpo, paginas_proceso.ESTILOS, paginas_proceso.SCRIPTS)
 
 
@@ -226,7 +227,7 @@ def paso(i):
     cuerpo = f"""    <section class="seccion seccion-primera">
       <div class="envoltura proceso-rejilla">
         <nav class="indice" aria-label="Pasos del proceso">
-          <a class="indice-volver" href="proceso.html">Cómo se construyó</a>
+          <a class="indice-volver" href="proceso.html">Cómo se hizo</a>
           <ol class="lista-pasos">
 {_lista_pasos(actual=clave)}
           </ol>

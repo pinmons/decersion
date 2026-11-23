@@ -66,21 +66,51 @@
     return barra;
   }
 
+  /* Mando de una simulación que corre sola: dice qué se está viendo y deja pausarla (y, si aplica, dar un paso). */
+  function mandoSim(texto, alPausar, paso) {
+    const caja = el("div", "mando-sim", `<span class="en-vivo">en vivo</span><p>${texto}</p>
+      <button type="button" class="boton boton-chico" data-acc="pausa">❚❚ Pausar</button>${paso ? `<button type="button" class="boton boton-chico" data-acc="paso">${paso.texto}</button>` : ""}`);
+    let pausado = false;
+    const fijar = (p) => {
+      pausado = p;
+      caja.querySelector(".en-vivo").classList.toggle("en-pausa", p);
+      caja.querySelector(".en-vivo").textContent = p ? "en pausa" : "en vivo";
+      caja.querySelector('[data-acc="pausa"]').textContent = p ? "▶ Reanudar" : "❚❚ Pausar";
+      alPausar(p);
+    };
+    caja.addEventListener("click", (ev) => {
+      const acc = ev.target.closest("button")?.dataset.acc;
+      if (acc === "pausa") fijar(!pausado);
+      if (acc === "paso") { if (!pausado) fijar(true); paso.accion(); }
+    });
+    if (reducido()) { caja.querySelector(".en-vivo").classList.add("en-pausa"); caja.querySelector(".en-vivo").textContent = "quieto"; caja.querySelector('[data-acc="pausa"]').hidden = true; }
+    return caja;
+  }
+
   /* Controles de una animación por etapas: anterior, siguiente y reproducir. */
   function controlEtapas(textos, alMostrar) {
     const caja = el("div", "control-etapas");
-    caja.innerHTML = `<button type="button" class="boton boton-chico" data-acc="ant" aria-label="Etapa anterior">Anterior</button>
-      <button type="button" class="boton boton-chico" data-acc="sig" aria-label="Etapa siguiente">Siguiente</button>
-      <button type="button" class="boton boton-chico boton-tinta" data-acc="rep">Ver animado</button>
+    caja.innerHTML = `<button type="button" class="boton boton-chico boton-tinta" data-acc="rep">▶ Reproducir</button>
+      <button type="button" class="boton boton-chico" data-acc="ant" aria-label="Etapa anterior">◀ Anterior</button>
+      <button type="button" class="boton boton-chico" data-acc="sig" aria-label="Etapa siguiente">Siguiente ▶</button>
+      <span class="puntos-etapa" aria-hidden="true">${textos.map(() => "<i></i>").join("")}</span>
       <span class="etapa-texto" aria-live="polite"></span>`;
     let k = textos.length - 1, temporizador = null;
-    const ir = (n) => { k = Math.max(0, Math.min(textos.length - 1, n)); caja.querySelector(".etapa-texto").textContent = `${k + 1} de ${textos.length}: ${textos[k]}`; alMostrar(k); };
-    const parar = () => { clearInterval(temporizador); temporizador = null; caja.querySelector('[data-acc="rep"]').textContent = "Ver animado"; };
+    const puntos = [...caja.querySelectorAll(".puntos-etapa i")];
+    const ir = (n) => {
+      k = Math.max(0, Math.min(textos.length - 1, n));
+      caja.querySelector(".etapa-texto").textContent = `Etapa ${k + 1} de ${textos.length}: ${textos[k]}`;
+      puntos.forEach((p, i) => { p.className = i === k ? "actual" : i < k ? "hecha" : ""; });
+      caja.querySelector('[data-acc="ant"]').disabled = k === 0;
+      caja.querySelector('[data-acc="sig"]').disabled = k === textos.length - 1;
+      alMostrar(k);
+    };
+    const parar = () => { clearInterval(temporizador); temporizador = null; caja.querySelector('[data-acc="rep"]').textContent = "▶ Reproducir"; };
     const reproducir = () => {
       parar();
       if (reducido()) { ir(textos.length - 1); return; }
       ir(0);
-      caja.querySelector('[data-acc="rep"]').textContent = "Detener";
+      caja.querySelector('[data-acc="rep"]').textContent = "❚❚ Pausar";
       temporizador = setInterval(() => { if (k >= textos.length - 1) parar(); else ir(k + 1); }, 1500);
     };
     caja.addEventListener("click", (ev) => {
@@ -248,16 +278,19 @@
       texto.textContent = `época ${epoca} de ${epocas} · lote ${Math.min(lote + 1, lotes)} de ${lotes} · ${miles((epoca - 1) * lotes + lote + 1)} correcciones de los pesos`;
     };
     const tic = () => { lote++; if (lote >= lotes) { lote = 0; epoca = epoca >= epocas ? 1 : epoca + 1; } pintar(); };
+    let pausado = false;
+    const arrancar = () => { if (visible && !pausado && !intervalo) intervalo = setInterval(tic, 80); };
+    const frenar = () => { clearInterval(intervalo); intervalo = null; };
     if (reducido()) { lote = lotes - 1; epoca = epocas; pintar(); }
     else {
       pintar();
-      if ("IntersectionObserver" in window) new IntersectionObserver(([e]) => {
-        visible = e.isIntersecting;
-        if (visible && !intervalo) intervalo = setInterval(tic, 80);
-        if (!visible && intervalo) { clearInterval(intervalo); intervalo = null; }
-      }).observe(svg);
+      if ("IntersectionObserver" in window) new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible) arrancar(); else frenar(); }).observe(svg);
     }
-    return el("div", "desplazable").appendChild(svg).parentNode;
+    const mando = mandoSim(`Cada cuadro es un mini-lote de ${tam} estudiantes: el modelo lo mira, corrige los pesos una vez y pasa al siguiente. Al llenar los ${lotes} cuadros terminó una época.`,
+      (p) => { pausado = p; if (p) frenar(); else arrancar(); }, { texto: "Un lote más", accion: tic });
+    const caja = el("div", "cuerpo");
+    caja.append(mando, el("div", "desplazable").appendChild(svg).parentNode);
+    return caja;
   }
 
   function neuronaPorEpoca(nombres, hist, mejor) {
@@ -294,24 +327,34 @@
       selectorEstudiante());
 
     // Paso 4.6: control de época
-    const control = el("div", "control-epoca", `<button type="button" class="boton boton-chico" data-reproducir>Reproducir</button>
+    const control = el("div", "control-epoca", `<button type="button" class="boton boton-chico boton-tinta" data-reproducir>▶ Reproducir</button>
       <label for="epoca" class="nota">Época</label><input type="range" id="epoca" min="0" max="${hist.length - 1}" value="${mejor - 1}"><output id="salida-epoca" for="epoca"></output>`);
     const svgN = neuronaPorEpoca(L.variables, hist, mejor);
-    const curva = el("div");
-    const dibujarCurva = (k) => curva.replaceChildren(figura(grafLineas({
+    const svgCurva = grafLineas({
       series: [{ nombre: "entrenamiento", color: "var(--serie-1)", valores: hist.map((h) => [h.epoca, h.perdida_train]) },
                { nombre: "validación", color: "var(--serie-2)", valores: hist.map((h) => [h.epoca, h.perdida_val]) }],
-      alto: 220, xEtiqueta: "época", yEtiqueta: "pérdida promedio", formatoY: (v) => num(v, 3), marcas: [{ x: hist[k].epoca, etiqueta: `época ${hist[k].epoca}` }],
-      etiqueta: "Pérdida por época" }), null, leyenda([["var(--serie-1)", "entrenamiento"], ["var(--serie-2)", "validación"]])));
+      alto: 220, xEtiqueta: "época", yEtiqueta: "pérdida promedio", formatoY: (v) => num(v, 3), etiqueta: "Pérdida por época" });
+    const ejesC = svgCurva.ejes;
+    const textoMarca = s("text", { x: 5, y: ejesC.m.arr + 10, class: "etiqueta-svg" });
+    const marcaEpoca = s("g", { class: "marca-epoca", "pointer-events": "none" }, [
+      s("line", { x1: 0, x2: 0, y1: ejesC.m.arr, y2: ejesC.alto - ejesC.m.aba, stroke: "var(--tinta)", "stroke-width": 1.5, "stroke-dasharray": "3 3" }), textoMarca]);
+    svgCurva.appendChild(marcaEpoca);
+    const curva = figura(svgCurva, null, leyenda([["var(--serie-1)", "entrenamiento"], ["var(--serie-2)", "validación"]]));
+    const dibujarCurva = (k) => {
+      const x = ejesC.X(hist[k].epoca), alFinal = x > ejesC.ancho - 90;
+      marcaEpoca.style.transform = `translateX(${x.toFixed(1)}px)`;
+      textoMarca.setAttribute("x", alFinal ? -5 : 5); textoMarca.setAttribute("text-anchor", alFinal ? "end" : "start");
+      textoMarca.textContent = `época ${hist[k].epoca}`;
+    };
     const rango = control.querySelector("input"), salida = control.querySelector("output");
     const mover = (k) => { rango.value = k; salida.value = `${hist[k].epoca} de ${hist.length}`; svgN.actualizar(k); dibujarCurva(k); };
     rango.addEventListener("input", () => mover(+rango.value));
     let anim = null;
     const reproducir = (boton) => {
-      if (anim) { clearInterval(anim); anim = null; boton.textContent = "Reproducir"; return; }
+      if (anim) { clearInterval(anim); anim = null; boton.textContent = "▶ Reproducir"; return; }
       if (reducido()) { mover(hist.length - 1); return; }
-      let k = 0; boton.textContent = "Pausar";
-      anim = setInterval(() => { mover(k++); if (k >= hist.length) { clearInterval(anim); anim = null; boton.textContent = "Reproducir"; } }, 110);
+      let k = 0; boton.textContent = "❚❚ Pausar";
+      anim = setInterval(() => { mover(k++); if (k >= hist.length) { clearInterval(anim); anim = null; boton.textContent = "▶ Reproducir"; } }, 110);
     };
     control.querySelector("[data-reproducir]").addEventListener("click", (ev) => reproducir(ev.target));
     mover(mejor - 1);
@@ -526,13 +569,14 @@
       texto.textContent = `lote ${lote}: ${apagadas} de 24 apagadas`;
     };
     sortear();
+    let intervalo = null, visible = false, pausado = false;
+    const arrancar = () => { if (visible && !pausado && !intervalo) intervalo = setInterval(sortear, 900); };
+    const frenar = () => { clearInterval(intervalo); intervalo = null; };
     if (!reducido() && "IntersectionObserver" in window) {
-      let intervalo = null;
-      new IntersectionObserver(([e]) => {
-        if (e.isIntersecting && !intervalo) intervalo = setInterval(sortear, 900);
-        if (!e.isIntersecting && intervalo) { clearInterval(intervalo); intervalo = null; }
-      }).observe(svg);
+      new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible) arrancar(); else frenar(); }).observe(svg);
     }
+    svg.mando = mandoSim("En cada lote se apagan al azar cerca de 1 de cada 5 neuronas ocultas (las grises). Así ninguna puede volverse indispensable.",
+      (p) => { pausado = p; if (p) frenar(); else arrancar(); }, { texto: "Sortear otro lote", accion: sortear });
     return svg;
   }
 
@@ -603,7 +647,7 @@
       { id: "r-dropout", titulo: "Dropout: apagar neuronas al azar", nodos: [
         `En cada lote de entrenamiento se apaga al azar el ${pct(cfg.dropout, 0)} de las neuronas ocultas. Así la red no puede depender de un solo
         camino ni de una sola variable. Al predecir, todas se encienden.`,
-        el("div", "desplazable").appendChild(animacionDropout(M)).parentNode] },
+        ...((svgD) => [svgD.mando, el("div", "desplazable").appendChild(svgD).parentNode])(animacionDropout(M))] },
       { id: "r-control", titulo: "L2, pesos por clase y early stopping", nodos: [
         fichas([["L2", num(cfg.l2, 4), "Castigo por pesos grandes, más suave que en la neurona."], ["Pesos por clase", `${num(e.info_red.pesos_clase.positivo, 2)} y ${num(e.info_red.pesos_clase.negativo, 2)}`, "Desertores y no desertores, igual que antes."],
           ["Paciencia", `${cfg.paciencia} épocas`, `Corrió ${e.info_red.epocas_corridas} épocas y se quedó con la ${e.info_red.mejor_epoca}.`]]),

@@ -128,6 +128,41 @@
     return svg;
   }
 
+  /* Cómo quedaron los datos, sin imagen: para cada variable, el promedio de quienes desertaron frente al de quienes no. */
+  function comparaMedias(rc) {
+    const filas = [["promedio_acumulado", 2], ["porcentaje_asistencia", 1], ["materias_reprobadas", 2], ["creditos_inscritos", 1]].filter(([k]) => rc.numericos[k]);
+    const W = 520, altoF = 46, izq = 150, der = 26, H = 10 + filas.length * altoF + 6;
+    const svg = lienzo(W, H, "Promedio de cada variable entre quienes desertaron y quienes no: " + filas.map(([k, dgt]) =>
+      `${nombre(k)} ${num(rc.numericos[k].media_desertores, dgt)} frente a ${num(rc.numericos[k].media_no_desertores, dgt)}`).join("; ") + ".");
+    filas.forEach(([k, dgt], i) => {
+      const v = rc.numericos[k], y = 10 + i * altoF + 16, X = escala(v.min, v.max, izq, W - der);
+      svg.appendChild(s("text", { x: izq - 14, y: y + 4, "text-anchor": "end", class: "texto-svg-fuerte", texto: nombre(k) }));
+      svg.appendChild(s("line", { x1: izq, x2: W - der, y1: y, y2: y, stroke: "var(--renglon)", "stroke-width": 6, "stroke-linecap": "round" }));
+      svg.appendChild(s("line", { x1: X(v.media_desertores), x2: X(v.media_no_desertores), y1: y, y2: y, stroke: "var(--tinta-2)", "stroke-width": 2 }));
+      svg.appendChild(s("text", { x: izq, y: y + 20, class: "etiqueta-svg", texto: num(v.min, 0) }));
+      svg.appendChild(s("text", { x: W - der, y: y + 20, "text-anchor": "end", class: "etiqueta-svg", texto: num(v.max, 0) }));
+      for (const [valor, color, quien] of [[v.media_no_desertores, "var(--serie-1)", "no desertaron"], [v.media_desertores, "var(--serie-2)", "desertaron"]]) {
+        const punto = s("circle", { cx: X(valor), cy: y, r: 7, fill: color, stroke: "var(--hoja)", "stroke-width": 2 });
+        conGlobo(punto, `<b>${esc(nombre(k))}</b><br>Quienes ${quien}: ${num(valor, dgt)} en promedio`);
+        svg.appendChild(punto);
+      }
+      const izqEs = v.media_desertores < v.media_no_desertores;
+      svg.appendChild(s("text", { x: X(v.media_desertores) + (izqEs ? -12 : 12), y: y - 10, "text-anchor": izqEs ? "end" : "start", class: "etiqueta-svg", texto: num(v.media_desertores, dgt) }));
+      svg.appendChild(s("text", { x: X(v.media_no_desertores) + (izqEs ? 12 : -12), y: y - 10, "text-anchor": izqEs ? "start" : "end", class: "etiqueta-svg", texto: num(v.media_no_desertores, dgt) }));
+    });
+    return figura(svg, "La raya es el rango completo de cada variable; cada punto, el promedio de un grupo. Entre más separados, más distingue esa variable.",
+      leyenda([["var(--serie-1)", "no desertaron", "punto"], ["var(--serie-2)", "desertaron", "punto"]]));
+  }
+  function tasasPorGrupo(rc, tasaGlobal) {
+    const rotulo = { estrato: (v) => `estrato ${v}`, trabaja: (v) => (v === "true" ? "trabaja" : "no trabaja"),
+      deuda_matricula: (v) => (v === "true" ? "debe matrícula" : v === "false" ? "no debe" : "deuda sin dato") };
+    const filas = ["estrato", "trabaja", "deuda_matricula"].flatMap((k) => (rc.categoricos[k] || []).map((f) => ({
+      etiqueta: rotulo[k](f.valor), valor: f.tasa_desercion, detalle: `${miles(f.n)} estudiantes (${pct(f.fraccion, 0)} del total)` })));
+    return figura(grafBarras({ filas, formato: (v) => pct(v, 0), min: 0, grupos: [{ clave: "valor", color: "var(--serie-2)" }], anchoEtiqueta: 120, ancho: 520,
+      linea: { valor: tasaGlobal, etiqueta: `todos: ${pct(tasaGlobal, 0)}`, color: "var(--tinta-2)" }, etiqueta: "Porcentaje que deserta en cada grupo" }),
+      "Qué parte de cada grupo deserta. La raya punteada es el promedio de todos.");
+  }
+
   function pasoDatos(c, R) {
     const d = R.datos;
     secuencia(c, 2, [
@@ -139,23 +174,23 @@
         figura(desplazable(diagramaFabrica()), `Cada estudiante sale de dos factores ocultos. Por eso las variables vienen correlacionadas como en la vida
           real (un promedio bajo va con más materias perdidas; un estrato bajo, con más trabajo y deuda), y la deserción se sortea con una función que no
           tiene los escalones de las reglas.`),
-        `La tasa de deserción se ajustó al ${pct(d.tasa_objetivo, 0)} (SPADIES reporta cerca de 12 % anual, concentrado en los primeros semestres).`] },
-      { id: "d-validacion", titulo: "Qué descartó la validación", nodos: [
+        `La tasa de deserción se ajustó al ${pct(d.tasa_objetivo, 0)} (SPADIES reporta cerca de 12 % anual, concentrado en los primeros semestres).`,
+        html(`<details><summary>Ver la fórmula con la que se generó la etiqueta [SUPUESTO]</summary><p class="nota"><code>${esc(d.formula_latente || "")}</code></p></details>`)] },
+      { id: "d-validacion", titulo: "Qué pasó la validación y cómo se repartió", nodos: [
         html(`<dl class="cifras">
           <div><dt>Estudiantes válidos</dt><dd>${miles(d.n_validos)}</dd></div>
           <div><dt>Desertan en la simulación</dt><dd>${pct(d.tasa_desercion)}</dd></div>
           <div><dt>Descartados por el Paso 1</dt><dd>${d.n_descartados}</dd></div>
           <div><dt>Techo de AUC posible</dt><dd>${num(d.auc_techo_test, 3)}</dd></div></dl>`),
         figura(desplazable(embudo(d)), `Los ${d.n_descartados} registros con defectos a propósito pasaron por la misma validación del contrato y ninguno entró
-          al entrenamiento. El techo de AUC es lo mejor que podría lograr un modelo perfecto: el resto es ruido de la simulación.`)] },
-      { id: "d-division", titulo: "Entrenamiento, validación y prueba", nodos: [
-        html(`<div class="fichas">
-          <div class="ficha-metodo"><h3>Entrenamiento</h3><span class="valor-metodo">${miles(d.division.train)}</span><p>Con estos estudiantes se aprenden los pesos.</p></div>
-          <div class="ficha-metodo"><h3>Validación</h3><span class="valor-metodo">${miles(d.division.val)}</span><p>Deciden cuándo parar, los cortes y el tope. El modelo no aprende de ellos.</p></div>
-          <div class="ficha-metodo"><h3>Prueba</h3><span class="valor-metodo">${miles(d.division.test)}</span><p>Guardados bajo llave hasta la evaluación final.</p></div></div>`)] },
+          al entrenamiento. El techo de AUC es lo mejor que podría lograr un modelo perfecto: el resto es ruido de la simulación.`),
+        html(`<ul class="tres-usos">
+          <li><span>Entrenamiento</span><b>${miles(d.division.train)}</b>Con estos estudiantes se aprenden los pesos.</li>
+          <li><span>Validación</span><b>${miles(d.division.val)}</b>Deciden cuándo parar, los cortes y el tope. El modelo no aprende de ellos.</li>
+          <li><span>Prueba</span><b>${miles(d.division.test)}</b>Guardados bajo llave hasta la evaluación final.</li></ul>`)] },
       { id: "d-distribuciones", titulo: "Cómo quedaron los datos", nodos: [
-        html(`<figure class="figura-png"><img src="reportes/distribuciones.png" alt="Histogramas de promedio, asistencia, tasa de reprobación y créditos por si el estudiante desertó, y tasas de deserción por estrato, semestre, trabajo y deuda" loading="lazy" width="1680" height="768"></figure>`),
-        html(`<details><summary>Ver la fórmula con la que se generó la etiqueta [SUPUESTO]</summary><p class="nota"><code>${esc(d.formula_latente)}</code></p></details>`)] },
+        "Antes de entrenar conviene mirar si los datos tienen sentido: quienes desertan deberían traer peor promedio, menos asistencia y más materias perdidas.",
+        div("cuerpo", [comparaMedias(d.resumen_campos), tasasPorGrupo(d.resumen_campos, d.tasa_desercion)])] },
     ]);
   }
 

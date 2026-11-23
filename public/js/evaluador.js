@@ -81,10 +81,38 @@
   }
 
   /* ---------------------------------------------------------------- planilla */
+  /* Tres bloques (ley de Hick): lo que más mueve el resultado va primero y abierto; los datos de
+     matrícula casi nunca cambian (pregrado, activo) y quedan plegados con su resumen a la vista. */
+  const GRUPOS = [
+    { id: "rendimiento", titulo: "Rendimiento", campos: ["promedio_acumulado", "porcentaje_asistencia", "materias_cursadas_periodo_anterior", "materias_reprobadas"] },
+    { id: "situacion", titulo: "Carga y situación", campos: ["creditos_inscritos", "estrato", "trabaja", "deuda_matricula"] },
+    { id: "matricula", titulo: "Matrícula", plegado: true, campos: ["id_estudiante", "semestre", "nivel_formacion", "estado_matricula"] },
+  ];
+  function resumirMatricula() {
+    const r = document.getElementById("resumen-matricula");
+    if (!r) return;
+    const partes = [valores.nivel_formacion, valores.estado_matricula, valores.semestre !== undefined ? `semestre ${valores.semestre}` : null].filter(Boolean);
+    const faltan = GRUPOS[2].campos.filter((k) => valores[k] === undefined).length;
+    r.textContent = faltan ? `${faltan === 1 ? "falta 1 dato" : `faltan ${faltan} datos`}` : partes.join(" · ").replace(/_/g, " ");
+    r.classList.toggle("con-faltantes", faltan > 0);
+    if (faltan) r.closest("details").open = true;
+  }
+
   function crearCampos() {
     const cont = $("#campos");
     cont.replaceChildren();
-    for (const [campo, def] of Object.entries(ESQUEMA.campos)) {
+    const rejillas = {};
+    for (const g of GRUPOS) {
+      const caja = document.createElement(g.plegado ? "details" : "fieldset");
+      caja.className = "grupo-campos";
+      caja.innerHTML = g.plegado ? `<summary><span class="rotulo">${g.titulo}</span><span class="resumen-grupo" id="resumen-matricula"></span></summary><div class="campos-rejilla"></div>`
+        : `<legend class="rotulo">${g.titulo}</legend><div class="campos-rejilla"></div>`;
+      cont.appendChild(caja);
+      for (const k of g.campos) rejillas[k] = caja.querySelector(".campos-rejilla");
+    }
+    const orden = GRUPOS.flatMap((g) => g.campos).filter((k) => ESQUEMA.campos[k]);
+    for (const campo of orden) {
+      const def = ESQUEMA.campos[campo];
       const div = document.createElement("div");
       div.className = "campo vacio";
       div.dataset.campo = campo;
@@ -110,7 +138,7 @@
         : `<label for="c-${campo}" id="l-${campo}">${esc(ETIQUETAS[campo])}${opcional}</label>`;
       div.innerHTML = `<div class="campo-cabeza">${etiqueta}<span class="valor" id="v-${campo}"></span></div>${control}
         ${PISTAS[campo] ? `<span class="pista" id="p-${campo}">${PISTAS[campo]}</span>` : ""}`;
-      cont.appendChild(div);
+      (rejillas[campo] || cont).appendChild(div);
       fijar(campo, undefined);
     }
     cont.addEventListener("input", alCambiar);
@@ -122,12 +150,19 @@
       actualizar();
     });
     document.querySelectorAll('input[name="modo"]').forEach((r) => r.addEventListener("change", actualizar));
-    $("#btn-ejemplo").addEventListener("click", () => cargarEnPlanilla(EJEMPLO));
-    $("#btn-limpiar").addEventListener("click", () => {
+    const marcarCaso = (boton) => document.querySelectorAll(".chip-caso").forEach((b) => b.setAttribute("aria-pressed", String(b === boton)));
+    document.querySelectorAll(".chip-caso[data-caso]").forEach((b) => b.addEventListener("click", () => {
+      const caso = CASOS.find((c) => c.id === b.dataset.caso);
+      if (location.hash) history.replaceState(null, "", location.pathname);
+      cargarEnPlanilla(caso ? caso.entrada : EJEMPLO);
+      marcarCaso(b);
+    }));
+    $("#btn-limpiar").addEventListener("click", (ev) => {
       for (const k of Object.keys(ESQUEMA.campos)) fijar(k, undefined);
       if (location.hash) history.replaceState(null, "", location.pathname);
+      marcarCaso(ev.currentTarget);
       actualizar();
-      $("#c-id_estudiante").focus();
+      $("#c-promedio_acumulado").focus();
     });
   }
 
@@ -176,6 +211,7 @@
 
   function actualizar() {
     clearTimeout(temporizador);
+    resumirMatricula();
     $("#ficha-id").textContent = valores.id_estudiante || "sin identificar";
     $("#ficha-modo").textContent = MODOS[modoActual()];
     const faltan = faltantes();
@@ -185,6 +221,7 @@
       $("#sello").innerHTML = `<p class="sello-vacio">Faltan ${faltan.length} ${faltan.length === 1 ? "dato" : "datos"}</p>`;
       $("#ficha-resumen").textContent = `Para calificar falta: ${faltan.map((k) => ETIQUETAS[k].toLowerCase().replace(/[¿?]/g, "")).join(", ")}.`;
       $("#ficha-detalle").hidden = true;
+      reglaViva = null;
       marcarRecorrido(svgRecorrido, null);
       pintarFlotante(`Faltan ${faltan.length} datos`, "");
       return;
@@ -226,6 +263,8 @@
         ? `El sistema no decide porque ${MOTIVOS[salida.motivo] || salida.motivo}${campos}. Una persona revisa el caso.`
         : `Error controlado: ${MOTIVOS[salida.motivo] || salida.motivo}${campos}. El sistema no adivina el dato.`;
       $("#ficha-detalle").hidden = true;
+      reglaViva = null;
+      $("#bloque-recorrido").open = true;
       pintarFlotante(humano ? "Revisión humana" : "Dato rechazado", humano ? "humano" : "alto");
       return;
     }
@@ -245,23 +284,37 @@
     pintarFlotante(titulo, salida.nivel);
   }
 
-  /* Regla de 0 a 100 con los tres tramos del semáforo y la aguja del estudiante */
+  /* Regla de 0 a 100 con los tres tramos del semáforo y la aguja del estudiante.
+     Se dibuja una vez por juego de cortes; después solo se desliza la aguja (transform) y se enciende el tramo. */
+  let reglaViva = null;
   function pintarRegla(salida) {
     const c = salida.cortes || { corte_medio: 30, corte_alto: 60 };
-    const W = 400, Hh = 64, m = 8;
+    const W = 400, Hh = 70, m = 8, clave = `${c.corte_medio}-${c.corte_alto}`;
     const X = escala(0, 100, m, W - m);
-    const svg = lienzo(W, Hh, `Puntaje ${salida.puntaje} de 100; medio desde ${c.corte_medio}, alto desde ${c.corte_alto}`);
-    const tramos = [[0, c.corte_medio, "var(--bajo)", "bajo"], [c.corte_medio, c.corte_alto, "var(--medio)", "medio"], [c.corte_alto, 100, "var(--alto)", "alto"]];
-    for (const [a, b, color, et] of tramos) {
-      svg.appendChild(s("rect", { x: X(a), y: 24, width: Math.max(0, X(b) - X(a) - 2), height: 12, rx: 3, fill: color, opacity: et === salida.nivel ? 0.95 : 0.3 }));
-      if (X(b) - X(a) > 44) svg.appendChild(s("text", { x: (X(a) + X(b)) / 2, y: 52, "text-anchor": "middle", class: "etiqueta-svg", texto: et }));
+    if (!reglaViva || reglaViva.clave !== clave || !reglaViva.svg.isConnected) {
+      const svg = lienzo(W, Hh, "");
+      const tramos = {};
+      for (const [a0, b0, color, et] of [[0, c.corte_medio, "var(--bajo)", "bajo"], [c.corte_medio, c.corte_alto, "var(--medio)", "medio"], [c.corte_alto, 100, "var(--alto)", "alto"]]) {
+        tramos[et] = s("rect", { x: X(a0), y: 28, width: Math.max(0, X(b0) - X(a0) - 2), height: 12, rx: 3, fill: color, class: "tramo-regla" });
+        svg.appendChild(tramos[et]);
+        if (X(b0) - X(a0) > 44) svg.appendChild(s("text", { x: (X(a0) + X(b0)) / 2, y: 56, "text-anchor": "middle", class: "etiqueta-svg", texto: et }));
+      }
+      for (const v of [0, c.corte_medio, c.corte_alto, 100]) svg.appendChild(s("text", { x: X(v), y: 67, "text-anchor": v === 0 ? "start" : v === 100 ? "end" : "middle", class: "etiqueta-svg", texto: v }));
+      const texto = s("text", { y: 12, class: "texto-svg-fuerte" });
+      const aguja = s("g", { class: "aguja-regla" }, [s("path", { d: "M-6,18 L6,18 L0,27 z", fill: "var(--tinta)" }),
+        s("line", { x1: 0, x2: 0, y1: 26, y2: 44, stroke: "var(--tinta)", "stroke-width": 2.5 }), texto]);
+      svg.appendChild(aguja);
+      $("#regla-puntaje").replaceChildren(svg);
+      reglaViva = { clave, svg, tramos, aguja, texto };
     }
-    for (const v of [0, c.corte_medio, c.corte_alto, 100]) svg.appendChild(s("text", { x: X(v), y: 62, "text-anchor": v === 0 ? "start" : v === 100 ? "end" : "middle", class: "etiqueta-svg", texto: v }));
     const x = X(Math.max(0, Math.min(100, salida.puntaje)));
-    svg.appendChild(s("path", { d: `M${x - 6},4 L${x + 6},4 L${x},14 z`, fill: "var(--tinta)" }));
-    svg.appendChild(s("line", { x1: x, x2: x, y1: 14, y2: 40, stroke: "var(--tinta)", "stroke-width": 2.5 }));
-    svg.appendChild(s("text", { x: x + (x > W - 80 ? -10 : 10), y: 12, "text-anchor": x > W - 80 ? "end" : "start", class: "texto-svg-fuerte", texto: `${salida.puntaje} puntos` }));
-    $("#regla-puntaje").replaceChildren(svg);
+    reglaViva.svg.setAttribute("aria-label", `Puntaje ${salida.puntaje} de 100; medio desde ${c.corte_medio}, alto desde ${c.corte_alto}`);
+    for (const [et, r] of Object.entries(reglaViva.tramos)) r.style.opacity = et === salida.nivel ? 0.95 : 0.28;
+    reglaViva.aguja.style.transform = `translateX(${x.toFixed(1)}px)`;
+    const alFinal = x > W - 90;
+    reglaViva.texto.setAttribute("x", alFinal ? -10 : 10);
+    reglaViva.texto.setAttribute("text-anchor", alFinal ? "end" : "start");
+    reglaViva.texto.textContent = `${salida.puntaje} puntos`;
   }
 
   /* Curva sigmoide: cómo el logit (suma ponderada) se convierte en probabilidad */
@@ -282,7 +335,7 @@
     for (let i = 0; i <= 90; i++) { const zz = -5 + i * 0.1; d += `${i ? "L" : "M"}${X(zz).toFixed(1)},${Y(1 / (1 + Math.exp(-zz))).toFixed(1)}`; }
     svg.appendChild(s("path", { d, fill: "none", stroke: "var(--acento)", "stroke-width": 2.5 }));
     svg.appendChild(s("line", { x1: m.izq, x2: W - m.der, y1: Y(TASA_BASE), y2: Y(TASA_BASE), stroke: "var(--tenue)", "stroke-dasharray": "5 4" }));
-    svg.appendChild(s("text", { x: W - m.der, y: Y(TASA_BASE) + 14, "text-anchor": "end", class: "etiqueta-svg", texto: `tasa simulada ${pct(TASA_BASE, 0)}` }));
+    svg.appendChild(s("text", { x: W - m.der, y: Y(TASA_BASE) + 14, "text-anchor": "end", class: "etiqueta-svg", texto: `de cada 100 simulados desertan ${num(100 * TASA_BASE, 0)}` }));
     svg.appendChild(s("line", { x1: X(z), x2: X(z), y1: Hh - m.aba, y2: Y(p), stroke: "var(--tinta)", "stroke-dasharray": "3 3" }));
     svg.appendChild(s("line", { x1: m.izq, x2: X(z), y1: Y(p), y2: Y(p), stroke: "var(--tinta)", "stroke-dasharray": "3 3" }));
     svg.appendChild(s("circle", { cx: X(z), cy: Y(p), r: 6, fill: `var(--${salida.nivel})`, stroke: "var(--hoja)", "stroke-width": 2 }));
@@ -297,18 +350,31 @@
       logistica: "Puntos de la tarjeta aprendida. Cada variable da 0 en su valor de menor riesgo; la suma es el puntaje.",
       red_neuronal: "Cuánto cambia el puntaje si la variable toma el valor medio de los estudiantes de entrenamiento. Negativo: esa variable le baja el riesgo a este estudiante.",
     }[modo];
-    const pares = Object.entries(salida.puntos_por_variable || {}).sort((a, b) => b[1] - a[1]);
+    // Orden fijo (el del modelo): si las barras cambiaran de puesto al mover un control no se podrían seguir con la vista.
+    const pares = Object.entries(salida.puntos_por_variable || {});
     const minimo = Math.min(0, ...pares.map((x) => x[1]));
     const maximo = Math.max(10, ...pares.map((x) => x[1]));
     const cero = (-minimo / (maximo - minimo)) * 100;
-    $("#influencia").innerHTML = pares.map(([v, pts]) => {
-      const w = (Math.abs(pts) / (maximo - minimo)) * 100;
+    const cont = $("#influencia"), clave = pares.map((x) => x[0]).join("|");
+    if (cont.dataset.clave !== clave) {
+      cont.dataset.clave = clave;
+      cont.innerHTML = pares.map(([v]) => `<div class="barra-var" data-var="${esc(v)}"><span class="nombre" title="${esc(nombre(v))}">${esc(nombre(v))}</span>
+        <span class="pista-barra"><span class="relleno sube"></span><span class="relleno negativo"></span><span class="cero"></span></span>
+        <span class="cifra"></span></div>`).join("");
+    }
+    const mayor = Math.max(...pares.map((x) => x[1]));
+    for (const [v, pts] of pares) {
+      const fila = cont.querySelector(`[data-var="${CSS.escape(v)}"]`);
+      const sube = fila.querySelector(".sube"), baja = fila.querySelector(".negativo");
+      sube.style.left = `${cero}%`; sube.style.width = `${100 - cero}%`;
+      baja.style.left = "0"; baja.style.width = `${cero}%`;
+      sube.style.transform = `scaleX(${pts > 0 ? pts / maximo : 0})`;
+      baja.style.transform = `scaleX(${pts < 0 && minimo < 0 ? pts / minimo : 0})`;
+      fila.querySelector(".cero").style.left = `${cero}%`;
       const r = Math.round(pts * 10) / 10;
-      return `<div class="barra-var"><span class="nombre" title="${esc(nombre(v))}">${esc(nombre(v))}</span>
-        <span class="pista-barra"><span class="relleno${pts < 0 ? " negativo" : ""}" style="left:${pts >= 0 ? cero : cero - w}%;width:${w}%"></span>
-        <span class="cero" style="left:${cero}%"></span></span>
-        <span class="cifra">${r > 0 ? "+" : ""}${num(r, Number.isInteger(r) ? 0 : 1)}</span></div>`;
-    }).join("");
+      fila.querySelector(".cifra").textContent = `${r > 0 ? "+" : ""}${num(r, Number.isInteger(r) ? 0 : 1)}`;
+      fila.classList.toggle("la-mayor", pts === mayor && pts >= 1);
+    }
   }
 
   /* ---------------------------------------------------------------- resumen fijo en el celular */
@@ -340,13 +406,17 @@
     try { ESQUEMA = await json("reportes/esquema.json"); } catch (e) { ESQUEMA = ESQUEMA_RESPALDO; }
     crearCampos();
     prepararFlotante();
-    // La planilla empieza vacía para llenarla a mano. Desde la portada se puede abrir un caso: evaluar.html#caso-R01
+    // Empieza con un ejemplo ya calificado: el resultado se ve sin llenar nada. También se puede abrir un caso: evaluar.html#caso-R01
+    $("#bloque-recorrido").open = !matchMedia("(max-width: 940px)").matches;
     const abrirCaso = () => {
       const caso = CASOS.find((c) => location.hash === `#caso-${c.id}`);
-      if (caso) { document.getElementById("modo-logistica").checked = true; cargarEnPlanilla(caso.entrada); }
+      if (caso) {
+        document.getElementById("modo-logistica").checked = true; cargarEnPlanilla(caso.entrada);
+        document.querySelectorAll(".chip-caso").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.caso === caso.id)));
+      }
       return Boolean(caso);
     };
-    if (!abrirCaso()) actualizar();
+    if (!abrirCaso()) cargarEnPlanilla(EJEMPLO);
     window.addEventListener("hashchange", abrirCaso);
   }
 

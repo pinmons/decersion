@@ -1,1 +1,78 @@
-/* Vista Inicio. Los tokens y las piezas comunes están en estilos.css. */
+/* Vista Inicio: el tablero. Los tokens y la rejilla bento (.bento, .celda, .c4…) están en estilos.css.
+   Una idea por celda; el único elemento con peso de acción es el botón «Ver a los estudiantes». */
+.tablero-zona { padding-block: clamp(16px, 2.4vw, 24px) 32px; }
+.tablero { gap: 14px; }
+.tablero .celda { padding: 16px 20px; gap: 8px; }
+
+/* la celda que dice qué es el sistema */
+.t-hero { justify-content: space-between; gap: 12px; padding: 22px 24px; }
+.t-hero h1 { font-size: clamp(1.7rem, 2.7vw, 2.3rem); font-weight: 700; line-height: 1.12; letter-spacing: -0.015em; max-width: 17ch; }
+.t-hero > p { font-size: 1rem; line-height: 1.5; max-width: 40ch; }
+.t-principal { align-self: flex-start; min-height: 46px; padding-inline: 22px; font-size: 1rem; background: var(--hoja); border-color: var(--hoja); color: var(--tinta); }
+.t-principal:hover { border-color: var(--hoja); filter: brightness(0.94); }
+.t-principal::after { content: "→"; margin-left: 10px; }
+
+/* el pulso: un punto que late dos veces cuando la base se acaba de leer */
+.t-pulso { display: flex; align-items: center; gap: 10px; font-size: var(--paso-1); }
+.t-pulso i { position: relative; width: 9px; height: 9px; border-radius: 50%; background: color-mix(in srgb, var(--hoja) 45%, transparent); flex: none; }
+.t-pulso.vivo i { background: var(--bajo-fondo); }
+.t-pulso.copia i { background: var(--medio); }
+.t-pulso.vivo i::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: var(--bajo-fondo); opacity: 0; animation: t-latido 300ms var(--curva-salida) 200ms 3; }
+@keyframes t-latido { 0% { transform: scale(1); opacity: 0.7; } 100% { transform: scale(3.4); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .t-pulso.vivo i::after { display: none; } }
+
+/* protagonista: cuántos quedaron en riesgo alto */
+.t-alto-fila { display: flex; align-items: flex-end; gap: 14px; }
+.t-alto .cifra-grande { color: var(--alto); }
+.t-alto-fila p { font-size: var(--paso-1); line-height: 1.35; padding-bottom: 4px; }
+.t-niveles { display: flex; gap: 2px; height: 16px; }
+.t-niveles i { border-radius: 4px; min-width: 4px; }
+.seg-alto { background: var(--alto); } .seg-medio { background: var(--medio); } .seg-bajo { background: var(--bajo); }
+.seg-devuelto { background: repeating-linear-gradient(135deg, var(--tenue) 0 3px, var(--renglon) 3px 6px); }
+.t-leyenda { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px 14px; font-size: var(--paso-1); color: var(--tinta-2); }
+.t-leyenda li { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+.t-leyenda i { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+.t-leyenda b { margin-left: auto; color: var(--tinta); font-size: 0.95rem; }
+.t-leyenda-corta { display: flex; gap: 12px; }
+.t-leyenda-corta li { gap: 5px; }
+
+/* celdas que son un enlace */
+.t-enlace { text-decoration: none; color: var(--tinta); transition: transform 150ms var(--curva-salida), border-color 150ms linear; }
+.t-enlace:hover { border-color: var(--acento); transform: translateY(-2px); }
+.t-enlace:active { transform: scale(0.985); }
+.t-ir { margin-top: auto; font-weight: 700; font-size: 0.92rem; color: var(--acento); }
+.t-ir::after { content: " →"; }
+
+/* nota del modelo */
+.t-notas { display: flex; flex-direction: column; gap: 8px; }
+.t-nota-fila { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "nombre valor" "marca marca"; gap: 2px 8px; align-items: end; padding-bottom: 8px; border-bottom: 1px solid var(--renglon); }
+.t-nota-nombre { grid-area: nombre; display: flex; flex-direction: column; line-height: 1.25; }
+.t-nota-nombre small { color: var(--tinta-2); font-size: 0.78rem; }
+.t-nota-fila > b { grid-area: valor; font-size: 1.7rem; font-weight: 650; line-height: 1; letter-spacing: -0.02em; }
+.t-notas p { font-size: 0.8rem; line-height: 1.35; }
+.t-marca { grid-area: marca; justify-self: start; display: inline-flex; align-items: center; gap: 5px; padding: 1px 9px 1px 7px; border-radius: 999px; font: 700 0.78rem/1.5 var(--letra-texto); color: var(--tinta); background: var(--hoja-2); }
+.t-marca i { font-style: normal; }
+.t-marca-excelente, .t-marca-bueno { background: var(--bajo-fondo); } .t-marca-excelente i, .t-marca-bueno i { color: var(--bajo); }
+.t-marca-aceptable { background: var(--medio-fondo); } .t-marca-aceptable i { color: var(--medio); }
+.t-marca-debil { background: var(--alto-fondo); } .t-marca-debil i { color: var(--alto); }
+
+/* riesgo por programa: una barra de 100 % por programa */
+.t-programas-cabeza { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 16px; }
+.t-barras { display: flex; flex-direction: column; gap: 5px; }
+.t-fila { display: grid; grid-template-columns: minmax(0, 13.5rem) minmax(0, 1fr) 3.2rem; gap: 12px; align-items: center; font-size: 0.9rem; }
+.t-fila-nombre { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.t-fila-barra { display: flex; gap: 2px; height: 12px; }
+.t-fila-barra i { border-radius: 3px; min-width: 3px; }
+.t-fila-barra .seg-medio, .t-fila-barra .seg-bajo { opacity: 0.38; }
+.t-fila b { text-align: right; font-size: 1rem; }
+@media (max-width: 560px) { .t-fila { grid-template-columns: minmax(0, 1fr) 3.2rem; } .t-fila-barra { grid-column: 1 / -1; grid-row: 2; } }
+
+/* lo que el sistema resolvió solo */
+.t-avisos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 0.86rem; color: var(--tinta-2); line-height: 1.35; }
+.t-avisos li { display: grid; grid-template-columns: 2.6rem minmax(0, 1fr); gap: 10px; align-items: baseline; }
+.t-avisos b { color: var(--tinta); font-size: 1.15rem; font-weight: 650; text-align: right; }
+.t-honesto { margin-top: 14px; max-width: 110ch; }
+.tablero .celda.t-hero { padding: 22px 24px; }
+.tablero .t-enlace p, .t-avisos-celda { font-size: 0.9rem; }
+.tablero .t-enlace p { line-height: 1.4; }
+.t-nota-fila { padding-bottom: 6px; }

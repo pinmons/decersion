@@ -1,1 +1,44 @@
-/* Índice de «Cómo se hizo». Los tokens y las piezas comunes están en estilos.css. */
+/* Índice de «Cómo se hizo». Los tokens y la rejilla bento están en estilos.css.
+   Cuatro grupos a la vista (memoria de trabajo); dentro de cada uno, sus pasos. */
+.indice-cabeza { margin-bottom: 20px; }
+.indice-cabeza p { max-width: 78ch; }
+.grupos { gap: 16px; }
+.grupo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "cabeza mini" "pasos pasos"; gap: 14px 22px; align-items: start; padding: 22px; }
+@media (max-width: 480px) { .grupo { grid-template-columns: 1fr; grid-template-areas: "cabeza" "mini" "pasos"; padding: 18px; } }
+.grupo-cabeza { grid-area: cabeza; display: flex; flex-direction: column; gap: 4px; }
+.grupo-cabeza h2 { font-size: var(--paso2); }
+.grupo-cabeza p { font-size: 0.95rem; }
+
+/* miniaturas */
+.grupo-mini { grid-area: mini; display: flex; flex-direction: column; gap: 6px; min-width: 0; min-height: 96px; justify-content: center; }
+.grupo-mini svg { width: 100%; height: auto; display: block; }
+.grupo .mini-pie { font-size: 0.8rem; line-height: 1.35; color: var(--tinta-2); }
+.mini-pie strong { color: var(--tinta); font-size: 0.95rem; }
+.mini-salidas { display: flex; flex-wrap: wrap; gap: 8px 10px; padding-block: 6px; }
+.mini-salidas .mini-sello { font-size: 0.7rem; padding: 3px 8px; }
+.mini-salidas .mini-error { border-style: dashed; }
+.mini-embudos { display: flex; flex-direction: column; gap: 10px; }
+.mini-embudo { display: grid; grid-template-columns: 4.6rem minmax(0, 1fr) auto; grid-template-areas: "titulo barra cifra" ". nota nota"; gap: 0 10px; align-items: center; font-size: 0.86rem; }
+.mini-embudo > span:first-child { grid-area: titulo; font-weight: 700; }
+.mini-barra { grid-area: barra; display: flex; gap: 2px; height: 10px; }
+.mini-barra i { background: var(--acento); border-radius: 3px; }
+.mini-barra u { background: repeating-linear-gradient(135deg, var(--tenue) 0 2px, var(--renglon) 2px 5px); border-radius: 3px; min-width: 3px; }
+.mini-embudo b { grid-area: cifra; font-size: 1rem; }
+.mini-embudo small { grid-area: nota; color: var(--tinta-2); font-size: 0.76rem; }
+.mini-clave { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; margin-right: 8px; }
+.mini-clave i { width: 12px; height: 3px; border-radius: 2px; display: inline-block; }
+.mini-casillas i { width: 11px; height: 11px; }
+
+/* los pasos del grupo: una línea cada uno, con para qué sirve */
+.grupo-pasos { grid-area: pasos; list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; border-top: 1px solid var(--renglon); }
+.grupo-pasos li + li { border-top: 1px solid var(--renglon); }
+.grupo-pasos a { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 6px; border-radius: 8px; text-decoration: none; color: var(--tinta); transition: transform 150ms var(--curva-salida), background-color 120ms linear; }
+.grupo-pasos a::after { content: "→"; color: var(--acento); font-weight: 700; opacity: 0.45; }
+.grupo-pasos a:hover { background: var(--acento-suave); }
+.grupo-pasos a:hover::after { opacity: 1; }
+.grupo-pasos a:active { transform: scale(0.99); }
+.grupo-pasos .paso-n { width: 30px; height: 30px; font-size: 0.85rem; }
+.grupo-pasos span { display: flex; flex-direction: column; line-height: 1.3; min-width: 0; }
+.grupo-pasos strong { font-family: var(--letra-titulo); font-size: 1.05rem; font-weight: 650; }
+.grupo-pasos small { color: var(--tinta-2); font-size: 0.86rem; }
+.indice-otros { margin-top: 18px; color: var(--tinta-2); font-size: 0.95rem; max-width: none; }
