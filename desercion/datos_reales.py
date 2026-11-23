@@ -24,6 +24,13 @@ Población y corte [SUPUESTO]:
   llega en junio), ni `baja_fecha`, `matricula_activa` o el rendimiento total.
 - La etiqueta: `abandono_hash` vale «A» o «B» y la fuente no publica cuál es abandono. Los datos
   lo muestran sin ambigüedad (ver `EVIDENCIA_ETIQUETA`): «A» es abandono.
+- Los estudiantes con un IMPAGO en la matrícula no entran (`leer_fuente`). Ninguno de los 334 figura
+  como abandono aunque el 69 % no aprobó ninguna asignatura y casi ninguno tiene nota de acceso ni vía
+  de ingreso: la etiqueta los trata aparte, así que no se sabe si abandonaron. Con ellos dentro, el
+  modelo aprendería que «no tener nota de acceso» protege, y que suspenderlo todo no es tan grave.
+
+Además de los 12 campos, cada registro lleva los campos del contrato ampliado
+(`contrato_ampliado.CAMPOS`: notas, actividad, admisión y titulación), que solo usa el modelo real.
 
 La fuente no tiene las 12 columnas del contrato con esos nombres. Cada columna se arma así, y
 cada decisión es un [SUPUESTO] que se muestra en la web (`SUPUESTOS_MAPEO`).
@@ -38,6 +45,7 @@ import zipfile
 
 from . import RAIZ
 from .contrato import CAMPOS
+from .contrato_ampliado import CAMPOS as CAMPOS_AMPLIADOS
 
 DIR_REALES = RAIZ / "datos" / "reales"
 DIR_FUENTE = DIR_REALES / "fuente_upv"          # aquí se descargan los CSV originales (no van a git)
@@ -56,7 +64,8 @@ FUENTE = {
     "descripcion": "Registros reales y anonimizados de estudiantes de la UPV (cursos 2021-22 y 2022-23 en esta "
                    "corrida): matrícula, notas por asignatura, días conectados al wifi del campus, actividad en el "
                    "aula virtual y si abandonó la titulación (dos cursos seguidos sin matricularse).",
-    "poblacion": "Primer año de grado, cohortes 2021 y 2022, con lo que se sabía al terminar el primer cuatrimestre.",
+    "poblacion": "Primer año de grado, cohortes 2021 y 2022, con lo que se sabía al terminar el primer cuatrimestre. "
+                 "Sin los 334 estudiantes con impago de matrícula: la fuente no marca a ninguno como abandono.",
 }
 
 # Lo que la web dice siempre junto a esta base (página Modelo, inicio y pie).
@@ -68,10 +77,11 @@ LIMITE_HONESTO = ("Son estudiantes reales de primer año de la Universitat Polit
 
 # Lo que se comprobó con los datos para decidir que «A» es abandono (primer año de grado, 2021 y 2022).
 # Lo recalcula `evidencia_etiqueta()` desde el extracto.
-EVIDENCIA_ETIQUETA = ("«A» es la letra minoritaria (11 % en primer año de grado). Los «A» aprueban el 51 % de sus "
-                      "asignaturas del primer cuatrimestre frente al 79 % de los «B», tienen menos presencia (35 frente "
-                      "a 47 de 100), son cuatro veces más a menudo de tiempo parcial (4,9 % frente a 1,2 %) y, al "
-                      "extraer los datos, solo el 13–18 % seguía con matrícula activa, frente al 77 % de los «B».")
+EVIDENCIA_ETIQUETA = ("«A» es la letra minoritaria (12 % en primer año de grado, sin los impagos). Los «A» aprueban el 51 % "
+                      "de sus asignaturas del primer cuatrimestre frente al 83 % de los «B», tienen menos presencia (35 "
+                      "frente a 49 de 100), son seis veces más a menudo de tiempo parcial (4,9 % frente a 0,8 %) y, al "
+                      "extraer los datos, solo el 13–18 % seguía con matrícula activa, frente al 77 % de los «B» (esto "
+                      "último se midió en la fuente completa, antes de quitar los impagos).")
 
 # Referencias del 100 % en la asistencia: lo que alcanza el 5 % más presente de la población (sept.–enero).
 DIAS_LECTIVOS_A = 78   # días conectado al wifi del campus
@@ -108,9 +118,28 @@ SUPUESTOS_MAPEO = [
     ("estrato", "Sin dato: la fuente trae los estudios del padre y de la madre como letras anonimizadas sin significado "
      "publicado, así que no se pueden ordenar. Se pone 3 a todos; al no variar, el modelo no lo usa.", "supuesto"),
     ("trabaja", "Se marca «sí» a quien está matriculado a tiempo parcial. La fuente no dice si trabaja.", "aproximado"),
-    ("deuda_matricula", "Sin informar (es opcional en el contrato). La fuente marca impagos, pero ninguno de los "
-     "estudiantes con impago figura como abandono: la etiqueta los trata aparte y el dato enseñaría lo contrario de lo "
-     "real.", "supuesto"),
+    ("deuda_matricula", "Sin informar (es opcional en el contrato). La fuente marca impagos, pero ninguno de los 334 "
+     "estudiantes con impago figura como abandono: la etiqueta los trata aparte. Por eso esos estudiantes no entran en "
+     "la base (no se sabe si abandonaron) y el dato no se usa.", "supuesto"),
+    # contrato ampliado (solo el modelo real; ver CONTRATO_AMPLIADO.md)
+    ("nota_media_cuatrimestre", "Media de TODAS las notas del primer cuatrimestre (también las suspendidas), en la escala "
+     "original 0 a 10. Sin dato si no se presentó a ninguna.", "directo"),
+    ("nota_minima_cuatrimestre", "La nota más baja entre las presentadas del primer cuatrimestre (0 a 10).", "directo"),
+    ("asignaturas_no_presentadas", "Asignaturas del primer cuatrimestre sin nota.", "directo"),
+    ("dias_campus_sep_nov", "Días conectado al wifi del campus en septiembre, octubre y noviembre. Sin dato si la fuente "
+     "no tiene ningún registro de wifi del estudiante (no dice si no fue o si no se registró).", "directo"),
+    ("dias_campus_dic_ene", "Lo mismo, en diciembre y enero (la época de exámenes).", "directo"),
+    ("dias_aula_virtual", "Días que entró al aula virtual, promedio por asignatura del primer cuatrimestre (sept.–enero).",
+     "directo"),
+    ("entregas_por_asignatura", "Tareas y cuestionarios entregados en el aula virtual, promedio por asignatura "
+     "(sept.–enero).", "directo"),
+    ("nota_acceso", "Nota de acceso a la universidad, sobre 14.", "directo"),
+    ("nota_bachillerato", "Nota media del bachillerato, sobre 10.", "directo"),
+    ("opcion_titulacion", "En qué opción pidió la titulación (1 = primera).", "directo"),
+    ("tipo_ingreso", "Vía de ingreso tal como la codifica la fuente («NAP» = acceso ordinario, 9 de cada 10).", "directo"),
+    ("titulacion", "Titulación, renombrada T01…T45 de la más grande a la más chica (la fuente la trae cifrada). El "
+     "modelo no usa el código: usa la tasa de abandono de esa titulación entre los estudiantes de entrenamiento.",
+     "directo"),
     ("deserto", "1 si la fuente lo marca como abandono («A»: dos cursos seguidos sin matricularse en la titulación); 0 "
      "si no. La letra no está documentada: se dedujo de los datos.", "supuesto"),
 ]
@@ -297,24 +326,32 @@ def mapear(fila):
         "deuda_matricula": None,
     }
     num = lambda v: float(v) if v not in ("", None) else None
+    wifi = fila["wifi_registrado"] == "1"
+    dias = lambda meses: round(sum(float(fila[f"wifi_{m}"] or 0) for m in meses), 1) if wifi else None
+    registro.update({                                    # contrato ampliado (todos opcionales)
+        "nota_media_cuatrimestre": round(sum(con_nota) / len(con_nota), 2) if con_nota else None,
+        "nota_minima_cuatrimestre": min(con_nota) if con_nota else None,
+        "asignaturas_no_presentadas": len(notas) - len(con_nota),
+        "dias_campus_sep_nov": dias(MESES_A[:3]), "dias_campus_dic_ene": dias(MESES_A[3:]),
+        "dias_aula_virtual": num(fila["aula_dias_a"]), "entregas_por_asignatura": num(fila["entregas_a"]),
+        "nota_acceso": num(fila["nota_acceso"]), "nota_bachillerato": num(fila["nota_bachillerato"]),
+        "opcion_titulacion": int(float(fila["preferencia"])) if fila["preferencia"] else None,
+        "tipo_ingreso": fila["tipo_ingreso"] or None, "titulacion": fila["titulacion"],
+    })
     deserto = int(fila["abandono"] == "A")
     extra = {"deserto": deserto, "desenlace": "abandono" if deserto else "sigue", "cohorte": int(fila["cohorte"]),
-             "titulacion": fila["titulacion"], "nota_acceso": num(fila["nota_acceso"]),
-             "nota_bachillerato": num(fila["nota_bachillerato"]), "preferencia": num(fila["preferencia"]),
-             "tipo_ingreso": fila["tipo_ingreso"] or None, "tiempo_parcial": int(fila["tiempo_parcial"]),
-             "ects": round(ects, 1), "impagado": int(fila["impagado"]),
-             "wifi_dias": (sum(float(fila[f"wifi_{m}"] or 0) for m in MESES_A) if fila["wifi_registrado"] == "1" else None),
-             "aula_dias": num(fila["aula_dias_a"]), "entregas": num(fila["entregas_a"])}
+             "tiempo_parcial": int(fila["tiempo_parcial"]), "ects": round(ects, 1),
+             "wifi_dias": (sum(float(fila[f"wifi_{m}"] or 0) for m in MESES_A) if wifi else None)}
     return registro, extra
 
 
-EXTRAS = ["deserto", "desenlace", "cohorte", "titulacion", "nota_acceso", "nota_bachillerato", "preferencia",
-          "tipo_ingreso", "tiempo_parcial", "ects", "impagado", "wifi_dias", "aula_dias", "entregas"]
+EXTRAS = ["deserto", "desenlace", "cohorte", "tiempo_parcial", "ects", "wifi_dias"]
 
 
-def leer_fuente(ruta=RUTA_EXTRACTO):
+def leer_fuente(ruta=RUTA_EXTRACTO, con_impagos=False):
+    """Extracto → [(registro, extra)]. Los estudiantes con impago no entran (ver la cabecera)."""
     with open(ruta, newline="", encoding="utf-8") as f:
-        return [mapear(fila) for fila in csv.DictReader(f)]
+        return [mapear(fila) for fila in csv.DictReader(f) if con_impagos or fila["impagado"] != "1"]
 
 
 def evidencia_etiqueta(filas=None):
@@ -339,15 +376,15 @@ def preparar(rehacer_extracto=False):
         extraer()
     filas = leer_fuente()
     with open(RUTA_CONTRATO, "w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=CAMPOS + EXTRAS, lineterminator="\n")
+        w = csv.DictWriter(f, fieldnames=CAMPOS + list(CAMPOS_AMPLIADOS) + EXTRAS, lineterminator="\n")
         w.writeheader()
         for registro, extra in filas:
             w.writerow({**{k: ("" if v is None else str(v).lower() if isinstance(v, bool) else v)
                            for k, v in registro.items()},
                         **{k: ("" if v is None else v) for k, v in extra.items()}})
     desertores = sum(e["deserto"] for _, e in filas)
-    print(f"Base real (UPV): {len(filas)} estudiantes ({desertores} abandonaron, {desertores / len(filas):.1%}) → "
-          f"{RUTA_CONTRATO.relative_to(RAIZ)}")
+    print(f"Base real (UPV): {len(filas)} estudiantes ({desertores} abandonaron, {desertores / len(filas):.1%}; "
+          f"sin los {len(leer_fuente(con_impagos=True)) - len(filas)} con impago) → {RUTA_CONTRATO.relative_to(RAIZ)}")
     ev = evidencia_etiqueta(filas)
     print("Etiqueta: " + " | ".join(f"«{k}» {v['n']} ({v['fraccion']:.1%}), aprobó {v['aprobadas_a']:.0%} de sus "
                                      f"asignaturas del 1.er cuatrimestre, asistencia media {v['asistencia_media']:.0f}, "

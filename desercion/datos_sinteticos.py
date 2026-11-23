@@ -257,8 +257,29 @@ def _convertir_celda(campo, texto):
     return texto
 
 
-def leer_csv(ruta):
-    """Lee un CSV con las columnas del contrato y `deserto`. Devuelve (registros, deserto)."""
+def _convertir_ampliado(tipo, texto):
+    """Como `_convertir_celda`, para los campos del contrato ampliado (todos opcionales)."""
+    if texto is None or texto.strip() == "":
+        return None
+    t = texto.strip()
+    try:
+        return int(t) if tipo == "int" else float(t) if tipo == "num" else t
+    except ValueError:
+        return texto
+
+
+def columnas_ampliadas(ruta):
+    """Campos del contrato ampliado que trae el CSV (lista vacía si es un CSV del contrato de 12 campos)."""
+    from .contrato_ampliado import CAMPOS as AMPLIADOS
+    with open(ruta, newline="", encoding="utf-8") as f:
+        cabecera = next(csv.reader(f), [])
+    return [c for c in AMPLIADOS if c in cabecera]
+
+
+def leer_csv(ruta, ampliado=False):
+    """Lee un CSV con las columnas del contrato y `deserto`. Devuelve (registros, deserto).
+    Con `ampliado`, cada registro lleva también los campos del contrato ampliado que traiga el CSV."""
+    from .contrato_ampliado import CAMPOS as AMPLIADOS
     registros, deserto = [], []
     with open(ruta, newline="", encoding="utf-8") as f:
         for fila in csv.DictReader(f):
@@ -268,21 +289,38 @@ def leer_csv(ruta):
                     v = _convertir_celda(campo, fila[campo])
                     if v is not None or campo != "deuda_matricula":
                         r[campo] = v
+            if ampliado:
+                for campo, (tipo, *_) in AMPLIADOS.items():
+                    if campo in fila:
+                        r[campo] = _convertir_ampliado(tipo, fila[campo])
             registros.append(r)
             d = (fila.get("deserto") or "").strip()
             deserto.append(int(d) if d in ("0", "1") else -1)
     return registros, np.array(deserto)
 
 
-def cargar_datos_reales(ruta_csv):
+def cargar_datos_reales(ruta_csv, ampliado=False):
     """Carga datos reales con el mismo esquema + columna `deserto` (0/1).
 
     Cada fila pasa por el Paso 1 del contrato; solo los válidos con etiqueta 0/1 se usan.
+    Con `ampliado`, los registros llevan también los campos del contrato ampliado y pasan además su
+    validación (`contrato_ampliado.validar`).
     Devuelve (registros_validos, deserto, descartes_por_motivo).
     """
-    registros, deserto = leer_csv(ruta_csv)
+    registros, deserto = leer_csv(ruta_csv, ampliado)
     sin_etiqueta = int((deserto < 0).sum())
     validos, y, por_motivo, _, _ = filtrar_por_contrato(registros, deserto)
+    if ampliado:
+        from .contrato_ampliado import validar
+        quedan = []
+        for i, r in enumerate(validos):
+            s = validar(r)
+            if s is None:
+                quedan.append(i)
+            else:
+                clave = f"{s['decision']}({s['motivo']}, ampliado)"
+                por_motivo[clave] = por_motivo.get(clave, 0) + 1
+        validos, y = [validos[i] for i in quedan], y[quedan]
     con_etiqueta = [i for i, v in enumerate(y) if v in (0, 1)]
     if sin_etiqueta:
         por_motivo["sin_etiqueta_deserto"] = sin_etiqueta

@@ -11,6 +11,10 @@ Transformaciones y por qué:
   estrato multiplicaría los parámetros sin necesidad.
 - `id_estudiante`, `nivel_formacion` y `estado_matricula` NO entran: el primero es un
   identificador y los otros dos son constantes dentro de la población (pregrado, activo).
+
+Contrato ampliado (solo el modelo de la base real): las variables de `contrato_ampliado.VARIABLES` se
+calculan con `contrato_ampliado.valor`, que imputa lo que falta con la mediana de entrenamiento (más su
+indicadora «sin dato») usando el diccionario `aux` guardado en el JSON del modelo.
 """
 import numpy as np
 
@@ -40,6 +44,24 @@ NOMBRES_LEGIBLES = {
     "estrato": "estrato",
     "trabaja": "trabaja",
     "deuda_matricula": "deuda de matrícula",
+    # contrato ampliado
+    "nota_media_cuatrimestre": "nota media del cuatrimestre",
+    "nota_minima_cuatrimestre": "nota mínima del cuatrimestre",
+    "asignaturas_no_presentadas": "asignaturas no presentadas",
+    "dias_campus_sep_nov": "días en el campus (sep.–nov.)",
+    "dias_campus_dic_ene": "días en el campus (dic.–ene.)",
+    "sin_registro_wifi": "sin registro de wifi",
+    "dias_aula_virtual": "días en el aula virtual",
+    "entregas_por_asignatura": "entregas por asignatura",
+    "sin_aula_virtual": "sin datos del aula virtual",
+    "nota_acceso": "nota de acceso",
+    "sin_nota_acceso": "sin nota de acceso",
+    "nota_bachillerato": "nota de bachillerato",
+    "sin_nota_bachillerato": "sin nota de bachillerato",
+    "opcion_titulacion": "opción en que eligió la titulación",
+    "sin_opcion_titulacion": "sin dato de opción",
+    "ingreso_ordinario": "ingreso por la vía ordinaria",
+    "abandono_titulacion": "abandono en su titulación",
 }
 
 
@@ -50,8 +72,12 @@ def caso_evidente(registro):
     return registro["materias_reprobadas"] >= registro["materias_cursadas_periodo_anterior"]
 
 
-def valor(registro, nombre, deuda_si_falta=1):
-    """Valor numérico de una variable. Si falta la deuda (opcional) se usa `deuda_si_falta`."""
+def valor(registro, nombre, deuda_si_falta=1, aux=None):
+    """Valor numérico de una variable. Si falta la deuda (opcional) se usa `deuda_si_falta`.
+    Las variables del contrato ampliado necesitan `aux` (lo aprendido en entrenamiento)."""
+    if aux is not None and nombre not in CANDIDATAS:
+        from . import contrato_ampliado
+        return contrato_ampliado.valor(registro, nombre, aux)
     if nombre == "tasa_reprobacion":
         return registro["materias_reprobadas"] / registro["materias_cursadas_periodo_anterior"]
     if nombre == "deuda_matricula":
@@ -60,9 +86,17 @@ def valor(registro, nombre, deuda_si_falta=1):
     return float(registro[nombre])
 
 
-def vector(registro, nombres, deuda_si_falta=1):
-    return np.array([valor(registro, n, deuda_si_falta) for n in nombres], dtype=float)
+def vector(registro, nombres, deuda_si_falta=1, aux=None):
+    return np.array([valor(registro, n, deuda_si_falta, aux) for n in nombres], dtype=float)
 
 
-def matriz(registros, nombres, deuda_si_falta=1):
-    return np.array([vector(r, nombres, deuda_si_falta) for r in registros], dtype=float)
+def matriz(registros, nombres, deuda_si_falta=1, aux=None):
+    return np.array([vector(r, nombres, deuda_si_falta, aux) for r in registros], dtype=float)
+
+
+def rango(nombre, aux=None):
+    """Rango posible de una variable (para la tarjeta de puntaje)."""
+    if nombre in CANDIDATAS:
+        return CANDIDATAS[nombre][0]
+    from . import contrato_ampliado
+    return contrato_ampliado.rango(nombre, aux)

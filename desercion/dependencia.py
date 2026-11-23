@@ -35,6 +35,10 @@ PREFERENCIAS = {
         "Las dos miden la carga académica. Los créditos son del periodo actual (lo que se "
         "quiere predecir); las materias cursadas son del anterior y ya están dentro de la tasa "
         "de reprobación."),
+    frozenset({"nota_acceso", "nota_bachillerato"}): (
+        "nota_acceso",
+        "Contrato ampliado: la nota de acceso ya contiene la del bachillerato (es su media más la prueba de acceso) "
+        "y sola ordena mejor a quien abandona."),
 }
 
 
@@ -76,9 +80,11 @@ def diagnostico(X, nombres):
             "vif": dict(zip(nombres, vif(X).tolist())), "pares_altos": pares_altos(p, nombres)}
 
 
-def resolver_colinealidad(X, nombres):
+def resolver_colinealidad(X, nombres, preferir=None):
     """Quita variables redundantes hasta que no haya |r| > 0.8 ni VIF > 10.
 
+    `preferir` (contrato ampliado): en un par sin preferencia de dominio, si una variable está en ese conjunto
+    (las del contrato original) y la otra no, se queda la del contrato: el contrato manda y la otra dice casi lo mismo.
     Devuelve (nombres_finales, decisiones). Cada decisión explica qué se quitó y por qué.
     """
     posicion = {n: i for i, n in enumerate(nombres)}
@@ -91,6 +97,10 @@ def resolver_colinealidad(X, nombres):
             a, b, r = pares[0]
             if frozenset({a, b}) in PREFERENCIAS:
                 queda, motivo = PREFERENCIAS[frozenset({a, b})]
+            elif preferir is not None and (a in preferir) != (b in preferir):
+                queda = a if a in preferir else b
+                motivo = ("Contrato ampliado: dicen casi lo mismo y una es del contrato original. Se queda la del "
+                          "contrato (es la que se valida en el Paso 1 y la que se explica en la ficha).")
             else:
                 v = dict(zip(nombres, vif(sub)))
                 queda = a if v[a] <= v[b] else b
@@ -145,6 +155,34 @@ def grupos_correlacionados(X, nombres, umbral=UMBRAL_GRUPO):
     for i in range(k):
         salida.setdefault(raiz(i), []).append(i)
     return sorted(salida.values(), key=lambda g: g[0])
+
+
+def grupos_por_fuente(X, nombres, fuente_de, umbral=UMBRAL_GRUPO):
+    """Grupos fijos por FUENTE del dato (notas, actividad, admisión, titulación), unidos además si una variable de
+    una fuente tiene |r| ≥ umbral con una de otra (así ninguna fuente puede suplir a otra al desordenarla).
+    Devuelve (grupos como listas de índices, fuente de cada grupo, pares entre fuentes que obligaron a unir)."""
+    k = len(nombres)
+    grupo = list(range(k))
+
+    def raiz(i):
+        while grupo[i] != i:
+            i = grupo[i]
+        return i
+    r = pearson(X)
+    cruzados = []
+    for i in range(k):
+        for j in range(i + 1, k):
+            misma = fuente_de(nombres[i]) == fuente_de(nombres[j])
+            if misma or abs(r[i, j]) >= umbral:
+                grupo[raiz(j)] = raiz(i)
+                if not misma:
+                    cruzados.append((nombres[i], nombres[j], float(r[i, j])))
+    salida = {}
+    for i in range(k):
+        salida.setdefault(raiz(i), []).append(i)
+    grupos = sorted(salida.values(), key=lambda g: g[0])
+    fuentes = [" + ".join(sorted({fuente_de(nombres[i]) for i in g})) for g in grupos]
+    return grupos, fuentes, cruzados
 
 
 def importancia_permutacion_grupos(funcion_puntaje, X, y, grupos, repeticiones=5, semilla=2026):

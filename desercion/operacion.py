@@ -11,8 +11,12 @@ Tiene a los estudiantes reales de primer año de la UPV (ver datos_reales.py) en
   se tomaría una muestra estratificada con semilla fija (el resto queda en `reserva`) para que la
   respuesta de la API no pese demasiado.
 
+Cada registro lleva los 12 campos del contrato y los del contrato ampliado (notas, actividad, admisión
+y titulación; ver CONTRATO_AMPLIADO.md), que usa el modelo real.
+
 `procesar()` lee la base y pasa cada registro por el sistema completo (validación, R3.4,
-modelo). No recalcula nada por fuera de `sistema.evaluar`. Solo usa la biblioteca estándar y
+modelo). No recalcula nada por fuera de `sistema.evaluar`. Los «por qué» y «en qué mejorar» salen de
+`textos.py`, en lenguaje llano y con lo usual (la mediana de entrenamiento) como referencia. Solo usa la biblioteca estándar y
 NumPy: corre igual en Vercel (GET /api/estudiantes) y en local.
 """
 import json
@@ -23,6 +27,8 @@ from datetime import datetime, timezone
 from . import RAIZ
 from . import ingreso
 from .contrato import ACCION_POR_NIVEL, CAMPOS, paso1_validar
+from .contrato_ampliado import CAMPOS as CAMPOS_AMPLIADOS
+from .textos import MEJORAS, por_que
 from .variables import caso_evidente
 from .web import responder_evaluar
 
@@ -30,9 +36,9 @@ RUTA_BD = RAIZ / "base_datos" / "registro_academico.sqlite"
 DIR_WEB = RAIZ / "public" / "reportes" / "real"
 MODELOS_OPERACION = ("logistica", "red_neuronal", "reglas")
 BOOLEANOS = ("trabaja", "deuda_matricula")
-EXTRAS = ("deserto", "desenlace", "cohorte", "titulacion", "nota_acceso", "nota_bachillerato", "preferencia",
-          "tipo_ingreso", "tiempo_parcial", "ects", "impagado", "wifi_dias", "aula_dias", "entregas")
+EXTRAS = ("deserto", "desenlace", "cohorte", "tiempo_parcial", "ects", "wifi_dias")
 MAX_OPERACION = 1400   # [SUPUESTO] tope de estudiantes en operación: la API responde en ~1 MB
+MAX_PORQUE, MAX_MEJORAR = 4, 3   # lo que la ficha muestra (así la respuesta no pasa de ~1,5 MB)
 
 ESQUEMA_SQL = """
 CREATE TABLE estudiantes (
@@ -40,9 +46,10 @@ CREATE TABLE estudiantes (
     nivel_formacion TEXT, estado_matricula TEXT, semestre INTEGER, promedio_acumulado REAL,
     creditos_inscritos INTEGER, materias_cursadas_periodo_anterior INTEGER, materias_reprobadas INTEGER,
     porcentaje_asistencia REAL, estrato INTEGER, trabaja INTEGER, deuda_matricula INTEGER,
-    deserto INTEGER, desenlace TEXT, cohorte INTEGER, titulacion TEXT, nota_acceso REAL, nota_bachillerato REAL,
-    preferencia REAL, tipo_ingreso TEXT, tiempo_parcial INTEGER, ects REAL, impagado INTEGER,
-    wifi_dias REAL, aula_dias REAL, entregas REAL,
+    nota_media_cuatrimestre REAL, nota_minima_cuatrimestre REAL, asignaturas_no_presentadas INTEGER,
+    dias_campus_sep_nov REAL, dias_campus_dic_ene REAL, dias_aula_virtual REAL, entregas_por_asignatura REAL,
+    nota_acceso REAL, nota_bachillerato REAL, opcion_titulacion INTEGER, tipo_ingreso TEXT, titulacion TEXT,
+    deserto INTEGER, desenlace TEXT, cohorte INTEGER, tiempo_parcial INTEGER, ects REAL, wifi_dias REAL,
     conjunto TEXT NOT NULL CHECK (conjunto IN ('historico', 'operacion', 'reserva'))
 );
 CREATE INDEX por_conjunto ON estudiantes (conjunto);
@@ -62,7 +69,7 @@ def construir_bd():
     bd = sqlite3.connect(RUTA_BD)
     bd.executescript(ESQUEMA_SQL)
     import random
-    columnas = CAMPOS + list(EXTRAS) + ["conjunto"]
+    columnas = CAMPOS + list(CAMPOS_AMPLIADOS) + list(EXTRAS) + ["conjunto"]
     cuenta = {"historico": 0, "operacion": 0, "reserva": 0}
     filas = leer_fuente()
     en_operacion = [r["id_estudiante"] in ids_prueba or paso1_validar(r) is not None for r, _ in filas]
@@ -104,7 +111,7 @@ def leer_cohorte(conjunto="operacion"):
     bd.close()
     salida = []
     for f in filas:
-        registro = {c: f[c] for c in CAMPOS if f[c] is not None}
+        registro = {c: f[c] for c in CAMPOS + list(CAMPOS_AMPLIADOS) if f[c] is not None}
         for c in BOOLEANOS:
             if c in registro:
                 registro[c] = bool(registro[c])
@@ -123,43 +130,7 @@ def resumen_bd():
 
 
 # ------------------------------------------------------------------ explicar un resultado
-def _coma(x, d=1):
-    return f"{x:.{d}f}".replace(".", ",")
-
-
-def _por_que(variable, r):
-    """Frase corta con el dato del registro que explica los puntos de una variable."""
-    if variable == "promedio_acumulado":
-        if r["promedio_acumulado"] == 0:
-            return "No aprobó ninguna asignatura del primer cuatrimestre"
-        return f"Nota media de {_coma(r['promedio_acumulado'], 2)} en lo aprobado (se aprueba con 3,0)"
-    if variable in ("tasa_reprobacion", "materias_reprobadas"):
-        return f"Suspendió {r['materias_reprobadas']} de {r['materias_cursadas_periodo_anterior']} asignaturas del primer cuatrimestre"
-    if variable == "materias_cursadas_periodo_anterior":
-        return f"Cursó {r['materias_cursadas_periodo_anterior']} asignaturas en el primer cuatrimestre"
-    if variable == "porcentaje_asistencia":
-        return f"Presencia del {_coma(r['porcentaje_asistencia'], 0)} % (campus y aula virtual)"
-    if variable == "deuda_matricula":
-        return "Tiene deuda de matrícula" if r.get("deuda_matricula") else "No se sabe si tiene deuda"
-    if variable == "trabaja":
-        return "Matriculado a tiempo parcial (se asume que trabaja)"
-    if variable == "estrato":
-        return f"Estrato {r['estrato']}"
-    if variable == "creditos_inscritos":
-        return f"Carga de {r['creditos_inscritos']} créditos"
-    return variable
-
-
-# Lo que bienestar puede hacer frente a cada factor. Estrato, trabajo y carga no se «mejoran».
-MEJORAS = {
-    "promedio_acumulado": "Tutoría en las asignaturas con la nota más baja.",
-    "tasa_reprobacion": "Plan para recuperar las asignaturas suspendidas del primer cuatrimestre.",
-    "materias_reprobadas": "Plan para recuperar las asignaturas suspendidas del primer cuatrimestre.",
-    "porcentaje_asistencia": "Llamarlo para saber por qué dejó de ir al campus y de entrar al aula virtual.",
-    "deuda_matricula": "Remitir a apoyo financiero para un acuerdo de pago.",
-}
-
-TEXTOS_MEJORA = {**MEJORAS, "ingreso": "Asignarle un tutor de primer año mientras el registro completa sus datos."}
+TEXTOS_MEJORA = {**MEJORAS, "ingreso": "Asignarle un tutor de primer año mientras el registro completa sus notas."}
 
 # Por qué el contrato no califica un registro (para el aviso al registro, una vez por causa).
 CAUSAS = {
@@ -173,19 +144,43 @@ def _nivel_con(puntaje, cortes):
     return "alto" if puntaje >= cortes["corte_alto"] else "medio" if puntaje >= cortes["corte_medio"] else "bajo"
 
 
-def _explicar(salida, registro, modelo):
-    puntos = sorted(salida["puntos_por_variable"].items(), key=lambda kv: -kv[1])
-    porque = [{"variable": v, "puntos": round(p, 1), "texto": _por_que(v, registro)} for v, p in puntos if p >= 1]
+def _sobre_lo_usual(salida, registro, m):
+    """Contrato ampliado, logística: puntos de cada variable POR ENCIMA del estudiante típico (la media de
+    entrenamiento), no desde el valor de menor riesgo de la tarjeta. Si no, casi todos tendrían como «porqué» entregar
+    tareas o tener 20 créditos, aunque estén en lo usual. (La red ya mide así: contra la media de entrenamiento.)"""
+    import numpy as np
+    from .variables import vector
+    t = m["tarjeta"]
+    x = vector(registro, m["variables"], deuda_si_falta=m["deuda_si_falta"], aux=m["ampliado"])
+    rel = (x - np.asarray(m["escalador"]["media"])) * np.asarray(t["beta"]) * t["escala"]
+    return dict(zip(m["variables"], rel.tolist()))
+
+
+def _explicar(salida, registro, modelo, aux=None, m=None):
+    base = salida["puntos_por_variable"]
+    if m is not None and modelo == "logistica" and m.get("ampliado"):
+        base = _sobre_lo_usual(salida, registro, m)
+    puntos = sorted(base.items(), key=lambda kv: -kv[1])
+    porque = []
+    for v, p in puntos:
+        texto = por_que(v, registro, aux) if p >= 1 else None
+        if texto:
+            porque.append({"variable": v, "puntos": round(p, 1), "texto": texto})
     mejorar = []
     for v, p in puntos:
-        if p < 1 or v not in MEJORAS:
+        if p < 1 or v not in MEJORAS or por_que(v, registro, aux) is None:
             continue
         item = {"variable": v, "puntos": round(p, 1)}   # el texto va una sola vez en "textos_mejora"
         # En la tarjeta de puntos (logística y reglas) los puntos se suman: quitar un factor resta exactamente eso.
         if modelo != "red_neuronal" and not salida.get("regla_r34"):
             item["nivel_si_mejora"] = _nivel_con(salida["puntaje"] - p, salida["cortes"])
         mejorar.append(item)
-    return porque, mejorar
+    return porque[:MAX_PORQUE], mejorar[:MAX_MEJORAR]
+
+
+def _ampliado(registro):
+    """Lo que la ficha muestra del contrato ampliado (None = sin dato, la web escribe «sin dato»)."""
+    return {c: registro.get(c) for c in CAMPOS_AMPLIADOS if c not in ("nota_bachillerato", "titulacion")}
 
 
 # ------------------------------------------------------------------ la corrida
@@ -198,6 +193,9 @@ def procesar(modelo="logistica"):
     t_lectura = time.perf_counter()
     modo = "reglas" if modelo == "reglas" else "aprendido"
     estudiantes, cortes = [], None
+    from .inferencia import cargar
+    m_real = cargar(modelo, "real") if modo == "aprendido" else None
+    aux = (m_real or {}).get("ampliado")
     conteo = {"resultado": 0, "abstener": 0, "error": 0, "provisional": 0}
     niveles_provisional = {n: {"n": 0, "desertaron": 0} for n in ("bajo", "medio", "alto")}
     sin_historial = {}
@@ -207,14 +205,15 @@ def procesar(modelo="logistica"):
         _, salida = responder_evaluar({"entrada": registro, "modo": modo, "origen": "real",
                                        "modelo": "logistica" if modelo == "reglas" else modelo})
         conteo[salida["decision"]] = conteo.get(salida["decision"], 0) + 1
-        fila = {"id": registro.get("id_estudiante"), "titulacion": f"Titulación {extra['titulacion']}",
+        fila = {"id": registro.get("id_estudiante"), "titulacion": f"Titulación {registro.get('titulacion')}",
                 "cohorte": extra["cohorte"], "desenlace": extra["desenlace"], "decision": salida["decision"],
-                "registro": {c: registro.get(c) for c in CAMPOS[3:]},
-                "matricula": {k: extra[k] for k in ("nota_acceso", "preferencia", "tipo_ingreso", "tiempo_parcial", "ects",
-                                                    "wifi_dias", "aula_dias", "entregas")}}
+                "registro": {c: registro.get(c) for c in CAMPOS[4:] if c not in ("estrato", "deuda_matricula")},
+                "ampliado": _ampliado(registro), "ects": extra["ects"]}
+        if salida.get("datos_no_informados"):
+            fila["sin_dato"] = [c for c in salida["datos_no_informados"] if c != "deuda_matricula"]
         if salida["decision"] == "resultado":
             cortes = salida["cortes"]
-            porque, mejorar = _explicar(salida, registro, modelo)
+            porque, mejorar = _explicar(salida, registro, modelo, aux, m_real)
             fila.update(nivel=salida["nivel"], puntaje=salida["puntaje"], accion=salida["accion"],
                         probabilidad=None if salida.get("probabilidad") is None else round(salida["probabilidad"], 3), r34=bool(salida.get("regla_r34")),
                         porque=porque, mejorar=mejorar,
@@ -229,7 +228,7 @@ def procesar(modelo="logistica"):
             # El contrato se abstiene (falta un dato o se contradice): se respeta, no hay resultado definitivo, y el
             # modelo de ingreso da una alerta provisional con los datos de la matrícula. Nadie queda a revisión manual.
             if salida["decision"] == "abstener" and salida.get("motivo") != "fuera_de_poblacion":
-                prov = ingreso.calificar(extra)
+                prov = ingreso.calificar(registro)
                 if prov:
                     conteo["abstener"] -= 1
                     conteo["provisional"] += 1
@@ -237,10 +236,12 @@ def procesar(modelo="logistica"):
                     sin_historial[causa] = sin_historial.get(causa, 0) + 1
                     niveles_provisional[prov["nivel"]]["n"] += 1
                     niveles_provisional[prov["nivel"]]["desertaron"] += extra["deserto"]
-                    mejorar = [{"variable": "ingreso"}] if prov["nivel"] != "bajo" else []
+                    mejorar = ([{"variable": "ingreso"}] + prov["mejorar"])[:MAX_MEJORAR] if prov["nivel"] != "bajo" else []
                     fila.update(decision="provisional", nivel=prov["nivel"], puntaje=prov["puntaje"],
-                                probabilidad=prov["probabilidad"], porque=prov["porque"], mejorar=mejorar,
+                                probabilidad=prov["probabilidad"], porque=prov["porque"][:MAX_PORQUE], mejorar=mejorar,
                                 accion=ACCION_POR_NIVEL[prov["nivel"]])
+                    if prov["faltan"]:
+                        fila["sin_dato"] = prov["faltan"]
         estudiantes.append(fila)
     orden = {"alto": 0, "medio": 1, "bajo": 2}
     for f in estudiantes:
@@ -255,7 +256,8 @@ def procesar(modelo="logistica"):
         # Lo que el sistema le pide al registro académico, una sola vez por causa (no un caso por estudiante).
         "avisos": [{"tipo": "dato_faltante", "causa": c, "n": n,
                     "texto": f"{n} estudiantes {CAUSAS.get(c, 'tienen un dato que el contrato no acepta')}. Mientras el "
-                             "registro lo completa, tienen un resultado provisional con los datos de su matrícula."}
+                             "registro lo completa, tienen un resultado provisional: el aviso antes de las notas (matrícula, "
+                             "actividad y titulación)."}
                    for c, n in sorted(sin_historial.items(), key=lambda t: -t[1])]
                   + ([{"tipo": "fuera_de_rango", "n": conteo["error"],
                        "texto": f"{conteo['error']} registros traen un dato fuera del rango del contrato y se devolvieron "
@@ -263,7 +265,7 @@ def procesar(modelo="logistica"):
         "niveles_provisional": niveles_provisional, "cortes_provisional": (ingreso.cargar() or {}).get("cortes"),
         "ingreso": (ingreso.cargar() or {}).get("metricas_prueba"),
         "base": resumen_bd(), "cortes": cortes, "niveles": niveles, "matriz": matriz,
-        "textos_mejora": TEXTOS_MEJORA, "titulaciones": sorted({f["titulacion"] for f in estudiantes}), "estudiantes": estudiantes,
+        "textos_mejora": TEXTOS_MEJORA, "usual": (aux or {}).get("medianas"), "titulaciones": sorted({f["titulacion"] for f in estudiantes}), "estudiantes": estudiantes,
     }
 
 

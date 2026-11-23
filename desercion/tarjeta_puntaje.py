@@ -15,7 +15,7 @@ explícito (ver `elegir_cortes`).
 """
 import numpy as np
 
-from .variables import CANDIDATAS
+from .variables import rango as rango_variable
 
 OBJETIVO_CORTES = {
     "recall_alto_min": 0.70,          # el nivel alto debe capturar ≥ 70 % de los desertores
@@ -24,12 +24,13 @@ OBJETIVO_CORTES = {
 }
 
 
-def construir(w, b, media, desviacion, nombres):
+def construir(w, b, media, desviacion, nombres, aux=None):
+    """`aux` (contrato ampliado): da el rango de las variables ampliadas (el recorte aprendido en entrenamiento)."""
     w = np.asarray(w, float); mu = np.asarray(media, float); sd = np.asarray(desviacion, float)
     beta = w / sd
     beta0 = float(b - np.sum(w * mu / sd))
-    lo = np.array([CANDIDATAS[n][0][0] for n in nombres], float)
-    hi = np.array([CANDIDATAS[n][0][1] for n in nombres], float)
+    lo = np.array([rango_variable(n, aux)[0] for n in nombres], float)
+    hi = np.array([rango_variable(n, aux)[1] for n in nombres], float)
     minimo = np.minimum(beta * lo, beta * hi)
     maximo = np.maximum(beta * lo, beta * hi)
     rango = float(np.sum(maximo - minimo))

@@ -8,6 +8,10 @@ después del Paso 1, así que las garantías del contrato se cumplen igual que e
                  variable se reemplaza por su media de entrenamiento.
 - En los dos: R3.4 fuerza el nivel alto; la deuda ausente se reporta en
   `datos_no_informados` y se imputa el valor que NO reduce el riesgo.
+- Contrato ampliado (pesos de la base real con la clave "ampliado" en el JSON): antes de calificar se
+  validan los campos ampliados (`contrato_ampliado.validar`: error o abstención controlados) y los que
+  faltan se imputan con la mediana de entrenamiento guardada en el JSON (con su indicadora) y se listan
+  en `datos_no_informados`. Los pesos sintéticos no tienen esa clave: no cambia nada para ellos.
 """
 import json
 
@@ -55,7 +59,7 @@ def _logit_red(m, X):
 
 def _calificar_logistica(e, m):
     t = m["tarjeta"]
-    x = vector(e, m["variables"], deuda_si_falta=m["deuda_si_falta"])
+    x = vector(e, m["variables"], deuda_si_falta=m["deuda_si_falta"], aux=m.get("ampliado"))
     pts = (x * np.asarray(t["beta"]) - np.asarray(t["aporte_minimo"])) * t["escala"]
     total = float(pts.sum())
     puntaje = int(np.clip(np.rint(total), 0, 100))
@@ -66,10 +70,11 @@ def _calificar_logistica(e, m):
 
 def _calificar_red(e, m):
     nombres = m["variables"]
+    aux = m.get("ampliado")
     if e.get("deuda_matricula") is None and "deuda_matricula" in nombres:
-        X = np.array([vector(e, nombres, 0), vector(e, nombres, 1)])
+        X = np.array([vector(e, nombres, 0, aux), vector(e, nombres, 1, aux)])
     else:
-        X = np.array([vector(e, nombres)])
+        X = np.array([vector(e, nombres, aux=aux)])
     probs = _sigmoide(_logit_red(m, X) - m["ajuste_prior"])
     i = int(np.argmax(probs))  # deuda ausente: la imputación que da más riesgo
     prob = float(probs[i])
@@ -96,6 +101,11 @@ def calificar(e, modelo="logistica", origen=None):
         return ({"decision": "error", "motivo": "modelo_no_disponible",
                  "detalle": "Falta modelos_entrenados/. Ejecute: python -m desercion.entrenamiento"},
                 {"S1": "valido", "S2": "-", "S3": "-"})
+    if m.get("ampliado") is not None:
+        from .contrato_ampliado import validar
+        s = validar(e)
+        if s is not None:
+            return s, {"S1": f"{s['decision']}({s['motivo']}, ampliado)", "S2": "-", "S3": "-"}
     if modelo == "logistica":
         puntaje, prob, detalle = _calificar_logistica(e, m)
     else:
@@ -104,6 +114,9 @@ def calificar(e, modelo="logistica", origen=None):
     factores = [f"{v}: {'+' if p >= 0 else ''}{round(p)}" for v, p in
                 sorted(detalle.items(), key=lambda kv: -kv[1]) if round(p) >= 1]
     no_inf = ["deuda_matricula"] if e.get("deuda_matricula") is None else []
+    if m.get("ampliado") is not None:
+        from .contrato_ampliado import faltantes
+        no_inf += faltantes(e, m["variables"])
     salida = {"decision": "resultado", "nivel": nivel, "puntaje": puntaje, "accion": ACCION_POR_NIVEL[nivel],
               "factores": factores, "datos_no_informados": no_inf,
               "modo": "aprendido", "modelo": modelo, "probabilidad": round(prob, 4),

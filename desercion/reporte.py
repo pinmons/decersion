@@ -330,7 +330,7 @@ _SUPUESTOS_CSV = {
     17: "Objetivo de cortes: alto ≥ 70 % de recall con ≤ 25 % de estudiantes; en bajo ≤ 10 % de los desertores. Con datos "
         "reales, si no se puede, se respeta el 25 % en alto y el resto de la detección queda en medio.",
     21: "Tope de dominancia 35 % de la importancia por permutación, medido por GRUPO de variables correlacionadas "
-        "(|r| ≥ 0,5); se decide en train con un margen de 2 puntos, y el freno se detiene antes de que el modelo deje de "
+        "(|r| ≥ 0,5; con el contrato ampliado, por FUENTE del dato); se decide en train con un margen de 2 puntos, y el freno se detiene antes de que el modelo deje de "
         "ganarle (por 0,01 de AUC en train) a la mejor variable sola.",
 }
 
@@ -370,6 +370,25 @@ def _reporte_csv(res):
                         for g in it["grupos"]]), "",
                 "Tope cumplido: logística " + ("sí" if it["cumple_tope"]["logistica"] else "**no**") + ", red neuronal "
                 + ("sí" if it["cumple_tope"]["red"] else "**no**") + ".", ""]
+    if co.get("aporte_fuentes"):
+        out += ["### Qué aporta cada fuente (nuestros modelos, AUC en prueba)", "",
+                _tabla(["Variables", "Logística", "Logística sin evidentes", "Red", "Red sin evidentes"],
+                       [[f["conjunto"], f"{f['logistica']['auc']:.3f}", f"{f['logistica']['auc_sin_evidentes']:.3f}",
+                         f"{f['red']['auc']:.3f}", f"{f['red']['auc_sin_evidentes']:.3f}"] for f in co["aporte_fuentes"]]), ""]
+    if co.get("sklearn"):
+        sk = co["sklearn"]
+        out += ["### Verificación con scikit-learn (misma división, variables e imputación)", "",
+                _tabla(["Modelo", "Propio", "scikit-learn", "Diferencia"],
+                       [[k, f"{sk[k]['propia']['auc']:.4f}", f"{sk[k]['sklearn']['auc']:.4f}", f"{sk[k]['diferencia_auc']:+.4f}"]
+                        for k in ("logistica_libre", "logistica_sin_tope", "logistica_final", "red") if k in sk]), "",
+                "`logistica_libre` es la propia sin restricción de signo ni tope: la única comparable con scikit-learn. Las otras "
+                "dos llevan la restricción de signo, que scikit-learn no tiene.", ""]
+    if res.get("dependencia", {}).get("ampliado"):
+        a = res["dependencia"]["ampliado"]
+        out += ["### Contrato ampliado", "", "Ver `CONTRATO_AMPLIADO.md`. Imputación con la mediana de entrenamiento: "
+                + ", ".join(f"`{k}` {v:g}" for k, v in a["medianas"].items()) + f". Tasa general de abandono {a['tasa_global']:.3f}, "
+                f"{a['n_titulaciones']} titulaciones, suavizado {a['suavizado']}.", "",
+                "Decisiones de la Fase 3: " + "; ".join(f"se quita `{d['se_quita']}`" for d in res["dependencia"]["decisiones"]) + ".", ""]
     out += ["![Curvas](curvas_perdida.png)", "", "![Importancia](importancia_permutacion.png)", "", "![Calibración](calibracion.png)", ""]
     out += ["## Pruebas de estrés (ronda 4, modelos de la corrida principal)", ""] + _seccion_ronda4()[2:]
     supuestos = [_SUPUESTOS_CSV.get(i, t) for i, t in enumerate(SUPUESTOS) if i not in _SOLO_SINTETICOS]

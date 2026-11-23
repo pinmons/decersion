@@ -29,6 +29,7 @@ from pathlib import Path
 import numpy as np
 
 from . import RAIZ
+from . import contrato_ampliado as ca
 from . import datos_sinteticos as ds
 from . import dependencia as dep
 from . import tarjeta_puntaje as tp
@@ -55,6 +56,8 @@ MEJORA_MINIMA = 1e-5
 MARGEN_TOPE = 0.02  # [SUPUESTO] margen bajo el tope por ruido de muestreo
 PRIORIDAD_CORTES = "recall"  # con --csv (datos reales) pasa a "fraccion": ver tarjeta_puntaje.elegir_cortes
 SIN_EVIDENTES = False  # --sin-evidentes: los modelos aprenden sin quien no aprobó ninguna materia
+AMPLIADO = False  # contrato ampliado: se activa solo si el CSV trae sus columnas (y no se pide --solo-contrato)
+SOLO_CONTRATO = False
 MARGEN_UNA_VARIABLE = 0.01  # [SUPUESTO] el modelo debe ganarle por al menos esto a la mejor variable sola (AUC train)
 COLAPSO_AUC = 0.10  # [SUPUESTO] quitar una variable y perder > 0.10 de AUC = dependencia excesiva
 
@@ -140,10 +143,20 @@ def crear_logistica(k, config=CONFIG_LOGISTICA, l2_por_variable=None, signos=Non
                               l2_por_variable=l2_por_variable, signos=signos, semilla=semilla)
 
 
+def signos_ampliados(nombres):
+    """Contrato ampliado [SUPUESTO]: cada variable ampliada con un sentido claro solo puede moverse en ese sentido
+    (más nota de acceso o más días en el campus nunca suben el riesgo; más abandono en la titulación nunca lo baja).
+    Sin esto la logística aprendía, por ejemplo, que a igual tasa de reprobación más nota de acceso sube el riesgo, y
+    la ficha diría «por qué: entró con 13 de nota de acceso». Las del contrato original no se restringen (como antes)."""
+    return [ca.VARIABLES[n][2] if n in ca.VARIABLES else 0 for n in nombres]
+
+
 def crear_red(k, config=CONFIG_RED, semilla=SEMILLA, nombres=None, freno_entrada=None):
     signos = None
     if config.get("monotonas") and nombres is not None:
         signos = [config["monotonas"].get(n, 0) for n in nombres]
+        if AMPLIADO:
+            signos = [s or a for s, a in zip(signos, signos_ampliados(nombres))]
     return RedNeuronal(k, capas=tuple(config["capas"]), l2=config["l2"], tasa_aprendizaje=config["tasa_aprendizaje"],
                        dropout=config["dropout"], signos_entrada=signos, freno_entrada=freno_entrada, semilla=semilla)
 
@@ -200,8 +213,15 @@ def etapa_datos(est, res, imprimir=True):
 def etapa_datos_csv(est, res, ruta):
     """Fase 2 con datos reales: CSV con las 12 columnas del contrato + `deserto` (0/1)."""
     from . import figuras
+    global AMPLIADO
     titulo(f"FASE 2 – Datos desde CSV: {ruta}")
-    validos, y, motivos = ds.cargar_datos_reales(ruta)
+    columnas = ds.columnas_ampliadas(ruta)
+    AMPLIADO = bool(columnas) and not SOLO_CONTRATO
+    validos, y, motivos = ds.cargar_datos_reales(ruta, ampliado=AMPLIADO)
+    if AMPLIADO:
+        print(f"Contrato ampliado: el CSV trae {len(columnas)} campos más que el contrato ({', '.join(columnas)}).")
+    elif columnas:
+        print("--solo-contrato: se ignoran los campos del contrato ampliado que trae el CSV.")
     n_desc = int(sum(motivos.values()))
     print(f"Registros válidos con etiqueta: {len(validos)} | descartados: {n_desc} | tasa de deserción: {_pct(y.mean())}")
     print("Descartes por motivo:", dict(sorted(motivos.items())))
@@ -229,7 +249,12 @@ def etapa_datos_csv(est, res, ruta):
         "resumen_campos": resumen_campos(validos, y),
         # quiénes quedaron en prueba: la operación solo califica a quienes el modelo nunca vio
         "ids_prueba": [validos[i]["id_estudiante"] for i in ite],
+        "ampliado": AMPLIADO,
     }
+    if AMPLIADO:   # cuántos registros no traen cada campo ampliado (se imputan y se dice)
+        res["datos"]["faltantes_ampliado"] = {c: int(sum(r.get(c) is None for r in validos)) for c in ca.CAMPOS}
+        print("Faltan (se imputan con la mediana de entrenamiento + indicadora):",
+              {c: n for c, n in res["datos"]["faltantes_ampliado"].items() if n})
 
 
 def resumen_campos(registros, y):
@@ -258,16 +283,26 @@ def resumen_campos(registros, y):
 def etapa_dependencia(est, res, imprimir=True):
     from . import figuras
     titulo("FASE 3 – Dependencia entre variables ANTES de entrenar (medida solo en train)")
-    candidatas = list(CANDIDATAS)
+    candidatas = list(CANDIDATAS) + (list(ca.VARIABLES) if AMPLIADO else [])
+    aux = None
+    if AMPLIADO:
+        # Imputación, recortes y tasa de abandono por titulación: se aprenden SOLO con train.
+        aux, oof = ca.ajustar([est["registros"][i] for i in est["itr"]], est["y"][est["itr"]], semilla=SEMILLA)
+        est["oof_titulacion"] = oof
+        print(f"Contrato ampliado: medianas de train para imputar {', '.join(f'{k} {v:g}' for k, v in aux['medianas'].items())}")
+        print(f"Tasa de abandono por titulación: {len(aux['titulaciones'])} titulaciones, tasa general {aux['tasa_global']:.3f}, "
+              f"suavizado {aux['suavizado']} estudiantes; en train se usa la tasa fuera de pliegue ({ca.PLIEGUES} partes).")
+    est["aux"] = aux
+    ESTADO_AUX["aux"] = aux
     # [SUPUESTO] deuda ausente → 1 (valor prudente: no reduce el riesgo). Se confirma con el signo aprendido.
-    X_todo = matriz(est["registros"], candidatas, deuda_si_falta=1)
+    X_todo = _matriz(est, candidatas)
     Xtr = X_todo[est["itr"]]
     # Una variable que vale lo mismo para todos no distingue a nadie (y rompe correlaciones y VIF).
     constantes = [n for j, n in enumerate(candidatas) if Xtr[:, j].std() == 0]
     if constantes:
         print("Variables constantes en estos datos (se quitan antes de medir):", ", ".join(constantes))
         candidatas = [n for n in candidatas if n not in constantes]
-        X_todo = matriz(est["registros"], candidatas, deuda_si_falta=1)
+        X_todo = _matriz(est, candidatas)
         Xtr = X_todo[est["itr"]]
     antes = dep.diagnostico(Xtr, candidatas)
     print("Variables candidatas:", ", ".join(candidatas))
@@ -277,7 +312,7 @@ def etapa_dependencia(est, res, imprimir=True):
     print("VIF antes:")
     for n, v in antes["vif"].items():
         print(f"   {n:38s} {v:7.2f}  {dep.clasificar_vif(v)}")
-    finales, decisiones = dep.resolver_colinealidad(Xtr, candidatas)
+    finales, decisiones = dep.resolver_colinealidad(Xtr, candidatas, preferir=set(CANDIDATAS) if AMPLIADO else None)
     decisiones = [{"par": [n], "se_quita": n, "motivo": "Vale lo mismo para todos los estudiantes de estos datos: "
                    "no puede distinguir a nadie."} for n in constantes] + decisiones
     for d in decisiones:
@@ -304,6 +339,19 @@ def etapa_dependencia(est, res, imprimir=True):
     res["dependencia"] = {"candidatas": candidatas, "antes": antes, "decisiones": decisiones,
                           "finales": finales, "despues": despues, "escalador": esc.a_dict(),
                           "deuda_si_falta_entrenamiento": 1}
+    if aux is not None:
+        res["dependencia"]["ampliado"] = ca.resumen_aux(aux)
+        res["dependencia"]["fuente_por_variable"] = {n: ca.fuente(n) for n in finales}
+
+
+def _matriz(est, nombres):
+    """Matriz de variables en unidades originales. Con el contrato ampliado, la tasa de la titulación de los
+    estudiantes de train es la fuera de pliegue (la suya no cuenta)."""
+    aux = est.get("aux")
+    X = matriz(est["registros"], nombres, deuda_si_falta=1, aux=aux)
+    if aux is not None and "abandono_titulacion" in nombres:
+        X[est["itr"], nombres.index("abandono_titulacion")] = est["oof_titulacion"]
+    return X
 
 
 # ====================================================================== Fase 4 – entrenamiento
@@ -312,8 +360,11 @@ def partes(est, X=None):
     return X[est["itr"]], est["y"][est["itr"]], X[est["iva"]], est["y"][est["iva"]], X[est["ite"]], est["y"][est["ite"]]
 
 
+ESTADO_AUX = {}  # el `aux` del contrato ampliado de la corrida en curso (lo necesita la tarjeta)
+
+
 def tarjeta_y_cortes(modelo, escalador, nombres, X_raw_val, y_val):
-    tarjeta = tp.construir(modelo.w, modelo.b, escalador.media, escalador.desviacion, nombres)
+    tarjeta = tp.construir(modelo.w, modelo.b, escalador.media, escalador.desviacion, nombres, aux=ESTADO_AUX.get("aux"))
     cortes = tp.elegir_cortes(tp.puntaje(tarjeta, X_raw_val), y_val, prioridad=PRIORIDAD_CORTES)
     return tarjeta, cortes
 
@@ -329,7 +380,8 @@ def etapa_entrenamiento(est, res, imprimir=True):
     titulo("FASE 4 – Modelo A: regresión logística (una neurona sigmoide), desde cero en NumPy")
     print(f"Configuración: {CONFIG_LOGISTICA} | pesos por clase: "
           f"{ {a: round(float(b), 3) for a, b in pesos_por_clase(ytr).items()} }")
-    log, hist_log, info_log = entrenar(crear_logistica(k), Xtr, ytr, Xva, yva, CONFIG_LOGISTICA, nombres, imprimir)
+    est["signos_log"] = np.array(signos_ampliados(nombres), float) if AMPLIADO else None
+    log, hist_log, info_log = entrenar(crear_logistica(k, signos=est["signos_log"]), Xtr, ytr, Xva, yva, CONFIG_LOGISTICA, nombres, imprimir)
     titulo(f"FASE 4 – Modelo B: red neuronal {k} → {' → '.join(map(str, CONFIG_RED['capas']))} → 1 "
            "(ReLU, dropout, Adam, He), desde cero en NumPy")
     print(f"Configuración: {CONFIG_RED}")
@@ -376,7 +428,8 @@ def reentrenar_logistica(est, columnas, l2_por_variable=None, idx_train=None, se
     if idx_train is not None:
         Xtr, ytr = est["Xs"][idx_train], est["y"][idx_train]
     c = None if l2_por_variable is None else np.asarray(l2_por_variable)[columnas]
-    modelo = crear_logistica(len(columnas), l2_por_variable=c, semilla=semilla)
+    signos = None if est.get("signos_log") is None else est["signos_log"][columnas]
+    modelo = crear_logistica(len(columnas), l2_por_variable=c, signos=signos, semilla=semilla)
     modelo, _, info = entrenar(modelo, Xtr[:, columnas], ytr, Xva[:, columnas], yva, CONFIG_LOGISTICA, semilla=semilla)
     return modelo, info
 
@@ -406,9 +459,29 @@ def etapa_control(est, res, imprimir=True):
     tope = dep.TOPE_DOMINANCIA
     objetivo = tope - MARGEN_TOPE
     Xtr, ytr = est["Xs"][est["itr"]], est["y"][est["itr"]]
+    if est.get("aux") is not None and "abandono_titulacion" in nombres:
+        # El tope se mide en train con la tasa de titulación que el modelo verá en prueba y en operación (la de todo el
+        # entrenamiento), no con la fuera de pliegue con la que aprende: con esa, más ruidosa, la importancia de la
+        # titulación salía más baja en train que en prueba (34 % frente a 40 % en una primera corrida).
+        j = nombres.index("abandono_titulacion")
+        Xtr_tope = Xtr.copy()
+        tasa = np.array([ca.tasa_titulacion(est["registros"][i], est["aux"]) for i in est["itr"]])
+        Xtr_tope[:, j] = (tasa - est["escalador"].media[j]) / est["escalador"].desviacion[j]
+    else:
+        Xtr_tope = Xtr
     log = est["log"]
     c = np.ones(k)
-    grupos = dep.grupos_correlacionados(Xtr, nombres)
+    fuentes_g = None
+    if AMPLIADO:
+        # Contrato ampliado: los grupos del tope son las FUENTES del dato (notas, actividad, admisión, titulación),
+        # unidas si dos variables de fuentes distintas tienen |r| ≥ 0,5. Así el tope responde a «¿depende de una sola
+        # fuente?» y se puede explicar; y como se unen por correlación, una fuente no suple a otra al desordenarla.
+        grupos, fuentes_g, cruzados = dep.grupos_por_fuente(Xtr, nombres, ca.fuente)
+        print("Grupos del tope = fuentes del dato" + (f"; pares entre fuentes con |r| ≥ {dep.UMBRAL_GRUPO} que obligaron a "
+              f"unir: {cruzados}" if cruzados else f" (ningún par de fuentes distintas tiene |r| ≥ {dep.UMBRAL_GRUPO})."))
+        est["cruzados"] = cruzados
+    else:
+        grupos = dep.grupos_correlacionados(Xtr, nombres)
     nombres_g = [" + ".join(nombres[i] for i in g) for g in grupos]
     aucs_una, signos_una, mejor_una = dep.una_variable(Xtr, ytr, nombres)
     piso = float(aucs_una.max()) + MARGEN_UNA_VARIABLE
@@ -417,11 +490,12 @@ def etapa_control(est, res, imprimir=True):
     print(f"Mejor variable sola en train: {mejor_una} (AUC {aucs_una.max():.4f}). Piso del freno: AUC train ≥ {piso:.4f}.")
 
     def medir(modelo):
-        pct = dep.porcentajes(dep.importancia_permutacion(modelo.logit, Xtr, ytr)[0])
-        pct_g = dep.porcentajes(dep.importancia_permutacion_grupos(modelo.logit, Xtr, ytr, grupos)[0])
+        pct = dep.porcentajes(dep.importancia_permutacion(modelo.logit, Xtr_tope, ytr)[0])
+        pct_g = dep.porcentajes(dep.importancia_permutacion_grupos(modelo.logit, Xtr_tope, ytr, grupos)[0])
         return pct, pct_g, auc(yva, modelo.logit(Xva)), auc(ytr, modelo.logit(Xtr))
 
     pct_tr, pct_g, auc_va, auc_tr = medir(log)
+    est["log_sin_tope"] = log
     antes = {"pct_train": pct_tr.tolist(), "grupos_pct_train": pct_g.tolist(), "auc_val": auc_va, "auc_train": auc_tr,
              "multiplicadores": c.tolist()}
     pasos_tope, freno_log = [], None
@@ -432,7 +506,7 @@ def etapa_control(est, res, imprimir=True):
           f"en TRAIN, por grupo, y se exige ≤ {objetivo * 100:.0f} % (margen por ruido de muestreo).")
     print("Importancia por permutación en train (logística), por grupo: " +
           " · ".join(f"{nombres_g[g]} {_pct(pct_g[g])}" for g in np.argsort(-pct_g)))
-    while pct_g.max() > objetivo and len(pasos_tope) < 15:
+    while pct_g.max() > objetivo and len(pasos_tope) < 25:
         g = int(pct_g.argmax())
         c[grupos[g]] *= 2
         log_nuevo, _ = reentrenar_logistica(est, todas, l2_por_variable=c)
@@ -484,7 +558,7 @@ def etapa_control(est, res, imprimir=True):
     # El mismo tope para la red neuronal: si un grupo pasa del objetivo, se frenan (decaimiento desacoplado) solo
     # los pesos que salen de esas entradas y se vuelve a entrenar. Mismo piso que la logística.
     def medir_red(r):
-        return (dep.porcentajes(dep.importancia_permutacion_grupos(r.logit, Xtr, ytr, grupos)[0]),
+        return (dep.porcentajes(dep.importancia_permutacion_grupos(r.logit, Xtr_tope, ytr, grupos)[0]),
                 auc(yva, r.logit(Xva)), auc(ytr, r.logit(Xtr)))
     red, f_red, pasos_red, freno_red = est["red"], np.zeros(k), [], None
     pct_red_g, auc_red_va, auc_red_tr = medir_red(red)
@@ -493,7 +567,7 @@ def etapa_control(est, res, imprimir=True):
           " · ".join(f"{nombres_g[g]} {_pct(pct_red_g[g])}" for g in np.argsort(-pct_red_g)))
     hist_red = info_red = None
     mejor_red = (pct_red_g.max(), red, None, None, f_red.copy(), pct_red_g, auc_red_va, auc_red_tr, 0)
-    while pct_red_g.max() > objetivo and len(pasos_red) < 10:
+    while pct_red_g.max() > objetivo and len(pasos_red) < (16 if AMPLIADO else 10):
         g = int(pct_red_g.argmax())
         previo = f_red.copy()
         f_red[grupos[g]] = 1e-3 if f_red[grupos[g][0]] == 0 else min(0.5, f_red[grupos[g][0]] * 3)
@@ -531,6 +605,7 @@ def etapa_control(est, res, imprimir=True):
                        "despues": {"grupos_pct_train": pct_red_g.tolist(), "auc_val": auc_red_va, "auc_train": auc_red_tr,
                                    "cumple": bool(pct_red_g.max() <= objetivo), "detenido_por_piso": freno_red}}
     res["grupos"] = {"umbral": dep.UMBRAL_GRUPO, "indices": grupos, "nombres": [[nombres[i] for i in g] for g in grupos],
+                     "por_fuente": bool(AMPLIADO), "fuentes": fuentes_g, "cruzados": est.get("cruzados"),
                      "una_variable_train": {"auc": aucs_una.tolist(), "signos": signos_una, "mejor": mejor_una,
                                             "piso": piso}}
     est["grupos"], est["signos_una"] = grupos, signos_una
@@ -651,7 +726,8 @@ def etapa_control(est, res, imprimir=True):
                              "logistica_pct": pct_te.tolist(), "red": imp_red.tolist(), "red_desv": imp_red_sd.tolist(),
                              "red_pct": pct_red.tolist(), "auc_base_logistica": auc_base, "auc_base_red": auc_red,
                              "grupos": [{"variables": [nombres[i] for i in g], "logistica_pct": float(g_log[n]),
-                                         "red_pct": float(g_red[n])} for n, g in enumerate(grupos)],
+                                         "red_pct": float(g_red[n]), "fuente": fuentes_g[n] if fuentes_g else None}
+                                        for n, g in enumerate(grupos)],
                              "cumple_tope": {"logistica": bool(g_log.max() <= tope), "red": bool(g_red.max() <= tope)}},
         "ablacion": ablacion, "ablacion_base": base,
         "estabilidad": {"pesos_media": pesos_b.mean(0).tolist(), "pesos_desv": pesos_b.std(0).tolist(),
@@ -660,6 +736,80 @@ def etapa_control(est, res, imprimir=True):
                         "cambios_de_signo": cambios_signo},
         "estrato": analisis_estrato,
     }
+    if AMPLIADO:
+        res["control"]["aporte_fuentes"] = aporte_fuentes(est)
+        res["control"]["sklearn"] = verificar_sklearn(est)
+
+
+def _auc_test(est, puntaje_test):
+    """AUC en test con todos y sin los casos evidentes."""
+    ite = est["ite"]
+    yte = est["y"][ite]
+    evid = np.array([caso_evidente(est["registros"][i]) for i in ite])
+    return {"auc": auc(yte, puntaje_test), "auc_sin_evidentes": auc(yte[~evid], puntaje_test[~evid])}
+
+
+def aporte_fuentes(est):
+    """Qué aporta cada fuente: NUESTROS modelos (logística y red, desde cero) entrenados solo con las variables de
+    una fuente, con todo menos las notas (el aviso que se puede dar antes de las notas) y con todo. AUC en prueba."""
+    nombres = est["nombres"]
+    Xtr, ytr, Xva, yva, Xte, _ = partes(est)
+    conjuntos = [(f, (f,)) for f in ca.FUENTES] + [("antes_de_notas", ca.ANTES_DE_NOTAS), ("todo", tuple(ca.FUENTES))]
+    print("\nQué aporta cada fuente (logística y red entrenadas solo con esas variables; AUC en prueba):")
+    salida = []
+    for clave, fuentes in conjuntos:
+        cols = [j for j, n in enumerate(nombres) if ca.fuente(n) in fuentes]
+        if not cols:
+            continue
+        log_f, _ = reentrenar_logistica(est, cols)
+        red_f, _, _ = entrenar(crear_red(len(cols), nombres=[nombres[j] for j in cols]), Xtr[:, cols], ytr,
+                               Xva[:, cols], yva, CONFIG_RED)
+        fila = {"conjunto": clave, "fuentes": list(fuentes), "variables": [nombres[j] for j in cols],
+                "logistica": _auc_test(est, log_f.logit(Xte[:, cols])), "red": _auc_test(est, red_f.logit(Xte[:, cols]))}
+        salida.append(fila)
+        print(f"   {clave:16s} ({len(cols):2d} variables) logística AUC {fila['logistica']['auc']:.4f} "
+              f"(sin evidentes {fila['logistica']['auc_sin_evidentes']:.4f}) | red {fila['red']['auc']:.4f} "
+              f"({fila['red']['auc_sin_evidentes']:.4f})")
+    return salida
+
+
+def verificar_sklearn(est):
+    """Misma división, mismas variables, misma imputación y misma estandarización con scikit-learn (solo para
+    verificar; no entra en la web ni en la inferencia). La L2 por variable del tope se reproduce escalando cada
+    columna por 1/√c_j. Si scikit-learn no está instalado, se omite."""
+    try:
+        from sklearn.linear_model import LogisticRegression
+        from sklearn.neural_network import MLPClassifier
+    except ImportError:
+        print("scikit-learn no está instalado: se omite la verificación.")
+        return None
+    Xtr, ytr, _, _, Xte, _ = partes(est)
+    C = 1.0 / (CONFIG_LOGISTICA["l2"] * len(ytr))   # misma penalización: λ/2·Σc·w² sobre la pérdida media
+    salida = {"C_equivalente": C}
+    # La comparable con scikit-learn es la logística propia SIN la restricción de signo (scikit-learn no la tiene).
+    _, _, Xva, yva, _, _ = partes(est)
+    libre, _, _ = entrenar(crear_logistica(Xtr.shape[1]), Xtr, ytr, Xva, yva, CONFIG_LOGISTICA)
+    for clave, modelo_propio, c in (("logistica_libre", libre, np.ones(Xtr.shape[1])),
+                                    ("logistica_sin_tope", est["log_sin_tope"], np.ones(Xtr.shape[1])),
+                                    ("logistica_final", est["log"], np.asarray(est["l2_por_variable"]))):
+        esc = 1 / np.sqrt(c)
+        sk = LogisticRegression(C=C, class_weight="balanced", max_iter=10000).fit(Xtr * esc, ytr)
+        propia, ref = _auc_test(est, modelo_propio.logit(Xte)), _auc_test(est, sk.decision_function(Xte * esc))
+        coef = sk.coef_[0] * esc
+        salida[clave] = {"propia": propia, "sklearn": ref, "diferencia_auc": propia["auc"] - ref["auc"],
+                         "correlacion_pesos": float(np.corrcoef(coef, modelo_propio.w)[0, 1]),
+                         "max_dif_peso": float(np.max(np.abs(coef - modelo_propio.w)))}
+    mlp = MLPClassifier(hidden_layer_sizes=tuple(CONFIG_RED["capas"]), alpha=1e-3, early_stopping=True,
+                        max_iter=500, random_state=SEMILLA).fit(Xtr, ytr)
+    propia, ref = _auc_test(est, est["red"].logit(Xte)), _auc_test(est, mlp.predict_proba(Xte)[:, 1])
+    salida["red"] = {"propia": propia, "sklearn": ref, "diferencia_auc": propia["auc"] - ref["auc"]}
+    print("\nVerificación con scikit-learn (misma división y variables; AUC en prueba):")
+    for clave in ("logistica_libre", "logistica_sin_tope", "logistica_final", "red"):
+        v = salida[clave]
+        print(f"   {clave:20s} propia {v['propia']['auc']:.4f} | scikit-learn {v['sklearn']['auc']:.4f} | "
+              f"diferencia {v['diferencia_auc']:+.4f}" + (f" | corr. de pesos {v['correlacion_pesos']:.4f}, máx. "
+                                                         f"dif. {v['max_dif_peso']:.3f}" if "correlacion_pesos" in v else ""))
+    return salida
 
 
 # ====================================================================== Fase 6 – evaluación
@@ -676,6 +826,9 @@ def guardar_modelos(est, res):
     comun = {"variables": est["nombres"], "escalador": est["escalador"].a_dict(), "ajuste_prior": est["ajuste"],
              "aviso": res.get("aviso_modelo", "Entrenado con datos SINTÉTICOS. No representa el desempeño con estudiantes reales."),
              "semilla": SEMILLA}
+    if est.get("aux") is not None:
+        comun["ampliado"] = est["aux"]
+        comun["fuentes"] = {n: ca.fuente(n) for n in est["nombres"]}
     log = {**comun, "tipo": "logistica", "pesos": est["log"].w.tolist(), "sesgo": float(est["log"].b),
            "l2_por_variable": est["l2_por_variable"].tolist(), "tarjeta": est["tarjeta"],
            "cortes": {"corte_medio": est["cortes"]["corte_medio"], "corte_alto": est["cortes"]["corte_alto"]},
@@ -718,12 +871,15 @@ def main(argv=None):
     p.add_argument("--csv", help="entrenar con datos reales: CSV con las 12 columnas del contrato + deserto (0/1)")
     p.add_argument("--sin-evidentes", action="store_true", help="los modelos aprenden sin los casos evidentes "
                    "(quien no aprobó ninguna materia); la prueba los conserva")
+    p.add_argument("--solo-contrato", action="store_true", help="aunque el CSV traiga los campos del contrato "
+                   "ampliado, entrena solo con los 12 campos del contrato (para comparar)")
     p.add_argument("--nombre", help="guarda la corrida aparte, en reportes/<nombre>/ y modelos_entrenados/<nombre>/, "
                                     "sin tocar los modelos ni las páginas de la corrida principal")
     args = p.parse_args(argv)
     est, res = {}, {"semilla": SEMILLA, "aviso": "Todas las métricas se midieron con datos SINTÉTICOS."}
-    global SIN_EVIDENTES, PRIORIDAD_CORTES
+    global SIN_EVIDENTES, PRIORIDAD_CORTES, SOLO_CONTRATO
     SIN_EVIDENTES = bool(args.sin_evidentes)
+    SOLO_CONTRATO = bool(args.solo_contrato)
     if args.csv:
         PRIORIDAD_CORTES = "fraccion"
     if args.nombre:
