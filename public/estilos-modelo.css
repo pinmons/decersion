@@ -97,3 +97,11 @@
 .modelo-selector .selector-modo legend { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 .celda-notas .teja { padding: 14px 18px; gap: 6px; }
 .celda-notas .tejas { gap: 14px; }
+
+/* La nota honesta: con todos y sin los casos evidentes, y la mejor variable sola en la última fila. */
+.tabla-honesta td, .tabla-honesta thead th:not(:first-child) { text-align: right; white-space: nowrap; }
+.tabla-honesta td { font-size: 1.05rem; }
+.tabla-honesta th, .tabla-honesta td { padding: 6px 10px; }
+.tabla-honesta { table-layout: auto; }
+.tabla-honesta th[scope="row"] { font-weight: 500; white-space: normal; min-width: 8em; }
+.tabla-honesta tbody tr:last-child > * { color: var(--tinta-2); border-top: 1px dashed var(--renglon); }

@@ -132,8 +132,10 @@ def calificar(extra):
     c = m["cortes"]
     nivel = "alto" if puntaje >= c["corte_alto"] else "medio" if puntaje >= c["corte_medio"] else "bajo"
     orden = sorted(zip(m["variables"], aportes), key=lambda t: -t[1])
+    # Las de sí o no solo explican el riesgo cuando valen 1 (con 0 su aporte positivo es solo «no tenerla»).
     porque = [{"variable": v, "peso": round(float(a), 2), "texto": _texto(v, datos)} for v, a in orden
-              if a >= 0.05 and not (v == "nota_acceso" and datos["sin_nota_acceso"])]
+              if a >= 0.05 and not (v == "nota_acceso" and datos["sin_nota_acceso"])
+              and not (v in ("sin_nota_acceso", "tiempo_parcial") and not datos[v])]
     return {"nivel": nivel, "puntaje": puntaje, "probabilidad": round(prob, 4), "cortes": dict(c), "porque": porque}
 
 

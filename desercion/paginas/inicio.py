@@ -34,7 +34,7 @@ def cuerpo(lista_pasos=None):
             <span class="t-ir">Cómo le va al modelo</span>
           </a>
           <section class="celda c7 t-programas" aria-labelledby="t-prog-rotulo">
-            <div class="t-programas-cabeza"><span class="rotulo" id="t-prog-rotulo">Dónde se concentra el riesgo</span>
+            <div class="t-programas-cabeza"><span class="rotulo" id="t-prog-rotulo">Dónde se concentra el riesgo, por titulación</span>
               <ul class="t-leyenda t-leyenda-corta" aria-hidden="true"><li><i class="seg-alto"></i>alto</li><li><i class="seg-medio"></i>medio</li><li><i class="seg-bajo"></i>bajo</li></ul></div>
             <div id="t-programas" class="t-barras"><p>Cargando…</p></div>
           </section>
@@ -53,8 +53,10 @@ def cuerpo(lista_pasos=None):
             <ul id="t-avisos" class="t-avisos"><li>Cargando…</li></ul>
           </section>
         </div>
-        <p class="nota t-honesto">Prototipo académico. La operación lee una base real y pública (Instituto Politécnico de
-          Portalegre, Portugal) en la que asistencia, estrato y trabajo son aproximaciones. «Probar un caso» y «Cómo se
-          hizo» usan el modelo construido con datos sintéticos. No se usa para decidir sobre estudiantes reales.</p>
+        <p class="nota t-honesto">Prototipo académico. La operación lee una base real y pública: estudiantes de primer
+          año de la Universitat Politècnica de València (España), en la que la asistencia (presencia en el campus y en el
+          aula virtual) y el trabajo (matrícula a tiempo parcial) son aproximaciones y el estrato no existe. «Probar un
+          caso» y «Cómo se hizo» usan el modelo construido con datos sintéticos. No se usa para decidir sobre
+          estudiantes reales.</p>
       </div>
     </section>"""

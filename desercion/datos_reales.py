@@ -59,11 +59,19 @@ FUENTE = {
     "poblacion": "Primer año de grado, cohortes 2021 y 2022, con lo que se sabía al terminar el primer cuatrimestre.",
 }
 
+# Lo que la web dice siempre junto a esta base (página Modelo, inicio y pie).
+LIMITE_HONESTO = ("Son estudiantes reales de primer año de la Universitat Politècnica de València (España), no de la "
+                  "universidad que use el sistema. La base no registra asistencia ni si el estudiante trabaja: la asistencia "
+                  "se aproxima con la presencia en el campus (wifi) y en el aula virtual, y el trabajo con la matrícula a "
+                  "tiempo parcial. El estrato no se pudo construir y qué letra marca el abandono se dedujo de los datos. "
+                  "Sirve para ver el modelo operar con personas reales, no para decidir sobre estudiantes.")
+
 # Lo que se comprobó con los datos para decidir que «A» es abandono (primer año de grado, 2021 y 2022).
 # Lo recalcula `evidencia_etiqueta()` desde el extracto.
-EVIDENCIA_ETIQUETA = ("«A» es la letra minoritaria (≈10 % en primer año). Los «A» aprueban el 61 % de los créditos "
-                      "del primer cuatrimestre frente al 87 % de los «B», van menos días al campus, son el doble de "
-                      "veces de tiempo parcial y casi ninguno sigue con la matrícula activa al extraer los datos.")
+EVIDENCIA_ETIQUETA = ("«A» es la letra minoritaria (11 % en primer año de grado). Los «A» aprueban el 51 % de sus "
+                      "asignaturas del primer cuatrimestre frente al 79 % de los «B», tienen menos presencia (35 frente "
+                      "a 47 de 100), son cuatro veces más a menudo de tiempo parcial (4,9 % frente a 1,2 %) y, al "
+                      "extraer los datos, solo el 13–18 % seguía con matrícula activa, frente al 77 % de los «B».")
 
 # Referencias del 100 % en la asistencia: lo que alcanza el 5 % más presente de la población (sept.–enero).
 DIAS_LECTIVOS_A = 78   # días conectado al wifi del campus

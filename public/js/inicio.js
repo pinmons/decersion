@@ -54,12 +54,12 @@
       : `Base leída a las ${hora} · ${miles(ej.leidos)} registros en ${num(ej.ms_lectura + ej.ms_modelo, 0)} ms`;
     pulso.classList.add(deCopia ? "copia" : "vivo");
 
-    // riesgo por programa: en cada programa, qué parte quedó en alto, medio y bajo
+    // riesgo por titulación (cifrada en la fuente: T01, T02…): en cada una, qué parte quedó en alto, medio y bajo
     const prog = new Map();
     for (const e of d.estudiantes) {
       if (!e.nivel) continue;
-      const p = prog.get(e.programa) || { alto: 0, medio: 0, bajo: 0, n: 0 };
-      p[e.nivel] += 1; p.n += 1; prog.set(e.programa, p);
+      const p = prog.get(e.titulacion) || { alto: 0, medio: 0, bajo: 0, n: 0 };
+      p[e.nivel] += 1; p.n += 1; prog.set(e.titulacion, p);
     }
     const filas = [...prog].filter(([, p]) => p.n >= 15).sort((a, b) => b[1].alto / b[1].n - a[1].alto / a[1].n).slice(0, 5);
     const caja = $("#t-programas");
@@ -74,8 +74,10 @@
     aparecer(caja.children, { pausa: 60, duracion: 300, desde: "translateX(-8px)" });
 
     // lo que se resolvió sin una persona
-    const avisos = (d.avisos || []).map((a) => (a.tipo === "falta_historial"
-      ? `<li><b class="num">${miles(a.n)}</b><span>sin historial académico (${esc(a.programa)}): reciben un resultado provisional.</span></li>`
+    const CAUSA = { promedio_acumulado: "sin ninguna nota del primer cuatrimestre", porcentaje_asistencia: "sin ningún dato de presencia",
+      datos_contradictorios: "con presencia de 1 % o menos (el contrato duda de la escala)" };
+    const avisos = (d.avisos || []).map((a) => (a.tipo === "dato_faltante"
+      ? `<li><b class="num">${miles(a.n)}</b><span>${esc(CAUSA[a.causa] || "con un dato que el contrato no acepta")}: reciben un resultado provisional.</span></li>`
       : `<li><b class="num">${miles(a.n)}</b><span>con un dato fuera de rango: devueltos al registro para corregir.</span></li>`));
     avisos.push(`<li><b class="num">${miles(ej.a_revision || 0)}</b><span>casos esperando revisión manual.</span></li>`);
     $("#t-avisos").innerHTML = avisos.join("");
@@ -88,7 +90,8 @@
       ["AUC", num(m.auc, 3), nota(m.auc, [0.9, 0.8, 0.7]), "qué tan bien ordena"]]
       .map(([t, v, n, que]) => `<div class="t-nota-fila"><span class="t-nota-nombre"><strong>${t}</strong><small>${que}</small></span>
         <b class="num">${v}</b>${marca(n)}</div>`).join("")
-      + `<p>Regresión logística, con ${miles(R.evaluacion.n_test)} estudiantes reales que no había visto.</p>`;
+      + `<p>Regresión logística, con ${miles(R.evaluacion.n_test)} estudiantes reales que no había visto.${R.evaluacion.sin_evidentes
+        ? ` Sin los que no aprobaron nada: AUC ${num(R.evaluacion.sin_evidentes.modelos["regresión logística"].auc, 3)}.` : ""}</p>`;
     aparecer($("#t-notas").children, { pausa: 70, duracion: 300 });
   }
 

@@ -20,7 +20,8 @@ def cuerpo():
             <p class="rotulo">Base de datos real · proceso automático</p>
             <h1>Estudiantes en seguimiento</h1>
             <p class="entrada">Nadie llena una planilla. El sistema lee la base, revisa cada registro y le da a cada
-              estudiante su resultado.</p>
+              estudiante su resultado. Son estudiantes reales de primer año de la Universitat Politècnica de València, al
+              terminar su primer cuatrimestre.</p>
           </div>
           <details class="est-opciones">
             <summary>Calificó: <b id="modelo-actual">regresión logística</b></summary>
@@ -40,9 +41,9 @@ def cuerpo():
           <div id="chips" class="chips" role="group" aria-label="Filtrar por resultado"></div>
           <div class="filtros-busqueda">
             <label class="oculto" for="buscar">Buscar por código</label>
-            <input type="search" id="buscar" placeholder="Código (IPP-0042)" autocomplete="off">
-            <label class="oculto" for="programa">Programa</label>
-            <select id="programa"><option value="">Todos los programas</option></select>
+            <input type="search" id="buscar" placeholder="Código (UPV21-0042)" autocomplete="off">
+            <label class="oculto" for="titulacion">Titulación</label>
+            <select id="titulacion"><option value="">Todas las titulaciones</option></select>
           </div>
         </div>
         <div class="seguimiento">

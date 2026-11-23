@@ -269,7 +269,7 @@ def procesar(modelo="logistica"):
 
 def publicar_copia():
     """Deja en la web una copia de la última corrida (por si la API no responde) y la ficha de la base."""
-    from .datos_reales import SUPUESTOS_MAPEO
+    from .datos_reales import EVIDENCIA_ETIQUETA, LIMITE_HONESTO, SUPUESTOS_MAPEO
     import shutil
     DIR_WEB.mkdir(parents=True, exist_ok=True)
     if ingreso.RUTA_MODELO.exists():   # el modelo de ingreso se entrena aquí, después de publicar los otros dos
@@ -277,7 +277,8 @@ def publicar_copia():
         shutil.copy2(ingreso.RUTA_MODELO, DIR_WEB / "modelos" / ingreso.RUTA_MODELO.name)
     corrida = procesar("logistica")
     (DIR_WEB / "estudiantes.json").write_text(json.dumps(corrida, ensure_ascii=False), encoding="utf-8")
-    base = {**resumen_bd(), "mapeo": [{"campo": c, "origen": o, "tipo": t} for c, o, t in SUPUESTOS_MAPEO]}
+    base = {**resumen_bd(), "limite": LIMITE_HONESTO, "etiqueta": EVIDENCIA_ETIQUETA,
+            "mapeo": [{"campo": c, "origen": o, "tipo": t} for c, o, t in SUPUESTOS_MAPEO]}
     (DIR_WEB / "base.json").write_text(json.dumps(base, ensure_ascii=False, indent=1), encoding="utf-8")
     e = corrida["ejecucion"]
     print(f"Operación: {e['leidos']} leídos → {e['calificados']} calificados, {e['provisionales']} provisionales, "

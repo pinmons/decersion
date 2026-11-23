@@ -11,7 +11,7 @@
   const NIVELES = ["alto", "medio", "bajo"];
   const TITULO = { alto: "Riesgo alto", medio: "Riesgo medio", bajo: "Riesgo bajo", devuelto: "Devueltos al registro" };
   const CHIPS = [["todos", "Todos"], ["alto", "Alto"], ["medio", "Medio"], ["bajo", "Bajo"], ["devuelto", "Devueltos"]];
-  const DESENLACE = { deserto: "Desertó", se_graduo: "Se graduó", sigue_matriculado: "Sigue matriculado" };
+  const DESENLACE = { abandono: "Abandonó la titulación", sigue: "No abandonó" };
   const CURVA = "cubic-bezier(0.23, 1, 0.32, 1)";
   const PASO = 20; // estudiantes por tanda en la lista
   const entero = (x) => num(x, 0);
@@ -19,7 +19,7 @@
   const modeloElegido = () => (document.querySelector('input[name="modelo-operacion"]:checked') || {}).value || "logistica";
   /* Con nivel (definitivo o provisional) va a su nivel; sin nivel, el registro se devolvió. */
   const grupoDe = (e) => e.nivel || "devuelto";
-  const E = { datos: null, filtro: "todos", texto: "", programa: "", visibles: PASO, elegido: null, deCopia: false, todosProgramas: false };
+  const E = { datos: null, filtro: "todos", texto: "", titulacion: "", visibles: PASO, elegido: null, deCopia: false, todasTitulaciones: false };
 
   function cuentas() {
     const c = { todos: 0, alto: 0, medio: 0, bajo: 0, devuelto: 0, provisional: { alto: 0, medio: 0, bajo: 0 } };
@@ -33,12 +33,12 @@
   function filtrados() {
     const t = E.texto.trim().toLowerCase();
     return E.datos.estudiantes.filter((e) => (E.filtro === "todos" || grupoDe(e) === E.filtro)
-      && (!E.programa || e.programa === E.programa) && (!t || e.id.toLowerCase().includes(t)));
+      && (!E.titulacion || e.titulacion === E.titulacion) && (!t || e.id.toLowerCase().includes(t)));
   }
 
   function filtrar(cambios) {
     Object.assign(E, cambios, { visibles: PASO });
-    $("#programa").value = E.programa;
+    $("#titulacion").value = E.titulacion;
     pintarChips(); pintarLista();
   }
 
@@ -92,10 +92,10 @@
 
   function pintarFlujo() {
     const d = E.datos, ej = d.ejecucion, c = cuentas();
-    const sinHistorial = ej.provisionales || 0;
+    const sinHistorial = ej.provisionales || 0;  // el contrato no los califica: van al modelo de ingreso
     const estaciones = [
       ["Base de datos", ej.leidos, miles, "registros leídos", `${esc(d.base.archivo)}`],
-      ["Validación", ej.calificados, miles, "pasan el contrato", `${miles(sinHistorial)} sin historial · ${miles(ej.con_error + (ej.a_revision || 0))} devueltos`],
+      ["Validación", ej.calificados, miles, "pasan el contrato", `${miles(sinHistorial)} provisionales · ${miles(ej.con_error + (ej.a_revision || 0))} devueltos`],
       ["Modelo", ej.ms_lectura + ej.ms_modelo, (v) => `${entero(v)} ms`, "para calificarlos a todos", esc(NOMBRE_MODELO[ej.modelo]) + (sinHistorial ? " + modelo de ingreso" : "")],
       ["Resultado", c.alto, miles, "en riesgo alto", `${miles(c.medio)} en medio · ${miles(c.bajo)} en bajo`],
     ];
@@ -140,7 +140,7 @@
     }
     caja.addEventListener("click", (ev) => { const b = ev.target.closest("[data-grupo]"); if (b) filtrar({ filtro: b.dataset.grupo }); });
     const prov = c.provisional.alto + c.provisional.medio + c.provisional.bajo;
-    return celda("c4", "Hoy", "Cuántos hay en cada nivel", caja, prov ? `La parte rayada (${miles(prov)}) es resultado provisional: aún no tienen historial en la base.` : "");
+    return celda("c4", "Hoy", "Cuántos hay en cada nivel", caja, prov ? `La parte rayada (${miles(prov)}) es resultado provisional: el contrato no los pudo calificar y se usaron los datos de su matrícula.` : "");
   }
 
   /* 2. Distribución de los puntajes definitivos, con los cortes y lo que pasó de verdad en cada tramo. */
@@ -149,7 +149,7 @@
     const definitivos = d.estudiantes.filter((e) => e.decision === "resultado");
     if (!definitivos.length || !cortes) return null;
     const paso = 5, cajas = Array.from({ length: 100 / paso }, (_, i) => ({ desde: i * paso, si: 0, no: 0 }));
-    for (const e of definitivos) { const b = cajas[Math.min(cajas.length - 1, Math.floor(e.puntaje / paso))]; e.desenlace === "deserto" ? b.si++ : b.no++; }
+    for (const e of definitivos) { const b = cajas[Math.min(cajas.length - 1, Math.floor(e.puntaje / paso))]; e.desenlace === "abandono" ? b.si++ : b.no++; }
     const W = 680, H = 250, m = { izq: 34, der: 8, arr: 30, aba: 30 };
     const maximo = Math.max(...cajas.map((b) => b.si + b.no));
     const X = escala(0, 100, m.izq, W - m.der), Y = escala(0, maximo, H - m.aba, m.arr);
@@ -171,45 +171,48 @@
       if (b.no) g.appendChild(s("rect", { x: X(b.desde) + 1, y: yTodo, width: ancho, height: Math.max(1, ySi - yTodo - (b.si ? 2 : 0)), rx: 2, fill: "var(--tenue)", opacity: 0.5 }));
       if (b.si) g.appendChild(s("rect", { x: X(b.desde) + 1, y: ySi, width: ancho, height: Y(0) - ySi, rx: 2, fill: "var(--tinta)" }));
       g.appendChild(s("rect", { x: X(b.desde), y: m.arr, width: ancho + 2, height: H - m.aba - m.arr, fill: "transparent" }));
-      conGlobo(g, `<b>Puntaje ${b.desde} a ${b.desde + paso - 1 + (b.desde + paso === 100 ? 1 : 0)}</b><br>${miles(b.si + b.no)} estudiantes<br>${miles(b.si)} desertaron (${pct(b.si / (b.si + b.no), 0)})`);
+      conGlobo(g, `<b>Puntaje ${b.desde} a ${b.desde + paso - 1 + (b.desde + paso === 100 ? 1 : 0)}</b><br>${miles(b.si + b.no)} estudiantes<br>${miles(b.si)} abandonaron (${pct(b.si / (b.si + b.no), 0)})`);
       svg.appendChild(g);
     }
-    const fig = html(`<figure class="grafica"><div class="leyenda"><span><i class="punto" style="background:var(--tinta)"></i>desertó</span>
-      <span><i class="punto" style="background:var(--tenue);opacity:.5"></i>no desertó</span></div></figure>`);
+    const fig = html(`<figure class="grafica"><div class="leyenda"><span><i class="punto" style="background:var(--tinta)"></i>abandonó</span>
+      <span><i class="punto" style="background:var(--tenue);opacity:.5"></i>no abandonó</span></div></figure>`);
     fig.appendChild(svg);
-    return celda("c8", "Puntajes", "Entre más puntaje, más desertaron de verdad", fig,
+    return celda("c8", "Puntajes", "Entre más puntaje, más abandonaron de verdad", fig,
       `Cada barra junta 5 puntos. Las franjas son los niveles: medio desde ${cortes.corte_medio}, alto desde ${cortes.corte_alto}. Solo resultados definitivos (${miles(definitivos.length)}).`);
   }
 
-  /* 3. Riesgo por programa: composición de cada programa, del que más tiene en alto al que menos. Pulsar filtra. */
-  function graficaProgramas() {
+  /* 3. Riesgo por titulación: composición de cada una, de la que más tiene en alto a la que menos. Pulsar filtra.
+     Las titulaciones vienen cifradas en la fuente: se muestran con un código (T01 = la de más estudiantes). */
+  function graficaTitulaciones() {
     const por = {};
     for (const e of E.datos.estudiantes) {
       if (!e.nivel) continue;
-      const p = (por[e.programa] = por[e.programa] || { programa: e.programa, alto: 0, medio: 0, bajo: 0, n: 0 });
+      const p = (por[e.titulacion] = por[e.titulacion] || { titulacion: e.titulacion, alto: 0, medio: 0, bajo: 0, n: 0 });
       p[e.nivel]++; p.n++;
     }
-    const filas = Object.values(por).sort((a, b) => b.alto / b.n - a.alto / a.n);
-    const visibles = E.todosProgramas ? filas : filas.slice(0, 7);
+    // Con menos de 10 estudiantes un porcentaje engaña: esas van al final.
+    const filas = Object.values(por).sort((a, b) => (b.n >= 10) - (a.n >= 10) || b.alto / b.n - a.alto / a.n);
+    if (!filas.length) return null;
+    const visibles = E.todasTitulaciones ? filas : filas.slice(0, 7);
     const caja = html(`<div class="programas"></div>`);
     for (const p of visibles) {
-      const fila = html(`<button type="button" class="programa-fila" data-programa="${esc(p.programa)}" aria-pressed="${E.programa === p.programa}">
-        <span class="programa-nombre">${esc(p.programa)}</span>
+      const fila = html(`<button type="button" class="programa-fila" data-titulacion="${esc(p.titulacion)}" aria-pressed="${E.titulacion === p.titulacion}">
+        <span class="programa-nombre">${esc(p.titulacion)} <small class="num">· ${miles(p.n)}</small></span>
         <span class="programa-barra" aria-hidden="true">${NIVELES.map((n) => (p[n] ? `<i class="tramo-${n}" style="flex-grow:${p[n]}"></i>` : "")).join("")}</span>
         <b class="num">${pct(p.alto / p.n, 0)}</b></button>`);
-      conGlobo(fila, `<b>${esc(p.programa)}</b><br>${miles(p.n)} estudiantes<br>${miles(p.alto)} en alto · ${miles(p.medio)} en medio · ${miles(p.bajo)} en bajo`);
+      conGlobo(fila, `<b>${esc(p.titulacion)}</b><br>${miles(p.n)} estudiantes<br>${miles(p.alto)} en alto · ${miles(p.medio)} en medio · ${miles(p.bajo)} en bajo`);
       caja.appendChild(fila);
     }
-    if (filas.length > 7) caja.appendChild(html(`<button type="button" class="enlace-boton" data-todos="1">${E.todosProgramas ? "Ver solo los 7 primeros" : `Ver los ${filas.length} programas`}</button>`));
+    if (filas.length > 7) caja.appendChild(html(`<button type="button" class="enlace-boton" data-todos="1">${E.todasTitulaciones ? "Ver solo las 7 primeras" : `Ver las ${filas.length} titulaciones`}</button>`));
     caja.addEventListener("click", (ev) => {
-      if (ev.target.closest("[data-todos]")) { E.todosProgramas = !E.todosProgramas; pintarTablero(); return; }
-      const b = ev.target.closest("[data-programa]");
+      if (ev.target.closest("[data-todos]")) { E.todasTitulaciones = !E.todasTitulaciones; pintarTablero(); return; }
+      const b = ev.target.closest("[data-titulacion]");
       if (!b) return;
-      filtrar({ programa: E.programa === b.dataset.programa ? "" : b.dataset.programa });
-      caja.querySelectorAll("[data-programa]").forEach((x) => x.setAttribute("aria-pressed", String(E.programa === x.dataset.programa)));
+      filtrar({ titulacion: E.titulacion === b.dataset.titulacion ? "" : b.dataset.titulacion });
+      caja.querySelectorAll("[data-titulacion]").forEach((x) => x.setAttribute("aria-pressed", String(E.titulacion === x.dataset.titulacion)));
     });
-    return celda("c7", "Programas", "Dónde se concentra el riesgo alto", [html(`<div class="leyenda">${NIVELES.map((n) => `<span><i class="punto punto-${n}"></i>${n}</span>`).join("")}<span class="leyenda-derecha">% en alto</span></div>`), caja],
-      "Pulse un programa para ver solo a sus estudiantes en la lista.");
+    return celda("c7", "Titulaciones", "Dónde se concentra el riesgo alto", [html(`<div class="leyenda">${NIVELES.map((n) => `<span><i class="punto punto-${n}"></i>${n}</span>`).join("")}<span class="leyenda-derecha">% en alto</span></div>`), caja],
+      "La fuente cifra las titulaciones: se muestran con un código. Las de menos de 10 estudiantes van al final. Pulse una para ver solo a sus estudiantes.");
   }
 
   /* 4. Lo que pasó de verdad en cada nivel (la base es histórica y trae el desenlace). */
@@ -221,17 +224,18 @@
       const tasa = n[k].n ? n[k].desertaron / n[k].n : 0;
       const fila = html(`<div class="acierto"><span class="acierto-nivel"><i class="punto punto-${k}" aria-hidden="true"></i>${k}</span>
         <span class="acierto-barra" aria-hidden="true"><i class="tramo-${k}" style="width:${Math.max(1, 100 * tasa)}%"></i></span><b class="num">${pct(tasa, 0)}</b></div>`);
-      conGlobo(fila, `<b>Nivel ${k}</b><br>${miles(n[k].desertaron)} de ${miles(n[k].n)} desertaron`);
+      conGlobo(fila, `<b>Nivel ${k}</b><br>${miles(n[k].desertaron)} de ${miles(n[k].n)} abandonaron`);
       caja.appendChild(fila);
     }
     const ing = E.datos.ingreso;
-    return celda("c5", "Contra la realidad", "De cada nivel, cuántos desertaron", caja,
-      `Si el modelo acierta, en alto deserta la mayoría y en bajo casi nadie. Resultados definitivos.${ing ? ` El modelo de ingreso (provisionales) es más débil: AUC ${num(ing.auc, 2)}.` : ""} Las demás notas están en <a href="modelo.html">Modelo</a>.`);
+    const tasa = NIVELES.reduce((a, k) => a + n[k].desertaron, 0) / Math.max(1, NIVELES.reduce((a, k) => a + n[k].n, 0));
+    return celda("c5", "Contra la realidad", "De cada nivel, cuántos abandonaron", caja,
+      `En total abandonó el ${pct(tasa, 0)}. Si el modelo sirve, en alto abandonan varias veces más que en bajo; con tan pocos abandonos, ni en alto son mayoría. Resultados definitivos.${ing ? ` El modelo de ingreso (provisionales) es más débil: AUC ${num(ing.auc, 2)}.` : ""} Las demás notas están en <a href="modelo.html">Modelo</a>.`);
   }
 
   function pintarTablero() {
     const t = $("#tablero");
-    t.replaceChildren(...[graficaReparto(cuentas()), graficaPuntajes(), graficaProgramas(), graficaAciertos()].filter(Boolean));
+    t.replaceChildren(...[graficaReparto(cuentas()), graficaPuntajes(), graficaTitulaciones(), graficaAciertos()].filter(Boolean));
   }
 
   /* ================================================================== filtros y lista */
@@ -239,9 +243,9 @@
     const c = cuentas();
     $("#chips").innerHTML = CHIPS.filter(([k]) => k === "todos" || c[k]).map(([k, t]) => `<button type="button" class="chip chip-${k}" data-grupo="${k}" aria-pressed="${E.filtro === k}">
       <i aria-hidden="true"></i>${t}<b class="num">${miles(c[k])}</b></button>`).join("");
-    const sel = $("#programa");
-    if (sel.options.length <= 1) sel.innerHTML = `<option value="">Todos los programas</option>` + E.datos.programas.map((p) => `<option>${esc(p)}</option>`).join("");
-    sel.value = E.programa;
+    const sel = $("#titulacion");
+    if (sel.options.length <= 1) sel.innerHTML = `<option value="">Todas las titulaciones</option>` + (E.datos.titulaciones || []).map((p) => `<option>${esc(p)}</option>`).join("");
+    sel.value = E.titulacion;
   }
 
   function pintarLista() {
@@ -257,7 +261,7 @@
         ? `<span class="fila-barra${e.decision === "provisional" ? " provisional" : ""}" aria-hidden="true"><i class="tramo-${e.nivel}" style="width:${Math.max(2, e.puntaje)}%"></i></span><span class="fila-puntaje num">${e.puntaje}</span>`
         : `<span class="fila-motivo">${esc(MOTIVOS[e.motivo] || e.motivo)}</span>`;
       return `${cabeza}<li><button type="button" class="fila-est" data-id="${esc(e.id)}" aria-pressed="${E.elegido === e.id}">
-        <span class="fila-id"><b>${esc(e.id)}</b><small>${esc(e.programa)}</small>${e.decision === "provisional" ? `<em class="marca-prov">provisional</em>` : ""}</span>${derecha}</button></li>`;
+        <span class="fila-id"><b>${esc(e.id)}</b><small>${esc(e.titulacion)}</small>${e.decision === "provisional" ? `<em class="marca-prov">provisional</em>` : ""}</span>${derecha}</button></li>`;
     });
     $("#lista").innerHTML = partes.join("") || `<li class="lista-vacia">Ningún estudiante con ese filtro.</li>`;
     $("#cuenta-lista").textContent = todos.length ? `${miles(lista.length)} de ${miles(todos.length)}, del puntaje más alto al más bajo.` : "";
@@ -267,7 +271,7 @@
 
   /* ================================================================== la ficha */
   function veredictoReal(e) {
-    const deserto = e.desenlace === "deserto", avisado = e.nivel === "alto";
+    const deserto = e.desenlace === "abandono", avisado = e.nivel === "alto";
     if (avisado && deserto) return ["acierto", "El modelo avisó a tiempo."];
     if (avisado) return ["fallo", "Fue una falsa alarma."];
     if (deserto) return ["fallo", `Quedó en nivel ${e.nivel}: se le escapó.`];
@@ -275,21 +279,22 @@
   }
 
   function datosDe(e) {
-    const r = e.registro, fila = (t, v) => `<div><dt>${t}</dt><dd class="num">${v}</dd></div>`;
-    const comunes = fila("Deuda de matrícula", r.deuda_matricula == null ? "sin dato" : r.deuda_matricula ? "sí" : "no") + fila("Jornada nocturna", r.trabaja ? "sí" : "no")
-      + fila("Escolaridad del hogar", `banda ${r.estrato} de 6`) + fila("Beca", e.becado ? "sí" : "no") + fila("Edad al ingresar", e.edad);
-    if (e.decision === "provisional") {
-      return fila("Nota de admisión", `${entero(e.ingreso.nota_admision)} de 200`) + fila("Nota del estudio anterior", `${entero(e.ingreso.nota_previa)} de 200`)
-        + comunes + fila("Historial académico", "sin cargar");
-    }
-    return fila("Promedio", num(r.promedio_acumulado, 2)) + fila("Materias cursadas", r.materias_cursadas_periodo_anterior) + fila("Materias reprobadas", r.materias_reprobadas)
-      + fila("Se presentó a evaluación", `${entero(r.porcentaje_asistencia)} %`) + fila("Créditos", r.creditos_inscritos) + comunes;
+    const r = e.registro, mt = e.matricula || {}, fila = (t, v) => `<div><dt>${t}</dt><dd class="num">${v}</dd></div>`;
+    const sinDato = (v, f) => (v == null ? "sin dato" : f(v));
+    const matricula = fila("Nota de acceso", sinDato(mt.nota_acceso, (v) => `${num(v, 2)} de 14`)) + fila("Opción en que eligió la titulación", sinDato(mt.preferencia, entero))
+      + fila("Dedicación", mt.tiempo_parcial ? "tiempo parcial" : "tiempo completo") + fila("Créditos ECTS del 1.er cuatrimestre", sinDato(mt.ects, (v) => num(v, 1)))
+      + fila("Cohorte", `${e.cohorte}-${String(e.cohorte + 1).slice(2)}`);
+    const presencia = fila("Días en el campus (wifi), sept.–enero", sinDato(mt.wifi_dias, entero)) + fila("Días en el aula virtual, por asignatura", sinDato(mt.aula_dias, (v) => num(v, 1)))
+      + fila("Entregas en el aula virtual, por asignatura", sinDato(mt.entregas, (v) => num(v, 1)));
+    const academicos = fila("Promedio (escala 0–5)", sinDato(r.promedio_acumulado, (v) => num(v, 2))) + fila("Asignaturas del 1.er cuatrimestre", r.materias_cursadas_periodo_anterior)
+      + fila("Suspendidas o sin nota", r.materias_reprobadas) + fila("Presencia", sinDato(r.porcentaje_asistencia, (v) => `${entero(v)} %`)) + fila("Créditos (escala del contrato)", r.creditos_inscritos);
+    return (e.decision === "provisional" ? matricula + academicos : academicos + matricula) + presencia;
   }
 
   function pintarFicha(e, animar) {
     const f = $("#ficha-estudiante");
     if (!e) { f.innerHTML = `<p class="ficha-resumen">Elija un estudiante de la lista.</p>`; return; }
-    const cabeza = `<header class="ficha-cabecera"><h2 class="num">${esc(e.id)}</h2><p class="ficha-programa">${esc(e.programa)}</p></header>`;
+    const cabeza = `<header class="ficha-cabecera"><h2 class="num">${esc(e.id)}</h2><p class="ficha-programa">${esc(e.titulacion)}</p></header>`;
     const datos = `<details class="ficha-datos"><summary>Sus datos en la base</summary><dl class="datos-registro">${datosDe(e)}</dl></details>`;
     if (!e.nivel) {
       f.innerHTML = `${cabeza}<div class="ficha-bento"><div class="pieza pieza-sello"><div class="sello sello-error"><b>Devuelto</b><small>al registro académico</small></div></div>
@@ -301,18 +306,19 @@
     const porque = e.porque.length ? e.porque.slice(0, 5).map((p) => `<div class="razon"><span class="razon-texto">${esc(p.texto)}</span>
       <span class="razon-barra" aria-hidden="true"><i style="width:${(100 * (prov ? p.peso : p.puntos)) / maximo}%"></i></span>${prov ? "" : `<b class="num">+${entero(p.puntos)}</b>`}</div>`).join("")
       : `<p class="nota">Ningún dato le suma riesgo.</p>`;
+    const textos = E.datos.textos_mejora || {};
     const mejorar = e.mejorar.length ? `<ol class="mejoras">${e.mejorar.slice(0, 3).map((m) => {
       const efecto = m.nivel_si_mejora ? `Hasta ${entero(m.puntos)} puntos menos${m.nivel_si_mejora !== e.nivel ? `: quedaría en <strong>${m.nivel_si_mejora}</strong>` : ""}.`
         : m.puntos ? `Le suma ${entero(m.puntos)} puntos de riesgo.` : "";
-      return `<li><strong>${esc(m.texto)}</strong>${efecto ? `<span>${efecto}</span>` : ""}</li>`; }).join("")}</ol>`
+      return `<li><strong>${esc(m.texto || textos[m.variable] || m.variable)}</strong>${efecto ? `<span>${efecto}</span>` : ""}</li>`; }).join("")}</ol>`
       : `<p class="nota">Nada que bienestar deba trabajar: basta el seguimiento rutinario.</p>`;
     const [clase, frase] = veredictoReal(e);
     const sub = `${e.puntaje} de 100${e.probabilidad != null ? ` · ${pct(e.probabilidad, 0)}` : ""}`;
     f.innerHTML = `${cabeza}<div class="ficha-bento">
       <div class="pieza pieza-sello"><div class="sello sello-${e.nivel}${prov ? " sello-provisional" : ""}${animar ? " recien" : ""}"><b>Riesgo ${e.nivel}</b><small>${prov ? "provisional · " : ""}${sub}</small></div></div>
       <div class="pieza"><p class="rotulo">Qué hacer</p><p class="pieza-accion">${esc(ACCIONES[e.accion] || e.accion || "")}</p>
-        ${e.r34 ? `<p class="nota">Alto por la regla R3.4: promedio menor a 3,0 y asistencia menor a 70 %.</p>` : ""}</div>
-      ${prov ? `<p class="pieza pieza-ancha pieza-aviso">Es <strong>provisional</strong>: su historial académico no está cargado en la base, así que se calculó solo con los datos de su matrícula. El sistema ya pidió el historial.</p>` : ""}
+        ${e.r34 ? `<p class="nota">Alto por la regla R3.4 del contrato: promedio menor a 3,0 y asistencia (aquí, presencia) menor a 70 %.</p>` : ""}</div>
+      ${prov ? `<p class="pieza pieza-ancha pieza-aviso">Es <strong>provisional</strong>: el contrato no lo pudo calificar porque ${esc(MOTIVOS[e.motivo] || e.motivo)}${e.campo ? ` (<code>${esc(nombre(e.campo))}</code>)` : ""}, así que se calculó solo con los datos de su matrícula. El sistema ya le pidió el dato al registro.</p>` : ""}
       <div class="pieza pieza-ancha"><p class="rotulo">Por qué</p><div class="razones">${porque}</div></div>
       <div class="pieza pieza-ancha"><p class="rotulo">En qué mejorar</p>${mejorar}</div>
       <div class="pieza pieza-ancha desenlace ${clase}"><p class="rotulo">Qué pasó en realidad</p><p><span class="desenlace-marca" aria-hidden="true">${clase === "acierto" ? "✓" : "✗"}</span>
@@ -343,8 +349,8 @@
     }
     btn.disabled = false;
     E.visibles = PASO;
-    /* Enlace directo a un estudiante: estudiantes.html#IPP-0042 */
-    const pedido = (location.hash.match(/[A-Z]+-\d+/) || [])[0];
+    /* Enlace directo a un estudiante: estudiantes.html#UPV21-0042 */
+    const pedido = (location.hash.match(/[A-Z]+\d*-\d+/) || [])[0];
     if (pedido && E.elegido === null && E.datos.estudiantes.some((e) => e.id === pedido)) { E.elegido = pedido; E.texto = pedido; $("#buscar").value = pedido; }
     pintarFlujo(); pintarTablero(); pintarChips(); pintarLista();
     if (E.elegido) elegir(E.elegido, false);
@@ -359,7 +365,7 @@
       if (matchMedia("(max-width: 940px)").matches) $("#ficha-estudiante").scrollIntoView({ behavior: reducido() ? "auto" : "smooth", block: "start" });
     });
     $("#buscar").addEventListener("input", (ev) => { E.texto = ev.target.value; E.visibles = PASO; pintarLista(); });
-    $("#programa").addEventListener("change", (ev) => filtrar({ programa: ev.target.value }));
+    $("#titulacion").addEventListener("change", (ev) => filtrar({ titulacion: ev.target.value }));
     $("#btn-mas").addEventListener("click", () => { E.visibles += PASO; pintarLista(); });
     $("#btn-leer").addEventListener("click", leerBase);
     document.querySelectorAll('input[name="modelo-operacion"]').forEach((r) => r.addEventListener("change", leerBase));

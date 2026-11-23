@@ -16,6 +16,8 @@
   "descripcion": "Registros reales y anonimizados de estudiantes de la UPV (cursos 2021-22 y 2022-23 en esta corrida): matrícula, notas por asignatura, días conectados al wifi del campus, actividad en el aula virtual y si abandonó la titulación (dos cursos seguidos sin matricularse).",
   "poblacion": "Primer año de grado, cohortes 2021 y 2022, con lo que se sabía al terminar el primer cuatrimestre."
  },
+ "limite": "Son estudiantes reales de primer año de la Universitat Politècnica de València (España), no de la universidad que use el sistema. La base no registra asistencia ni si el estudiante trabaja: la asistencia se aproxima con la presencia en el campus (wifi) y en el aula virtual, y el trabajo con la matrícula a tiempo parcial. El estrato no se pudo construir y qué letra marca el abandono se dedujo de los datos. Sirve para ver el modelo operar con personas reales, no para decidir sobre estudiantes.",
+ "etiqueta": "«A» es la letra minoritaria (11 % en primer año de grado). Los «A» aprueban el 51 % de sus asignaturas del primer cuatrimestre frente al 79 % de los «B», tienen menos presencia (35 frente a 47 de 100), son cuatro veces más a menudo de tiempo parcial (4,9 % frente a 1,2 %) y, al extraer los datos, solo el 13–18 % seguía con matrícula activa, frente al 77 % de los «B».",
  "mapeo": [
   {
    "campo": "id_estudiante",

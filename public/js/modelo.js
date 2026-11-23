@@ -262,11 +262,61 @@
     return nodo(`<div class="fichas">${items.map(([t, v, d]) => `<div class="ficha-metodo"><h3>${t}</h3><span class="valor-metodo">${v}</span><p>${d}</p></div>`).join("")}</div>`);
   }
 
-  function importancia(R, cual) {
-    const imp = R.control.importancia_test, valores = cual === "red_neuronal" ? imp.red_pct : imp.logistica_pct;
-    const filas = imp.variables.map((v, i) => ({ etiqueta: nombre(v), valor: valores[i] })).sort((a, b) => b.valor - a.valor);
-    return { filas, figura: figura(grafBarras({ filas, formato: (v) => pct(v, 0), grupos: [{ clave: "valor", color: "var(--acento)" }], ancho: 560, etiqueta: "Cuánto depende el modelo de cada variable" }),
-      "Se desordena una variable a la vez y se mira cuánto empeora el modelo. La que más lo daña es de la que más depende.") };
+  /* De qué depende: importancia por GRUPO de variables correlacionadas (lo que mide el tope), con la raya del tope. */
+  function dependencia(R, cual) {
+    const it = R.control.importancia_test, tope = R.control.tope, red = cual === "red_neuronal";
+    const porVariable = it.variables.map((v, i) => ({ v, valor: (red ? it.red_pct : it.logistica_pct)[i] })).sort((a, b) => b.valor - a.valor);
+    const grupos = (it.grupos || it.variables.map((v) => ({ variables: [v], logistica_pct: it.logistica_pct[it.variables.indexOf(v)], red_pct: it.red_pct[it.variables.indexOf(v)] })))
+      .map((g) => ({ etiqueta: g.variables.map(nombre).join(" + "), valor: red ? g.red_pct : g.logistica_pct, juntas: g.variables.length > 1 }))
+      .sort((a, b) => b.valor - a.valor);
+    for (const g of grupos) { g.color = g.valor > tope ? "var(--tinta)" : "var(--acento)"; g.detalle = g.juntas ? "se miden juntas: dicen casi lo mismo" : ""; }
+    const mayor = grupos[0], cumple = mayor.valor <= tope, juntas = grupos.filter((g) => g.juntas);
+    const grafica = grafBarras({ filas: grupos, formato: (v) => pct(v, 0), grupos: [{ clave: "valor", color: "var(--acento)" }], ancho: 600, anchoEtiqueta: 230,
+      max: Math.max(mayor.valor, tope) * 1.08, linea: { valor: tope, etiqueta: `tope ${pct(tope, 0)}`, color: "var(--tinta-2)" },
+      etiqueta: `Cuánto depende el modelo de cada grupo de variables. ${grupos.map((g) => `${g.etiqueta} ${pct(g.valor, 0)}`).join(", ")}. Tope ${pct(tope, 0)}.` });
+    const frases = [
+      `Se desordena un grupo de variables a la vez y se mira cuánto empeora el modelo con los ${miles(R.evaluacion.n_test)} estudiantes de prueba.`
+        + (juntas.length ? ` ${juntas.map((g) => esc(g.etiqueta)).join(" y ")} se miden juntas porque dicen casi lo mismo: por separado, cada una parecería pesar poco porque la otra la suple.` : ""),
+      `Por variable, la que más pesa es ${esc(nombre(porVariable[0].v))} (${pct(porVariable[0].valor, 0)}).`
+        + (cumple ? "" : ` El freno se detuvo antes del tope: bajarlo más hacía que el modelo adivinara peor que la ${esc(nombre((R.evaluacion.una_variable || {}).mejor || porVariable[0].v))} sola.`),
+    ];
+    const titulo = cumple ? `Ningún grupo pasa del tope de ${pct(tope, 0)}: el que más pesa es ${esc(mayor.etiqueta)} (${pct(mayor.valor, 0)})`
+      : `No se cumple el tope: ${esc(mayor.etiqueta)} pesa ${pct(mayor.valor, 0)} (tope ${pct(tope, 0)})`;
+    return { titulo, figura: figura(grafica, frases.join(" ")) };
+  }
+
+  /* La nota honesta: sin los casos evidentes (no aprobó nada) y frente a la mejor variable sola. */
+  function honestas(R, clave) {
+    const ev = R.evaluacion, se = ev.sin_evidentes, u = ev.una_variable, m = ev.modelos[clave];
+    const ms = se ? se.modelos[clave] : null;
+    const filas = [["AUC", m.auc, ms && ms.auc, (v) => num(v, 3)], ["F1", m.f1, ms && ms.f1, (v) => num(v, 2)],
+      ["Detección", m.recall, ms && ms.recall, (v) => pct(v, 0)], ["Precisión", m.precision, ms && ms.precision, (v) => pct(v, 0)]];
+    if (u) filas.push([`AUC de la ${nombre(u.mejor)} sola`, u.auc_mejor, u.sin_evidentes && u.sin_evidentes.auc_mejor, (v) => num(v, 3)]);
+    const tabla = nodo(`<div class="tabla-envoltura"><table class="tabla-honesta"><thead><tr><th></th><th>Con todos</th>${ms ? "<th>Sin evidentes</th>" : ""}</tr></thead>
+      <tbody>${filas.map(([t, a, b, f]) => `<tr><th scope="row">${esc(t)}</th><td class="num">${f(a)}</td>${ms ? `<td class="num">${b == null ? "–" : f(b)}</td>` : ""}</tr>`).join("")}</tbody></table></div>`);
+    const gana = u ? m.auc - u.auc_mejor : null, ganaSin = u && ms && u.sin_evidentes ? ms.auc - u.sin_evidentes.auc_mejor : null;
+    const ev_ = ev.evidentes;
+    const texto = [
+      ev_ ? `Casos evidentes: los ${miles(ev_.n)} de prueba que no aprobaron ninguna asignatura. Aquí no lo son tanto: de ellos abandonó el ${pct(ev_.tasa, 0)}. Sin ellos quedan ${miles(se.n)} y abandona el ${pct(se.tasa, 0)}; esa es la nota honesta.` : "",
+      u ? `${gana > 0 ? "Le gana" : "No le gana"} a la ${esc(nombre(u.mejor))} sola por ${num(Math.abs(gana), 3)} de AUC${ganaSin != null ? ` (${num(Math.abs(ganaSin), 3)} sin los evidentes)` : ""}: es lo que aporta usar todas las variables.` : "",
+    ].filter(Boolean).map((t) => `<p class="nota">${t}</p>`).join("");
+    const titulo = ms ? `Sin los casos evidentes, AUC ${num(ms.auc, 3)} y F1 ${num(ms.f1, 2)}` : `AUC ${num(m.auc, 3)}`;
+    return { titulo, nodos: [tabla, nodo(`<div>${texto}</div>`)] };
+  }
+
+  /* Cada variable sola contra el modelo, con todos y sin los casos evidentes (AUC desde 0,5 = adivinar). */
+  function unaVariable(R, clave) {
+    const ev = R.evaluacion, u = ev.una_variable;
+    if (!u) return null;
+    const se = ev.sin_evidentes, conSin = Boolean(se && u.sin_evidentes);
+    const filas = [{ etiqueta: `el modelo (${CORTO[clave]})`, todos: ev.modelos[clave].auc, sin: conSin ? se.modelos[clave].auc : 0 },
+      ...u.variables.map((v, i) => ({ etiqueta: `${nombre(v)} sola`, todos: u.auc[i], sin: conSin ? u.sin_evidentes.auc[i] : 0 }))
+        .sort((a, b) => b.todos - a.todos)];
+    const grupos = [{ clave: "todos", color: "var(--acento)", nombre: "con todos" }, ...(conSin ? [{ clave: "sin", color: "var(--serie-2)", nombre: "sin los evidentes" }] : [])];
+    const g = grafBarras({ filas, grupos, min: 0.5, max: Math.max(...filas.map((f) => Math.max(f.todos, f.sin))) + 0.03, formato: (v) => num(v, 3), ancho: 600, anchoEtiqueta: 200,
+      etiqueta: `AUC del modelo y de cada variable usada sola. ${filas.map((f) => `${f.etiqueta} ${num(f.todos, 3)}`).join(", ")}.` });
+    return figura(g, "Cada variable se usa sola como puntaje (más alta, más riesgo, o al revés). La barra empieza en 0,5, que es adivinar.",
+      leyenda(grupos.map((x) => [x.color, x.nombre])));
   }
 
   /* ------------------------------------------------------------------ modelo de ingreso y base */
@@ -277,20 +327,22 @@
       catch (e) { ingresoCache = null; }
     }
     if (!destino.isConnected) return;
-    if (!ingresoCache) { destino.innerHTML = `<p>Usa solo datos de la matrícula (edad, notas de admisión, beca, deuda). No se pudieron consultar sus notas en este momento.</p>`; return; }
+    if (!ingresoCache) { destino.innerHTML = `<p>Usa solo datos de la matrícula (nota de acceso, opción en que eligió la titulación, dedicación y créditos). No se pudieron consultar sus notas en este momento.</p>`; return; }
     const g = ingresoCache.m;
     destino.innerHTML = `<div class="ingreso-notas"><div><span class="rotulo">AUC</span>${cifra(g.auc, "num3")}${marca(nota(g.auc, [0.9, 0.8, 0.7]))}</div>
       <div><span class="rotulo">F1</span>${cifra(g.f1, "num2")}${marca(nota(g.f1, [0.8, 0.65, 0.5]))}</div></div>
-      <p>${ingresoCache.n ? `Hoy califica a <strong>${miles(ingresoCache.n)} estudiantes</strong> sin historial académico en la base. ` : ""}Usa solo datos de la matrícula (edad, notas de admisión, beca, deuda), así que es más débil que el modelo principal: su resultado se marca como provisional. Medido con ${miles(g.n_prueba)} estudiantes que no vio.</p>`;
+      <p>${ingresoCache.n ? `Hoy califica a <strong>${miles(ingresoCache.n)} estudiantes</strong> que el contrato no puede calificar (sin notas del primer cuatrimestre o con un dato que no acepta). ` : "Hoy no hay ningún estudiante que lo necesite. "}Usa solo datos de la matrícula (nota de acceso, opción en que eligió la titulación, dedicación y créditos), así que es más débil que el modelo principal: su resultado se marca como provisional. Medido con ${miles(g.n_prueba)} estudiantes que no vio.</p>`;
     contar(destino);
   }
 
   function nodoBase(B) {
     const f = B.fuente, etiqueta = { directo: "dato directo", aproximado: "aproximación", supuesto: "supuesto" };
-    return [nodo(`<p class="aviso"><strong>Límite honesto.</strong> La base no trae asistencia, estrato ni si el estudiante trabaja: esos tres datos son aproximaciones. Y son estudiantes de Portugal, no de la universidad que use el sistema. Sirve para ver el modelo operar con personas reales, no para decidir todavía sobre sus estudiantes.</p>`),
+    return [nodo(`<p class="aviso"><strong>Límite honesto.</strong> ${esc(B.limite || "")}</p>`),
       nodo(`<details class="base-detalle"><summary>De dónde salen los datos y cómo se llevó cada columna al contrato</summary>
         <dl class="cifras"><div><dt>Estudiantes reales</dt><dd>${miles(B.total)}</dd></div><div><dt>Para entrenar y validar</dt><dd>${miles(B.historico)}</dd></div><div><dt>En operación</dt><dd>${miles(B.operacion)}</dd></div></dl>
-        <p><strong>${esc(f.nombre)}</strong>, ${esc(f.institucion)}. ${esc(f.descripcion)} ${esc(f.autores)}, ${esc(f.repositorio)}, <a href="${esc(f.doi)}" rel="noopener">${esc(f.doi.replace("https://", ""))}</a>, licencia ${esc(f.licencia)}.</p>
+        <p><strong>${esc(f.nombre)}</strong>, ${esc(f.institucion)}. ${esc(f.descripcion)} ${esc(f.autores)}, ${esc(f.repositorio)}, <a href="${esc(f.doi)}" rel="noopener">${esc(f.doi.replace("https://", ""))}</a>, licencia ${esc(f.licencia)}.${f.poblacion ? ` ${esc(f.poblacion)}` : ""}</p>
+        ${B.etiqueta ? `<p><strong>Qué letra es abandono.</strong> La fuente marca el abandono con «A» o «B» sin decir cuál es cuál. ${esc(B.etiqueta)}</p>` : ""}
+        ${B.muestra ? `<p>En operación se muestra una muestra estratificada (semilla fija) de ${miles(B.operacion)}; los otros ${miles(B.reserva)} quedan en reserva para que la respuesta no pese demasiado.</p>` : ""}
         <p>Está montada en el servidor como una base ${esc(B.motor)} (<code>${esc(B.archivo)}</code>) que hace de registro académico. La página de <a href="estudiantes.html">estudiantes</a> la lee cada vez que se abre.</p>
         <div class="tabla-envoltura"><table><thead><tr><th>Dato del contrato</th><th>De dónde sale</th><th>Qué tan directo</th></tr></thead>
         <tbody>${B.mapeo.map((x) => `<tr><td>${esc(nombre(x.campo))}</td><td>${esc(x.origen)}</td><td><span class="etiqueta-mapeo ${x.tipo}">${etiqueta[x.tipo]}</span></td></tr>`).join("")}</tbody></table></div></details>`)];
@@ -316,12 +368,19 @@
         <div class="tejas tejas-3">${["accuracy", "brier", "especificidad"].map((k) => teja(T[k])).join("")}</div>
         <p class="nota leyenda-notas">${Object.keys(NOTAS).map(marca).join(" ")} Umbrales de uso común [SUPUESTO]: AUC 0,9 / 0,8 / 0,7 · F1 0,8 / 0,65 / 0,5 · detección y precisión 85 / 70 / 50 % · exactitud 15 / 10 / 5 puntos sobre «nadie deserta» · Brier 0,10 / 0,15 / 0,20 · especificidad 90 / 80 / 65 %. Las rayas de cada medidor son esos umbrales.</p></details>`)]);
 
-    // 2. Las gráficas que explican esas notas.
-    const celdas = [veredicto, notas,
+    // 2. Las dos preguntas honestas: de qué depende y cuánto vale sin los casos evidentes.
+    const hon = honestas(R, clave);
+    const celdas = [veredicto, notas];
+    if (cual !== "reglas") {
+      const dep = dependencia(R, cual);
+      celdas.push(celda("c7 celda-dependencia", "De qué depende", dep.titulo, [dep.figura]));
+    }
+    celdas.push(celda(cual === "reglas" ? "c12" : "c5", "La nota honesta", hon.titulo, hon.nodos));
+    celdas.push(
       celda("c7", "Aciertos y errores", `Acertó con ${miles(mz.vp + mz.vn)} de ${miles(total)} estudiantes`, ["Cada cuadro es un estudiante de prueba. «Avisar» es ponerlo en riesgo alto.", gofre(mz)]),
       celda("c5", "Frente a los otros", mejorF1 === clave ? `Es el de mejor equilibrio (F1 ${num(m.f1, 2)})` : `El mejor equilibrio lo tiene la ${esc(CORTO[mejorF1])} (F1 ${num(ev.modelos[mejorF1].f1, 2)})`, [comparacion(ev, clave)]),
       celda("c6", "Curva ROC", `Ordena bien a ${entero(100 * m.auc)} de cada 100 parejas (AUC ${num(m.auc, 3)})`, [curvaRoc(ev, clave)]),
-      celda("c6", "Calibración", `Sus probabilidades se desvían ${num(desvioCalibracion(ev.calibracion[clave]), 1)} puntos de lo que pasó`, [calibracion(ev, clave)])];
+      celda("c6", "Calibración", `Sus probabilidades se desvían ${num(desvioCalibracion(ev.calibracion[clave]), 1)} puntos de lo que pasó`, [calibracion(ev, clave)]));
 
     // 3. Cómo aprendió.
     if (cual === "reglas") {
@@ -337,14 +396,17 @@
         nodo(`<details class="mas-notas"><summary>Con qué datos y con qué ajustes</summary></details>`)]));
       const det = celdas[celdas.length - 1].querySelector("details");
       det.append(reparto(R.datos), ajustes(R, cual));
-      const imp = importancia(R, cual);
-      celdas.push(celda("c7", "De qué depende", `Lo que más pesa: ${esc(imp.filas[0].etiqueta)} y ${esc(imp.filas[1].etiqueta)}`, [imp.figura]));
+    }
+    const una = unaVariable(R, clave);
+    if (una) {
+      const u = ev.una_variable, gana = m.auc - u.auc_mejor;
+      celdas.push(celda("c7", "Frente a una sola variable", gana > 0 ? `Le gana a la mejor variable sola por ${num(gana, 3)} de AUC` : `No le gana a la mejor variable sola (${esc(nombre(u.mejor))})`, [una]));
     }
 
     // 4. El modelo de ingreso (provisional) y la base.
-    const ingreso = celda(cual === "reglas" ? "c12" : "c5", "Modelo de ingreso", "Para quien no tiene historial: un resultado provisional", [nodo(`<div class="ingreso"><p class="nota">Consultando sus notas…</p></div>`)]);
+    const ingreso = celda(una ? "c5" : "c12", "Modelo de ingreso", "Para quien el contrato no puede calificar: un resultado provisional", [nodo(`<div class="ingreso"><p class="nota">Consultando sus notas…</p></div>`)]);
     celdas.push(ingreso);
-    if (B) celdas.push(celda("c12 celda-base", "La base de datos real", `${miles(B.total)} estudiantes reales del ${esc(B.fuente.institucion)}`, nodoBase(B)));
+    if (B) celdas.push(celda("c12 celda-base", "La base de datos real", `${miles(B.total)} estudiantes reales de la ${esc(B.fuente.institucion)}`, nodoBase(B)));
     c.append(...celdas);
     aparecer(c.children, { pausa: 50, duracion: 300 });
     contar(c);
