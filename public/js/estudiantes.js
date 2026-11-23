@@ -96,7 +96,7 @@
     const estaciones = [
       ["Base de datos", ej.leidos, miles, "registros leídos", `${esc(d.base.archivo)}`],
       ["Validación", ej.calificados, miles, "pasan el contrato", `${miles(sinHistorial)} provisionales · ${miles(ej.con_error + (ej.a_revision || 0))} devueltos`],
-      ["Modelo", ej.ms_lectura + ej.ms_modelo, (v) => `${entero(v)} ms`, "para calificarlos a todos", esc(NOMBRE_MODELO[ej.modelo]) + (sinHistorial ? " + modelo de ingreso" : "")],
+      ["Modelo", ej.ms_lectura + ej.ms_modelo, (v) => `${entero(v)} ms`, "para calificarlos a todos", esc(NOMBRE_MODELO[ej.modelo]) + (sinHistorial ? " + aviso antes de las notas" : "")],
       ["Resultado", c.alto, miles, "en riesgo alto", `${miles(c.medio)} en medio · ${miles(c.bajo)} en bajo`],
     ];
     const flujo = $("#flujo");
@@ -140,7 +140,7 @@
     }
     caja.addEventListener("click", (ev) => { const b = ev.target.closest("[data-grupo]"); if (b) filtrar({ filtro: b.dataset.grupo }); });
     const prov = c.provisional.alto + c.provisional.medio + c.provisional.bajo;
-    return celda("c4", "Hoy", "Cuántos hay en cada nivel", caja, prov ? `La parte rayada (${miles(prov)}) es resultado provisional: el contrato no los pudo calificar y se usaron los datos de su matrícula.` : "");
+    return celda("c4", "Hoy", "Cuántos hay en cada nivel", caja, prov ? `La parte rayada (${miles(prov)}) es resultado provisional: el contrato no los pudo calificar y se usó el aviso antes de las notas (matrícula, actividad y titulación).` : "");
   }
 
   /* 2. Distribución de los puntajes definitivos, con los cortes y lo que pasó de verdad en cada tramo. */
@@ -230,7 +230,7 @@
     const ing = E.datos.ingreso;
     const tasa = NIVELES.reduce((a, k) => a + n[k].desertaron, 0) / Math.max(1, NIVELES.reduce((a, k) => a + n[k].n, 0));
     return celda("c5", "Contra la realidad", "De cada nivel, cuántos abandonaron", caja,
-      `En total abandonó el ${pct(tasa, 0)}. Si el modelo sirve, en alto abandonan varias veces más que en bajo; con tan pocos abandonos, ni en alto son mayoría. Resultados definitivos.${ing ? ` El modelo de ingreso (provisionales) es más débil: AUC ${num(ing.auc, 2)}.` : ""} Las demás notas están en <a href="modelo.html">Modelo</a>.`);
+      `En total abandonó el ${pct(tasa, 0)}. Si el modelo sirve, en alto abandonan varias veces más que en bajo; con tan pocos abandonos, ni en alto son mayoría. Resultados definitivos.${ing ? ` El aviso antes de las notas (provisionales) es más débil: AUC ${num(ing.auc, 2)}.` : ""} Las demás notas están en <a href="modelo.html">Modelo</a>.`);
   }
 
   function pintarTablero() {
@@ -278,17 +278,32 @@
     return ["acierto", "No hubo alerta alta, y acertó."];
   }
 
+  /* Lo que la base tiene del estudiante: los 12 campos del contrato y los del contrato ampliado («sin dato» si falta). */
   function datosDe(e) {
-    const r = e.registro, mt = e.matricula || {}, fila = (t, v) => `<div><dt>${t}</dt><dd class="num">${v}</dd></div>`;
-    const sinDato = (v, f) => (v == null ? "sin dato" : f(v));
-    const matricula = fila("Nota de acceso", sinDato(mt.nota_acceso, (v) => `${num(v, 2)} de 14`)) + fila("Opción en que eligió la titulación", sinDato(mt.preferencia, entero))
-      + fila("Dedicación", mt.tiempo_parcial ? "tiempo parcial" : "tiempo completo") + fila("Créditos ECTS del 1.er cuatrimestre", sinDato(mt.ects, (v) => num(v, 1)))
+    const r = e.registro, a = e.ampliado || {}, fila = (t, v) => `<div><dt>${t}</dt><dd class="num">${v}</dd></div>`;
+    const sinDato = (v, f) => (v == null ? `<span class="sin-dato">sin dato</span>` : f(v));
+    const usual = E.datos.usual || {}, con = (campo, f) => (usual[campo] != null ? ` <small>(lo usual: ${f(usual[campo])})</small>` : "");
+    const d1 = (v) => num(v, 1), d0 = (v) => entero(v);
+    const notas = fila("Promedio de lo aprobado (escala 0–5)", sinDato(r.promedio_acumulado, (v) => num(v, 2)))
+      + fila("Suspendidas o sin nota", `${r.materias_reprobadas} de ${r.materias_cursadas_periodo_anterior}`)
+      + fila("Nota media de lo presentado (0–10)", sinDato(a.nota_media_cuatrimestre, d1))
+      + fila("Nota más baja (0–10)", sinDato(a.nota_minima_cuatrimestre, d1))
+      + fila("Asignaturas no presentadas", sinDato(a.asignaturas_no_presentadas, d0));
+    const actividad = fila("Días en el campus, sept.–nov.", sinDato(a.dias_campus_sep_nov, (v) => d0(v) + con("dias_campus_sep_nov", d0)))
+      + fila("Días en el campus, dic.–enero", sinDato(a.dias_campus_dic_ene, (v) => d0(v) + con("dias_campus_dic_ene", d0)))
+      + fila("Días en el aula virtual, por asignatura", sinDato(a.dias_aula_virtual, (v) => d1(v) + con("dias_aula_virtual", d0)))
+      + fila("Entregas por asignatura", sinDato(a.entregas_por_asignatura, (v) => d1(v) + con("entregas_por_asignatura", d0)))
+      + fila("Presencia (contrato)", sinDato(r.porcentaje_asistencia, (v) => `${entero(v)} %`));
+    const admision = fila("Nota de acceso", sinDato(a.nota_acceso, (v) => `${num(v, 2)} de 14`))
+      + fila("Opción en que pidió la titulación", sinDato(a.opcion_titulacion, d0))
+      + fila("Vía de ingreso", sinDato(a.tipo_ingreso, (v) => (v === "NAP" ? "acceso ordinario" : `otra (${esc(v)})`)))
+      + fila("Dedicación", r.trabaja ? "tiempo parcial" : "tiempo completo")
+      + fila("Créditos ECTS del 1.er cuatrimestre", sinDato(e.ects, d1))
       + fila("Cohorte", `${e.cohorte}-${String(e.cohorte + 1).slice(2)}`);
-    const presencia = fila("Días en el campus (wifi), sept.–enero", sinDato(mt.wifi_dias, entero)) + fila("Días en el aula virtual, por asignatura", sinDato(mt.aula_dias, (v) => num(v, 1)))
-      + fila("Entregas en el aula virtual, por asignatura", sinDato(mt.entregas, (v) => num(v, 1)));
-    const academicos = fila("Promedio (escala 0–5)", sinDato(r.promedio_acumulado, (v) => num(v, 2))) + fila("Asignaturas del 1.er cuatrimestre", r.materias_cursadas_periodo_anterior)
-      + fila("Suspendidas o sin nota", r.materias_reprobadas) + fila("Presencia", sinDato(r.porcentaje_asistencia, (v) => `${entero(v)} %`)) + fila("Créditos (escala del contrato)", r.creditos_inscritos);
-    return (e.decision === "provisional" ? matricula + academicos : academicos + matricula) + presencia;
+    const bloque = (t, x) => `<div class="datos-bloque"><dt class="datos-titulo">${t}</dt></div>${x}`;
+    const partes = [["Notas del primer cuatrimestre", notas], ["Actividad", actividad], ["Matrícula y admisión", admision]];
+    if (e.decision === "provisional") partes.push(partes.shift());
+    return partes.map(([t, x]) => bloque(t, x)).join("");
   }
 
   function pintarFicha(e, animar) {
@@ -318,7 +333,8 @@
       <div class="pieza pieza-sello"><div class="sello sello-${e.nivel}${prov ? " sello-provisional" : ""}${animar ? " recien" : ""}"><b>Riesgo ${e.nivel}</b><small>${prov ? "provisional · " : ""}${sub}</small></div></div>
       <div class="pieza"><p class="rotulo">Qué hacer</p><p class="pieza-accion">${esc(ACCIONES[e.accion] || e.accion || "")}</p>
         ${e.r34 ? `<p class="nota">Alto por la regla R3.4 del contrato: promedio menor a 3,0 y asistencia (aquí, presencia) menor a 70 %.</p>` : ""}</div>
-      ${prov ? `<p class="pieza pieza-ancha pieza-aviso">Es <strong>provisional</strong>: el contrato no lo pudo calificar porque ${esc(MOTIVOS[e.motivo] || e.motivo)}${e.campo ? ` (<code>${esc(nombre(e.campo))}</code>)` : ""}, así que se calculó solo con los datos de su matrícula. El sistema ya le pidió el dato al registro.</p>` : ""}
+      ${prov ? `<p class="pieza pieza-ancha pieza-aviso">Es <strong>provisional</strong>: el contrato no lo pudo calificar porque ${esc(MOTIVOS[e.motivo] || e.motivo)}${e.campo ? ` (<code>${esc(nombre(e.campo))}</code>)` : ""}, así que se calculó sin notas: con su matrícula, su actividad en el campus y en el aula virtual, y su titulación (el aviso antes de las notas). El sistema ya le pidió el dato al registro.</p>` : ""}
+      ${e.sin_dato && e.sin_dato.length ? `<p class="pieza pieza-ancha nota">Sin dato en la base: ${e.sin_dato.map((c) => esc(nombre(c))).join(", ")}. El modelo usó el valor usual y lo tuvo en cuenta como dato que falta; no se inventó.</p>` : ""}
       <div class="pieza pieza-ancha"><p class="rotulo">Por qué</p><div class="razones">${porque}</div></div>
       <div class="pieza pieza-ancha"><p class="rotulo">En qué mejorar</p>${mejorar}</div>
       <div class="pieza pieza-ancha desenlace ${clase}"><p class="rotulo">Qué pasó en realidad</p><p><span class="desenlace-marca" aria-hidden="true">${clase === "acierto" ? "✓" : "✗"}</span>

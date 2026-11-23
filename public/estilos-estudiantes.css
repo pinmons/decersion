@@ -163,3 +163,8 @@
 .datos-registro dt { color: var(--tinta-2); }
 .datos-registro dd { margin: 0; font-weight: 650; white-space: nowrap; }
 @media (max-width: 480px) { .datos-registro { grid-template-columns: 1fr; } }
+/* Contrato ampliado: bloques de la ficha y «sin dato» */
+.datos-registro .datos-bloque { grid-column: 1 / -1; border-bottom: 0; padding-block: 12px 2px; }
+.datos-registro .datos-titulo { font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--tinta); font-weight: 700; }
+.datos-registro dd small { font-weight: 400; color: var(--tinta-2); font-family: inherit; }
+.sin-dato { font-weight: 400; font-style: italic; color: var(--tinta-2); }

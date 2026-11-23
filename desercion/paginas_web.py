@@ -107,8 +107,9 @@ def _pagina(archivo, titulo, descripcion, pagina, seccion, cuerpo, estilos=(), s
   <footer class="pie">
     <div class="envoltura">
       <p>Prototipo académico, con los modelos escritos desde cero en NumPy. «Estudiantes» y «Modelo» usan una base
-        real y pública (Universitat Politècnica de València, España: primer año de grado) donde la asistencia y el trabajo
-        son aproximaciones y el estrato no existe.
+        real y pública (Universitat Politècnica de València, España: primer año de grado) con un contrato ampliado (notas,
+        actividad, admisión y titulación); en ella la asistencia y el trabajo son aproximaciones, el estrato no existe y
+        los estudiantes con impago quedan fuera.
         «Probar un caso» y «Cómo se hizo» usan el modelo construido con datos sintéticos. No se usa para decidir sobre
         estudiantes reales.</p>
     </div>
@@ -212,6 +213,12 @@ def paso(i):
     anterior = PASOS[i - 1] if i > 0 else None
     siguiente = PASOS[i + 1] if i + 1 < len(PASOS) else None
     extra = ""
+    if clave == "contrato":
+        extra = """
+            <p class="nota nota-ampliado">Este paso describe el contrato de 12 campos, que usan «Probar un caso» y las rondas.
+              El modelo de la base real (páginas Estudiantes y Modelo) recibe además un <strong>contrato ampliado</strong>: notas,
+              actividad en el campus y el aula virtual, admisión y titulación, con la misma validación, la regla R3.4 y las
+              mismas garantías. Se explica en <a href="modelo.html">Modelo</a>.</p>"""
     if clave == "pruebas":
         extra = """
             <div class="pruebas-vivo">

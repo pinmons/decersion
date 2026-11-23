@@ -20,7 +20,19 @@
     materias_cursadas_periodo_anterior: "materias cursadas", materias_reprobadas: "materias reprobadas",
     tasa_reprobacion: "tasa de reprobación", porcentaje_asistencia: "asistencia", estrato: "estrato",
     trabaja: "trabaja", deuda_matricula: "deuda de matrícula",
+    // contrato ampliado (solo el modelo de la base real)
+    nota_media_cuatrimestre: "nota media del cuatrimestre", nota_minima_cuatrimestre: "nota mínima del cuatrimestre",
+    asignaturas_no_presentadas: "asignaturas no presentadas", dias_campus_sep_nov: "días en el campus (sep.–nov.)",
+    dias_campus_dic_ene: "días en el campus (dic.–ene.)", sin_registro_wifi: "sin registro de wifi",
+    dias_aula_virtual: "días en el aula virtual", entregas_por_asignatura: "entregas por asignatura",
+    sin_aula_virtual: "sin datos del aula virtual", nota_acceso: "nota de acceso", sin_nota_acceso: "sin nota de acceso",
+    nota_bachillerato: "nota de bachillerato", sin_nota_bachillerato: "sin nota de bachillerato",
+    opcion_titulacion: "opción de la titulación", sin_opcion_titulacion: "sin dato de opción",
+    tipo_ingreso: "vía de ingreso", ingreso_ordinario: "ingreso ordinario", titulacion: "titulación",
+    abandono_titulacion: "abandono en su titulación",
   };
+  const FUENTES = { notas: "Notas del cuatrimestre", actividad: "Actividad (campus y aula virtual)", admision: "Matrícula y admisión", titulacion: "Titulación" };
+  const fuente = (f) => String(f || "").split(" + ").map((x) => FUENTES[x] || x).join(" + ");
   const nombre = (v) => NOMBRES[v] || v;
   const ACCIONES = {
     seguimiento_rutinario: "seguimiento rutinario",
@@ -248,5 +260,5 @@
     return lista;
   }
 
-  window.SAT = Object.assign(window.SAT || {}, { $, esc, pct, num, miles, json, NOMBRES, nombre, ACCIONES, MOTIVOS, mostrarGlobo, ocultarGlobo, conGlobo, s, lienzo, escala, marcasBonitas, figura, leyenda, grafLineas, grafBarras, reducido, alVerUnaVez, aparecer, secuencia });
+  window.SAT = Object.assign(window.SAT || {}, { $, esc, pct, num, miles, json, NOMBRES, nombre, FUENTES, fuente, ACCIONES, MOTIVOS, mostrarGlobo, ocultarGlobo, conGlobo, s, lienzo, escala, marcasBonitas, figura, leyenda, grafLineas, grafBarras, reducido, alVerUnaVez, aparecer, secuencia });
 })();

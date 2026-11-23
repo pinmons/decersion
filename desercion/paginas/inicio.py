@@ -54,8 +54,9 @@ def cuerpo(lista_pasos=None):
           </section>
         </div>
         <p class="nota t-honesto">Prototipo académico. La operación lee una base real y pública: estudiantes de primer
-          año de la Universitat Politècnica de València (España), en la que la asistencia (presencia en el campus y en el
-          aula virtual) y el trabajo (matrícula a tiempo parcial) son aproximaciones y el estrato no existe. «Probar un
+          año de la Universitat Politècnica de València (España). Su modelo usa un contrato ampliado: además de los 12 datos,
+          las notas del primer cuatrimestre, la actividad en el campus y en el aula virtual, la admisión y la tasa de abandono
+          de la titulación. La asistencia y el trabajo son aproximaciones y el estrato no existe. «Probar un
           caso» y «Cómo se hizo» usan el modelo construido con datos sintéticos. No se usa para decidir sobre
           estudiantes reales.</p>
       </div>

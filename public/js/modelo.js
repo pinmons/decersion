@@ -4,7 +4,7 @@
    La página nunca recalcula el modelo: todo viene de reportes/real/ y de /api/estudiantes. */
 (function () {
   "use strict";
-  const { $, esc, pct, num, miles, json, nombre, conGlobo, s, lienzo, escala, marcasBonitas, figura, leyenda,
+  const { $, esc, pct, num, miles, json, nombre, fuente, conGlobo, s, lienzo, escala, marcasBonitas, figura, leyenda,
     grafLineas, grafBarras, aparecer, reducido } = window.SAT;
 
   const NOMBRE_MODELO = { logistica: "regresión logística", red_neuronal: "red neuronal", reglas: "reglas del contrato" };
@@ -262,27 +262,55 @@
     return nodo(`<div class="fichas">${items.map(([t, v, d]) => `<div class="ficha-metodo"><h3>${t}</h3><span class="valor-metodo">${v}</span><p>${d}</p></div>`).join("")}</div>`);
   }
 
-  /* De qué depende: importancia por GRUPO de variables correlacionadas (lo que mide el tope), con la raya del tope. */
+  /* De qué depende: importancia por GRUPO (lo que mide el tope) y por variable, con la raya del tope.
+     Con el contrato ampliado los grupos son las FUENTES del dato (notas, actividad, admisión, titulación). */
   function dependencia(R, cual) {
     const it = R.control.importancia_test, tope = R.control.tope, red = cual === "red_neuronal";
-    const porVariable = it.variables.map((v, i) => ({ v, valor: (red ? it.red_pct : it.logistica_pct)[i] })).sort((a, b) => b.valor - a.valor);
+    const porFuente = Boolean(R.grupos && R.grupos.por_fuente);
+    const porVariable = it.variables.map((v, i) => ({ etiqueta: nombre(v), valor: (red ? it.red_pct : it.logistica_pct)[i] })).sort((a, b) => b.valor - a.valor);
     const grupos = (it.grupos || it.variables.map((v) => ({ variables: [v], logistica_pct: it.logistica_pct[it.variables.indexOf(v)], red_pct: it.red_pct[it.variables.indexOf(v)] })))
-      .map((g) => ({ etiqueta: g.variables.map(nombre).join(" + "), valor: red ? g.red_pct : g.logistica_pct, juntas: g.variables.length > 1 }))
+      .map((g) => ({ etiqueta: g.fuente ? fuente(g.fuente) : g.variables.map(nombre).join(" + "), valor: red ? g.red_pct : g.logistica_pct,
+        juntas: g.variables.length > 1, detalle: g.fuente ? `${g.variables.length} ${g.variables.length === 1 ? "variable" : "variables"}: ${g.variables.map(nombre).join(", ")}` : "" }))
       .sort((a, b) => b.valor - a.valor);
-    for (const g of grupos) { g.color = g.valor > tope ? "var(--tinta)" : "var(--acento)"; g.detalle = g.juntas ? "se miden juntas: dicen casi lo mismo" : ""; }
+    for (const g of grupos) { g.color = g.valor > tope ? "var(--tinta)" : "var(--acento)"; if (!porFuente) g.detalle = g.juntas ? "se miden juntas: dicen casi lo mismo" : ""; }
     const mayor = grupos[0], cumple = mayor.valor <= tope, juntas = grupos.filter((g) => g.juntas);
-    const grafica = grafBarras({ filas: grupos, formato: (v) => pct(v, 0), grupos: [{ clave: "valor", color: "var(--acento)" }], ancho: 600, anchoEtiqueta: 230,
-      max: Math.max(mayor.valor, tope) * 1.08, linea: { valor: tope, etiqueta: `tope ${pct(tope, 0)}`, color: "var(--tinta-2)" },
-      etiqueta: `Cuánto depende el modelo de cada grupo de variables. ${grupos.map((g) => `${g.etiqueta} ${pct(g.valor, 0)}`).join(", ")}. Tope ${pct(tope, 0)}.` });
+    const barras = (filas, etiqueta, anchoEtiqueta) => grafBarras({ filas, formato: (v) => pct(v, 0), grupos: [{ clave: "valor", color: "var(--acento)" }], ancho: 600, anchoEtiqueta,
+      max: Math.max(filas[0].valor, tope) * 1.08, linea: { valor: tope, etiqueta: `tope ${pct(tope, 0)}`, color: "var(--tinta-2)" }, etiqueta });
+    const grafica = barras(grupos, `Cuánto depende el modelo de cada ${porFuente ? "fuente" : "grupo de variables"}. ${grupos.map((g) => `${g.etiqueta} ${pct(g.valor, 0)}`).join(", ")}. Tope ${pct(tope, 0)}.`, 230);
+    const visibles = porVariable.filter((v) => v.valor > 0.004);
+    const graficaVar = barras(visibles, `Cuánto depende el modelo de cada variable. ${visibles.map((v) => `${v.etiqueta} ${pct(v.valor, 0)}`).join(", ")}.`, 250);
+    const cruzados = (R.grupos && R.grupos.cruzados) || [];
     const frases = [
-      `Se desordena un grupo de variables a la vez y se mira cuánto empeora el modelo con los ${miles(R.evaluacion.n_test)} estudiantes de prueba.`
-        + (juntas.length ? ` ${juntas.map((g) => esc(g.etiqueta)).join(" y ")} se miden juntas porque dicen casi lo mismo: por separado, cada una parecería pesar poco porque la otra la suple.` : ""),
-      `Por variable, la que más pesa es ${esc(nombre(porVariable[0].v))} (${pct(porVariable[0].valor, 0)}).`
-        + (cumple ? "" : ` El freno se detuvo antes del tope: bajarlo más hacía que el modelo adivinara peor que la ${esc(nombre((R.evaluacion.una_variable || {}).mejor || porVariable[0].v))} sola.`),
+      `Se desordena ${porFuente ? "una fuente entera" : "un grupo de variables"} a la vez y se mira cuánto empeora el modelo con los ${miles(R.evaluacion.n_test)} estudiantes de prueba.`
+        + (porFuente ? ` Los grupos son las fuentes del dato, para responder a «¿depende de una sola fuente?»; ${cruzados.length ? "se unieron las fuentes con variables que dicen casi lo mismo" : "ninguna variable de una fuente dice casi lo mismo que una de otra (|r| < 0,5), así que ninguna fuente suple a otra al desordenarla"}.`
+          : juntas.length ? ` ${juntas.map((g) => esc(g.etiqueta)).join(" y ")} se miden juntas porque dicen casi lo mismo: por separado, cada una parecería pesar poco porque la otra la suple.` : ""),
+      `Por variable, la que más pesa es ${esc(porVariable[0].etiqueta)} (${pct(porVariable[0].valor, 0)}).`
+        + (cumple ? "" : ` El freno se detuvo antes del tope: bajarlo más hacía que el modelo adivinara peor que la ${esc(nombre((R.evaluacion.una_variable || {}).mejor || it.variables[0]))} sola, o el exceso pasaba a otra fuente.`),
     ];
-    const titulo = cumple ? `Ningún grupo pasa del tope de ${pct(tope, 0)}: el que más pesa es ${esc(mayor.etiqueta)} (${pct(mayor.valor, 0)})`
-      : `No se cumple el tope: ${esc(mayor.etiqueta)} pesa ${pct(mayor.valor, 0)} (tope ${pct(tope, 0)})`;
-    return { titulo, figura: figura(grafica, frases.join(" ")) };
+    const titulo = cumple ? `Ninguna ${porFuente ? "fuente" : "parte"} pasa del tope de ${pct(tope, 0)}: la que más pesa es ${esc(mayor.etiqueta.toLowerCase())} (${pct(mayor.valor, 0)})`
+      : `No se cumple el tope: ${esc(mayor.etiqueta.toLowerCase())} pesa ${pct(mayor.valor, 0)} (tope ${pct(tope, 0)})`;
+    const det = nodo(`<details class="mas-notas"><summary>Ver cada variable por separado</summary></details>`);
+    det.appendChild(figura(graficaVar, "Las variables que no aparecen pesan menos del 0,5 %. Desordenar una sola variable subestima a las que tienen pareja dentro de su fuente."));
+    return { titulo, figura: figura(grafica, frases.join(" ")), detalle: det };
+  }
+
+  /* Qué aporta cada fuente: nuestros modelos entrenados solo con esas variables (AUC en prueba). */
+  const ETIQUETA_CONJUNTO = { notas: "solo notas", actividad: "solo actividad", admision: "solo matrícula y admisión", titulacion: "solo titulación",
+    antes_de_notas: "todo menos las notas", todo: "todo" };
+  function aporteFuentes(R, cual) {
+    const a = R.control.aporte_fuentes;
+    if (!a || !a.length || cual === "reglas") return null;
+    const k = cual === "red_neuronal" ? "red" : "logistica";
+    const filas = a.map((f) => ({ etiqueta: ETIQUETA_CONJUNTO[f.conjunto] || f.conjunto, todos: f[k].auc, sin: f[k].auc_sin_evidentes,
+      detalle: `${f.variables.length} variables` }));
+    const g = grafBarras({ filas, grupos: [{ clave: "todos", color: "var(--acento)", nombre: "con todos" }, { clave: "sin", color: "var(--serie-2)", nombre: "sin los evidentes" }],
+      min: 0.5, max: Math.max(...filas.map((f) => f.todos)) + 0.03, formato: (v) => num(v, 3), ancho: window.innerWidth > 900 ? 1100 : 600, anchoEtiqueta: window.innerWidth > 900 ? 230 : 200,
+      etiqueta: `AUC en prueba de la ${CORTO[CLAVE_MODELO[cual]]} entrenada con cada fuente. ${filas.map((f) => `${f.etiqueta} ${num(f.todos, 3)}`).join(", ")}.` });
+    const todo = a.find((f) => f.conjunto === "todo"), solas = a.filter((f) => ["notas", "actividad", "admision", "titulacion"].includes(f.conjunto));
+    const mejorSola = solas.reduce((x, y) => (y[k].auc > x[k].auc ? y : x));
+    const titulo = `Ninguna fuente sola llega: la mejor (${esc(ETIQUETA_CONJUNTO[mejorSola.conjunto].replace("solo ", ""))}) da ${num(mejorSola[k].auc, 3)}; juntas, ${num(todo[k].auc, 3)}`;
+    return { titulo, figura: figura(g, "Cada barra es el mismo modelo, desde cero, entrenado otra vez solo con esas variables y medido con los mismos estudiantes de prueba. «Todo» es sin el freno del tope. La barra empieza en 0,5, que es adivinar.",
+      leyenda([["var(--acento)", "con todos"], ["var(--serie-2)", "sin los evidentes"]])) };
   }
 
   /* La nota honesta: sin los casos evidentes (no aprobó nada) y frente a la mejor variable sola. */
@@ -327,11 +355,13 @@
       catch (e) { ingresoCache = null; }
     }
     if (!destino.isConnected) return;
-    if (!ingresoCache) { destino.innerHTML = `<p>Usa solo datos de la matrícula (nota de acceso, opción en que eligió la titulación, dedicación y créditos). No se pudieron consultar sus notas en este momento.</p>`; return; }
+    const usa = "matrícula y admisión (nota de acceso, opción, vía de ingreso, dedicación, créditos), actividad (días en el campus y en el aula virtual, entregas) y la tasa de abandono de su titulación";
+    if (!ingresoCache) { destino.innerHTML = `<p>Usa ${usa}, no las notas. No se pudieron consultar sus notas en este momento.</p>`; return; }
     const g = ingresoCache.m;
     destino.innerHTML = `<div class="ingreso-notas"><div><span class="rotulo">AUC</span>${cifra(g.auc, "num3")}${marca(nota(g.auc, [0.9, 0.8, 0.7]))}</div>
       <div><span class="rotulo">F1</span>${cifra(g.f1, "num2")}${marca(nota(g.f1, [0.8, 0.65, 0.5]))}</div></div>
-      <p>${ingresoCache.n ? `Hoy califica a <strong>${miles(ingresoCache.n)} estudiantes</strong> que el contrato no puede calificar (sin notas del primer cuatrimestre o con un dato que no acepta). ` : "Hoy no hay ningún estudiante que lo necesite. "}Usa solo datos de la matrícula (nota de acceso, opción en que eligió la titulación, dedicación y créditos), así que es más débil que el modelo principal: su resultado se marca como provisional. Medido con ${miles(g.n_prueba)} estudiantes que no vio.</p>`;
+      <p>Usa ${usa}: todo lo que se sabe en diciembre, antes de los exámenes. Medido con ${miles(g.n_prueba)} estudiantes que no vio: detecta al ${pct(g.recall, 0)} de los que abandonan y acierta en ${pct(g.precision, 0)} de sus avisos. El modelo con notas lo supera, por eso su resultado se marca como provisional.</p>
+      <p>${ingresoCache.n ? `Hoy califica a <strong>${miles(ingresoCache.n)} estudiantes</strong> que el contrato no puede calificar (sin notas del primer cuatrimestre o con un dato que no acepta).` : "Hoy no hay ningún estudiante que lo necesite."}</p>`;
     contar(destino);
   }
 
@@ -360,7 +390,7 @@
     const veredicto = celda("c5 f2 celda-tinta celda-veredicto", `Con ${miles(ev.n_test)} estudiantes reales que nunca vio`, null, [
       nodo(`<div class="veredicto-cifra">${cifra(100 * m.recall, "ent", "cifra-grande")}<span>de cada 100</span></div>`),
       nodo(`<p class="veredicto-frase">estudiantes que desertaron fueron marcados a tiempo en riesgo alto por ${articulo} <strong>${NOMBRE_MODELO[cual]}</strong>.</p>`),
-      nodo(`<p class="veredicto-frase">De cada 100 avisos, <strong>${entero(100 * m.precision)}</strong> eran ciertos. En total desertó el ${pct(ev.tasa_test, 0)} de los ${miles(ev.n_test)}.</p>`),
+      nodo(`<p class="veredicto-frase">De cada 100 avisos, <strong>${entero(100 * m.precision)}</strong> eran ciertos: ${num(m.precision / ev.tasa_test, 1)} veces la tasa del grupo, porque solo abandonó el ${pct(ev.tasa_test, 0)} de los ${miles(ev.n_test)}. Con tan pocos abandonos la precisión es baja aunque el modelo ordene bien.</p>`),
       nodo(`<p class="veredicto-nota">Nota general (F1) ${marca(T.f1.n)}</p>`)]);
     const notas = celda("c7 f2 celda-lisa celda-notas", null, null, [
       nodo(`<div class="tejas">${["auc", "f1", "recall", "precision"].map((k) => teja(T[k])).join("")}</div>`),
@@ -373,7 +403,7 @@
     const celdas = [veredicto, notas];
     if (cual !== "reglas") {
       const dep = dependencia(R, cual);
-      celdas.push(celda("c7 celda-dependencia", "De qué depende", dep.titulo, [dep.figura]));
+      celdas.push(celda("c7 celda-dependencia", "De qué depende", dep.titulo, [dep.figura, dep.detalle]));
     }
     celdas.push(celda(cual === "reglas" ? "c12" : "c5", "La nota honesta", hon.titulo, hon.nodos));
     celdas.push(
@@ -396,6 +426,13 @@
         nodo(`<details class="mas-notas"><summary>Con qué datos y con qué ajustes</summary></details>`)]));
       const det = celdas[celdas.length - 1].querySelector("details");
       det.append(reparto(R.datos), ajustes(R, cual));
+      const sk = R.control.sklearn;
+      if (sk && sk.logistica_libre) {
+        const v = cual === "red_neuronal" ? sk.red : sk.logistica_libre;
+        det.appendChild(nodo(`<p class="nota">Verificado con scikit-learn, con la misma división, las mismas variables y la misma imputación: ${cual === "red_neuronal"
+          ? `su red de referencia da AUC ${num(v.sklearn.auc, 3)} y la nuestra ${num(v.propia.auc, 3)}.`
+          : `sin la restricción de signo ni el tope, nuestra logística da AUC ${num(v.propia.auc, 3)} y la de scikit-learn ${num(v.sklearn.auc, 3)} (diferencia ${num(v.diferencia_auc, 4)}). La restricción de signo y el tope cuestan ${num(v.propia.auc - sk.logistica_final.propia.auc, 3)} de AUC, a cambio de porqués coherentes y de no depender de una sola fuente.`}</p>`));
+      }
     }
     const una = unaVariable(R, clave);
     if (una) {
@@ -403,9 +440,11 @@
       celdas.push(celda("c7", "Frente a una sola variable", gana > 0 ? `Le gana a la mejor variable sola por ${num(gana, 3)} de AUC` : `No le gana a la mejor variable sola (${esc(nombre(u.mejor))})`, [una]));
     }
 
-    // 4. El modelo de ingreso (provisional) y la base.
-    const ingreso = celda(una ? "c5" : "c12", "Modelo de ingreso", "Para quien el contrato no puede calificar: un resultado provisional", [nodo(`<div class="ingreso"><p class="nota">Consultando sus notas…</p></div>`)]);
+    // 4. Qué aporta cada fuente, el aviso antes de las notas y la base.
+    const ap = aporteFuentes(R, cual);
+    const ingreso = celda(una ? "c5" : "c12", "Aviso antes de las notas", "Sin esperar las notas ya se puede avisar, con menos acierto", [nodo(`<div class="ingreso"><p class="nota">Consultando sus notas…</p></div>`)]);
     celdas.push(ingreso);
+    if (ap) celdas.push(celda("c12", "Qué aporta cada fuente", ap.titulo, [ap.figura]));
     if (B) celdas.push(celda("c12 celda-base", "La base de datos real", `${miles(B.total)} estudiantes reales de la ${esc(B.fuente.institucion)}`, nodoBase(B)));
     c.append(...celdas);
     aparecer(c.children, { pausa: 50, duracion: 300 });
