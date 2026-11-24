@@ -26,6 +26,7 @@ from datetime import datetime, timezone
 
 from . import RAIZ
 from . import ingreso
+from . import plan_bienestar as pb
 from .contrato import ACCION_POR_NIVEL, CAMPOS, paso1_validar
 from .contrato_ampliado import CAMPOS as CAMPOS_AMPLIADOS
 from .textos import MEJORAS, por_que
@@ -38,7 +39,7 @@ MODELOS_OPERACION = ("logistica", "red_neuronal", "reglas")
 BOOLEANOS = ("trabaja", "deuda_matricula")
 EXTRAS = ("deserto", "desenlace", "cohorte", "tiempo_parcial", "ects", "wifi_dias")
 MAX_OPERACION = 1400   # [SUPUESTO] tope de estudiantes en operación: la API responde en ~1 MB
-MAX_PORQUE, MAX_MEJORAR = 4, 3   # lo que la ficha muestra (así la respuesta no pasa de ~1,5 MB)
+MAX_PORQUE, MAX_MEJORAR, MAX_SENALES = 4, 3, 4   # lo que la ficha muestra (así la respuesta no pasa de ~1,5 MB)
 
 ESQUEMA_SQL = """
 CREATE TABLE estudiantes (
@@ -196,6 +197,10 @@ def procesar(modelo="logistica"):
     from .inferencia import cargar
     m_real = cargar(modelo, "real") if modo == "aprendido" else None
     aux = (m_real or {}).get("ampliado")
+    bd = _conectar()
+    fichas, tasa_global = pb.titulaciones(bd)
+    bd.close()
+    usual = (aux or {}).get("medianas") or ((ingreso.cargar() or {}).get("medianas"))
     conteo = {"resultado": 0, "abstener": 0, "error": 0, "provisional": 0}
     niveles_provisional = {n: {"n": 0, "desertaron": 0} for n in ("bajo", "medio", "alto")}
     sin_historial = {}
@@ -242,6 +247,12 @@ def procesar(modelo="logistica"):
                                 accion=ACCION_POR_NIVEL[prov["nivel"]])
                     if prov["faltan"]:
                         fila["sin_dato"] = prov["faltan"]
+        if fila.get("nivel"):
+            # Lo que Bienestar necesita para hablar con el estudiante: lo que se ve en sus datos, y a dónde llevarlo.
+            sen = pb.senales(registro, usual, fichas.get(registro.get("titulacion")), tasa_global)
+            fila["senales"] = sen[:MAX_SENALES]
+            if fila["nivel"] == "alto":
+                fila["plan"] = pb.ruta(sen)
         estudiantes.append(fila)
     orden = {"alto": 0, "medio": 1, "bajo": 2}
     for f in estudiantes:
@@ -250,6 +261,17 @@ def procesar(modelo="logistica"):
     # de modelos distintos y no se pueden comparar, y el provisional (sin notas) es el más débil de los dos.
     estudiantes.sort(key=lambda f: (orden.get(f.get("nivel"), 3), f["decision"] == "provisional",
                                     -(f.get("puntaje") or 0), f["id"]))
+    # Reparto automático de los casos de riesgo alto entre el equipo, en orden de prioridad.
+    asignacion, carga = pb.asignar([{"id": f["id"], "ruta": f["plan"]["ruta"]} for f in estudiantes if f.get("plan")])
+    for f in estudiantes:
+        if f.get("plan"):
+            f["plan"]["asignada"] = asignacion[f["id"]]
+    en_op = {}
+    for f in estudiantes:
+        c = f["titulacion"].replace("Titulación ", "")
+        e = en_op.setdefault(c, {"n": 0, "alto": 0})
+        e["n"] += 1
+        e["alto"] += f.get("nivel") == "alto"
     t_fin = time.perf_counter()
     return {
         "ejecucion": {"fecha": datetime.now(timezone.utc).isoformat(timespec="seconds"), "modelo": modelo,
@@ -268,7 +290,12 @@ def procesar(modelo="logistica"):
         "niveles_provisional": niveles_provisional, "cortes_provisional": (ingreso.cargar() or {}).get("cortes"),
         "ingreso": (ingreso.cargar() or {}).get("metricas_prueba"),
         "base": resumen_bd(), "cortes": cortes, "niveles": niveles, "matriz": matriz,
-        "textos_mejora": TEXTOS_MEJORA, "usual": (aux or {}).get("medianas"), "titulaciones": sorted({f["titulacion"] for f in estudiantes}), "estudiantes": estudiantes,
+        "textos_mejora": TEXTOS_MEJORA, "usual": (aux or {}).get("medianas"), "titulaciones": sorted({f["titulacion"] for f in estudiantes}),
+        "fichas_titulacion": {c: {**fichas.get(c, {"codigo": c}), "en_operacion": v["n"], "en_alto": v["alto"]}
+                              for c, v in sorted(en_op.items())},
+        "tasa_global": tasa_global, "explicacion_titulacion": pb.EXPLICACION_TITULACION,
+        "equipo": [{**p, "casos": carga[p["id"]]} for p in pb.EQUIPO], "coordinacion": pb.COORDINACION,
+        "estudiantes": estudiantes,
     }
 
 
