@@ -109,8 +109,8 @@ def _pagina(archivo, titulo, descripcion, pagina, seccion, cuerpo, estilos=(), s
         real y pública (Universitat Politècnica de València, España: primer año de grado) con un contrato ampliado (notas,
         actividad, admisión y titulación); en ella la asistencia y el trabajo son aproximaciones, el estrato no existe y
         los estudiantes con impago quedan fuera.
-        «Probar un caso» y «Cómo se hizo» usan el modelo construido con datos sintéticos. No se usa para decidir sobre
-        estudiantes reales.</p>
+        «Probar un caso» califica con ese mismo modelo; «Cómo se hizo» muestra el construido antes con datos sintéticos.
+        No se usa para decidir sobre estudiantes reales.</p>
     </div>
   </footer>
   <div id="globo" class="globo" role="tooltip" hidden></div>
@@ -140,9 +140,9 @@ def evaluar():
     cuerpo = """    <section class="seccion seccion-primera">
       <div class="envoltura">
         <header class="seccion-encabezado">
-          <p class="rotulo">Práctica con datos ficticios</p>
+          <p class="rotulo">Casos inventados, modelo de la base real</p>
           <h1>¿Qué cambia el nivel de riesgo?</h1>
-          <p>Elige un caso y anota su nivel de riesgo. Después cambia solo la asistencia o el promedio y compara el resultado en la ficha.</p>
+          <p>Elige un caso y anota su nivel de riesgo. Después cambia un solo dato (la titulación, la nota media o los días en el aula virtual) y compara el resultado en la ficha.</p>
         </header>
         <div class="casos-rapidos" role="group" aria-label="Empezar con un caso">
           <span class="rotulo">Elige un ejemplo</span>
@@ -184,7 +184,7 @@ def evaluar():
       </div>
     </section>"""
     return _pagina("evaluar.html", "Probar un caso",
-                   "Planilla con los 12 datos del contrato y ficha de seguimiento que responde al mover cada dato.",
+                   "Planilla con los datos del estudiante y ficha de seguimiento que califica con el modelo de la base real.",
                    "evaluar", "evaluar", cuerpo)
 
 
@@ -220,8 +220,8 @@ def paso(i):
     extra = ""
     if clave == "contrato":
         extra = """
-            <p class="nota nota-ampliado">Este paso describe el contrato de 12 campos, que usan «Probar un caso» y las rondas.
-              El modelo de la base real (páginas Estudiantes y Modelo) recibe además un <strong>contrato ampliado</strong>: notas,
+            <p class="nota nota-ampliado">Este paso describe el contrato de 12 campos, que usan las rondas.
+              El modelo de la base real (Probar un caso, Estudiantes y Modelo) recibe además un <strong>contrato ampliado</strong>: notas,
               actividad en el campus y el aula virtual, admisión y titulación, con la misma validación, la regla R3.4 y las
               mismas garantías. Se explica en <a href="modelo.html">Modelo</a>.</p>"""
     if clave == "pruebas":

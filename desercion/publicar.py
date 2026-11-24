@@ -47,8 +47,13 @@ def publicar_para_web(nombre=None):
                        "valores": sorted(regla) if tipo == "enum" else None,
                        "rango": list(regla) if tipo in ("int", "num") else None}
                for campo, (tipo, regla, ob) in ESQUEMA.items()}
+    # Campos del contrato ampliado (todos opcionales): «Probar un caso» los pide para el modelo de la base real.
+    from .contrato_ampliado import CAMPOS as CAMPOS_AMPLIADOS
+    ampliado = {campo: {"tipo": tipo, "obligatorio": False, "rango": list(r) if r else None, "fuente": f, "descripcion": d}
+                for campo, (tipo, r, f, d) in CAMPOS_AMPLIADOS.items()}
     (DESTINO / "esquema.json").write_text(json.dumps(
-        {"campos": esquema, "semestres_poblacion": list(SEMESTRES_POBLACION)}, ensure_ascii=False, indent=1),
+        {"campos": esquema, "ampliado": ampliado, "semestres_poblacion": list(SEMESTRES_POBLACION)},
+        ensure_ascii=False, indent=1),
         encoding="utf-8")
     print(f"Web: {n + 1} archivos copiados a public/reportes/ (incluye esquema.json del contrato)")
     from .reporte import SUPUESTOS

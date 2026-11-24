@@ -102,6 +102,122 @@
    "rango": null
   }
  },
+ "ampliado": {
+  "nota_media_cuatrimestre": {
+   "tipo": "num",
+   "obligatorio": false,
+   "rango": [
+    0.0,
+    10.0
+   ],
+   "fuente": "notas",
+   "descripcion": "Nota media de todas las asignaturas presentadas del primer cuatrimestre (0 a 10)"
+  },
+  "nota_minima_cuatrimestre": {
+   "tipo": "num",
+   "obligatorio": false,
+   "rango": [
+    0.0,
+    10.0
+   ],
+   "fuente": "notas",
+   "descripcion": "La nota más baja entre las presentadas (0 a 10)"
+  },
+  "asignaturas_no_presentadas": {
+   "tipo": "int",
+   "obligatorio": false,
+   "rango": [
+    0,
+    12
+   ],
+   "fuente": "notas",
+   "descripcion": "Asignaturas del primer cuatrimestre sin nota (no se presentó)"
+  },
+  "dias_campus_sep_nov": {
+   "tipo": "num",
+   "obligatorio": false,
+   "rango": [
+    0.0,
+    91.0
+   ],
+   "fuente": "actividad",
+   "descripcion": "Días conectado al wifi del campus, de septiembre a noviembre"
+  },
+  "dias_campus_dic_ene": {
+   "tipo": "num",
+   "obligatorio": false,
+   "rango": [
+    0.0,
+    62.0
+   ],
+   "fuente": "actividad",
+   "descripcion": "Días conectado al wifi del campus, de diciembre a enero"
+  },
+  "dias_aula_virtual": {
+   "tipo": "num",
+   "obligatorio": false,
+   "rango": [
+    0.0,
+    153.0
+   ],
+   "fuente": "actividad",
+   "descripcion": "Días que entró al aula virtual, promedio por asignatura (septiembre a enero)"
+  },
+  "entregas_por_asignatura": {
+   "tipo": "num",
+   "obligatorio": false,
+   "rango": [
+    0.0,
+    200.0
+   ],
+   "fuente": "actividad",
+   "descripcion": "Tareas y cuestionarios entregados, promedio por asignatura (septiembre a enero)"
+  },
+  "nota_acceso": {
+   "tipo": "num",
+   "obligatorio": false,
+   "rango": [
+    0.0,
+    14.0
+   ],
+   "fuente": "admision",
+   "descripcion": "Nota de acceso a la universidad (0 a 14)"
+  },
+  "nota_bachillerato": {
+   "tipo": "num",
+   "obligatorio": false,
+   "rango": [
+    0.0,
+    10.0
+   ],
+   "fuente": "admision",
+   "descripcion": "Nota media del bachillerato (0 a 10)"
+  },
+  "opcion_titulacion": {
+   "tipo": "int",
+   "obligatorio": false,
+   "rango": [
+    1,
+    30
+   ],
+   "fuente": "admision",
+   "descripcion": "En qué opción eligió la titulación (1 = primera)"
+  },
+  "tipo_ingreso": {
+   "tipo": "str",
+   "obligatorio": false,
+   "rango": null,
+   "fuente": "admision",
+   "descripcion": "Vía de ingreso (código de la universidad; «NAP» = acceso ordinario)"
+  },
+  "titulacion": {
+   "tipo": "str",
+   "obligatorio": false,
+   "rango": null,
+   "fuente": "titulacion",
+   "descripcion": "Código de la titulación"
+  }
+ },
  "semestres_poblacion": [
   2,
   4

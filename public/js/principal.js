@@ -27,7 +27,7 @@
 
     if (pagina === "inicio") return (window.SAT.iniciarInicio || iniciarPortada)();
     if (pagina === "proceso" && window.SAT.iniciarProceso) return window.SAT.iniciarProceso(R);
-    if (pagina === "evaluar") return iniciarEvaluador(R);
+    if (pagina === "evaluar") return iniciarEvaluador();
     if (pagina === "reporte") {
       const [sup, r4] = await Promise.all([opcional("reportes/supuestos.json"), opcional("reportes/resultados_ronda4.json")]);
       return montarReporte(R, sup, r4);

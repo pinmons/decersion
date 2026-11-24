@@ -21,12 +21,26 @@
     trabaja: { tipo: "bool", obligatorio: true },
     deuda_matricula: { tipo: "bool", obligatorio: false },
   } };
+  /* Respaldo del contrato ampliado (desercion/contrato_ampliado.py): lo usa el modelo de la base real. */
+  const AMPLIADO_RESPALDO = {
+    nota_media_cuatrimestre: { tipo: "num", rango: [0, 10] }, nota_minima_cuatrimestre: { tipo: "num", rango: [0, 10] },
+    asignaturas_no_presentadas: { tipo: "int", rango: [0, 12] }, dias_campus_sep_nov: { tipo: "num", rango: [0, 91] },
+    dias_campus_dic_ene: { tipo: "num", rango: [0, 62] }, dias_aula_virtual: { tipo: "num", rango: [0, 153] },
+    entregas_por_asignatura: { tipo: "num", rango: [0, 200] }, nota_acceso: { tipo: "num", rango: [0, 14] },
+    nota_bachillerato: { tipo: "num", rango: [0, 10] }, opcion_titulacion: { tipo: "int", rango: [1, 30] },
+    tipo_ingreso: { tipo: "str" }, titulacion: { tipo: "str" },
+  };
 
   const ETIQUETAS = {
     id_estudiante: "Identificador", nivel_formacion: "Nivel de formación", estado_matricula: "Estado de matrícula",
     semestre: "Semestre", promedio_acumulado: "Promedio acumulado", creditos_inscritos: "Créditos inscritos",
     materias_cursadas_periodo_anterior: "Materias cursadas el periodo anterior", materias_reprobadas: "Materias reprobadas",
     porcentaje_asistencia: "Asistencia", estrato: "Estrato", trabaja: "¿Trabaja?", deuda_matricula: "¿Debe matrícula?",
+    titulacion: "Titulación", nota_media_cuatrimestre: "Nota media del cuatrimestre", nota_minima_cuatrimestre: "Nota más baja",
+    asignaturas_no_presentadas: "Asignaturas no presentadas", dias_campus_sep_nov: "Días en el campus (sep.–nov.)",
+    dias_campus_dic_ene: "Días en el campus (dic.–ene.)", dias_aula_virtual: "Días en el aula virtual",
+    entregas_por_asignatura: "Entregas por asignatura", nota_acceso: "Nota de acceso", nota_bachillerato: "Nota de bachillerato",
+    opcion_titulacion: "Opción en que eligió la carrera", tipo_ingreso: "Vía de ingreso",
   };
   const PISTAS = {
     id_estudiante: "Cualquier código; no se usa para calificar.",
@@ -37,26 +51,46 @@
     creditos_inscritos: "Activo con 0 créditos es una contradicción.",
     materias_cursadas_periodo_anterior: "Desde el semestre 2 debe haber al menos una.",
     materias_reprobadas: "No puede superar las cursadas.",
-    porcentaje_asistencia: "De 0 a 100. Las reglas usan 70 % y 85 % como umbrales.",
-    estrato: "Estrato socioeconómico de la vivienda (1 es el más bajo).",
-    deuda_matricula: "Si no se sabe, el sistema no lo inventa.",
+    porcentaje_asistencia: "De 0 a 100. Las reglas usan 70 % y 85 %; el modelo real solo la usa en la regla R3.4.",
+    estrato: "Lo pide el contrato, pero el modelo real no lo usa: la base no lo trae. Cuenta en modo reglas.",
+    deuda_matricula: "El modelo real no la usa (la base no la trae). Cuenta en modo reglas.",
+    titulacion: "Su tasa de abandono es lo que más pesa en el modelo real.",
+    trabaja: "En la base real se aproxima con la matrícula a tiempo parcial; pesa mucho en el modelo real.",
+    nota_media_cuatrimestre: "De 0 a 10 (en la base se aprueba con 5).",
+    nota_minima_cuatrimestre: "No puede ser mayor que la media.",
+    asignaturas_no_presentadas: "No puede superar las materias cursadas.",
+    dias_aula_virtual: "Promedio por asignatura, de septiembre a enero.",
+    entregas_por_asignatura: "Tareas y cuestionarios, promedio por asignatura.",
+    nota_acceso: "De 0 a 14 (selectividad española).",
+    opcion_titulacion: "1 = era su primera opción.",
   };
   const SUFIJO = { porcentaje_asistencia: " %" };
-  const PASOS_NUM = { promedio_acumulado: 0.01, porcentaje_asistencia: 0.1 };
+  const PASOS_NUM = { promedio_acumulado: 0.01, porcentaje_asistencia: 0.1, nota_media_cuatrimestre: 0.1, nota_minima_cuatrimestre: 0.1,
+    nota_acceso: 0.01, nota_bachillerato: 0.01, entregas_por_asignatura: 0.5 };
+  const VIAS = [["NAP", "Acceso ordinario"], ["OTRA", "Otra vía"]];
   const EJEMPLO = {
     id_estudiante: "EJEMPLO-001", nivel_formacion: "pregrado", estado_matricula: "activo", semestre: 3,
-    promedio_acumulado: 3.1, creditos_inscritos: 15, materias_cursadas_periodo_anterior: 6, materias_reprobadas: 2,
-    porcentaje_asistencia: 76.5, estrato: 2, trabaja: true, deuda_matricula: false,
+    promedio_acumulado: 3.1, creditos_inscritos: 15, materias_cursadas_periodo_anterior: 6, materias_reprobadas: 1,
+    porcentaje_asistencia: 76.5, estrato: 2, trabaja: false, deuda_matricula: false,
+    titulacion: "T05", nota_media_cuatrimestre: 5.4, nota_minima_cuatrimestre: 3.2, asignaturas_no_presentadas: 1,
+    dias_campus_sep_nov: 30, dias_campus_dic_ene: 10, dias_aula_virtual: 25, entregas_por_asignatura: 3,
+    nota_acceso: 9.5, nota_bachillerato: 7, opcion_titulacion: 2, tipo_ingreso: "NAP",
   };
   /* Casos típicos R01–R03 del contrato (contexto/dataset.py), datos inventados para la práctica. */
   const BASE = { nivel_formacion: "pregrado", estado_matricula: "activo", materias_cursadas_periodo_anterior: 6, creditos_inscritos: 16, deuda_matricula: false };
   const CASOS = [
-    { id: "R01", texto: "Promedio 3,8, asistencia del 92 % y ninguna materia perdida. Estrato 3, no trabaja.",
-      entrada: { ...BASE, id_estudiante: "EST-101", semestre: 3, promedio_acumulado: 3.8, materias_reprobadas: 0, porcentaje_asistencia: 92, estrato: 3, trabaja: false } },
-    { id: "R02", texto: "Promedio 3,2, una materia perdida, asistencia del 80 %. Estrato 2 y trabaja.",
-      entrada: { ...BASE, id_estudiante: "EST-102", semestre: 2, promedio_acumulado: 3.2, materias_reprobadas: 1, porcentaje_asistencia: 80, estrato: 2, trabaja: true, creditos_inscritos: 15 } },
-    { id: "R03", texto: "Promedio 2,7, tres de cinco materias perdidas, asistencia del 65 %. Estrato 1, trabaja y debe matrícula.",
-      entrada: { ...BASE, id_estudiante: "EST-103", semestre: 4, promedio_acumulado: 2.7, materias_cursadas_periodo_anterior: 5, materias_reprobadas: 3, porcentaje_asistencia: 65, estrato: 1, trabaja: true, deuda_matricula: true, creditos_inscritos: 12 } },
+    { id: "R01", texto: "Promedio 3,8, asistencia del 92 % y ninguna materia perdida. Nota media 7,8, entra seguido al campus y al aula virtual.",
+      entrada: { ...BASE, id_estudiante: "EST-101", semestre: 3, promedio_acumulado: 3.8, materias_reprobadas: 0, porcentaje_asistencia: 92, estrato: 3, trabaja: false,
+        titulacion: "T01", nota_media_cuatrimestre: 7.8, nota_minima_cuatrimestre: 6.5, asignaturas_no_presentadas: 0, dias_campus_sep_nov: 50, dias_campus_dic_ene: 25,
+        dias_aula_virtual: 60, entregas_por_asignatura: 8, nota_acceso: 12.1, nota_bachillerato: 8.6, opcion_titulacion: 1, tipo_ingreso: "NAP" } },
+    { id: "R02", texto: "Promedio 3,2, una materia perdida, nota media 6,0 y actividad cerca de lo usual. Trabaja (en la base real: matrícula a tiempo parcial), y eso es lo que más le sube el riesgo.",
+      entrada: { ...BASE, id_estudiante: "EST-102", semestre: 2, promedio_acumulado: 3.2, materias_reprobadas: 1, porcentaje_asistencia: 80, estrato: 2, trabaja: true, creditos_inscritos: 15,
+        titulacion: "T03", nota_media_cuatrimestre: 6, nota_minima_cuatrimestre: 4.2, asignaturas_no_presentadas: 0, dias_campus_sep_nov: 35, dias_campus_dic_ene: 12,
+        dias_aula_virtual: 30, entregas_por_asignatura: 4, nota_acceso: 10.2, nota_bachillerato: 7.4, opcion_titulacion: 1, tipo_ingreso: "NAP" } },
+    { id: "R03", texto: "Promedio 2,7, tres de cinco materias perdidas, dos sin presentar. Casi no va al campus ni al aula virtual, y su titulación tiene mucho abandono.",
+      entrada: { ...BASE, id_estudiante: "EST-103", semestre: 4, promedio_acumulado: 2.7, materias_cursadas_periodo_anterior: 5, materias_reprobadas: 3, porcentaje_asistencia: 65, estrato: 1, trabaja: true, deuda_matricula: true, creditos_inscritos: 12,
+        titulacion: "T04", nota_media_cuatrimestre: 3.1, nota_minima_cuatrimestre: 1, asignaturas_no_presentadas: 2, dias_campus_sep_nov: 8, dias_campus_dic_ene: 2,
+        dias_aula_virtual: 6, entregas_por_asignatura: 0.5, nota_acceso: 6.8, nota_bachillerato: 6.1, opcion_titulacion: 4, tipo_ingreso: "OTRA" } },
   ];
   const SELLOS = {
     alto: ["Riesgo alto", "Remitir a bienestar y tutoría"],
@@ -66,7 +100,11 @@
   const MODOS = { reglas: "reglas del contrato", logistica: "regresión logística", red_neuronal: "red neuronal" };
 
   let ESQUEMA = ESQUEMA_RESPALDO;
-  let TASA_BASE = 0.183;
+  let CAMPOS = { ...ESQUEMA_RESPALDO.campos };   // contrato + ampliado (este último, opcional)
+  let AMPLIADOS = new Set();
+  let MEDIANAS = {};
+  let TITULACIONES = null;   // {T01: [tasa, n], …} del modelo real
+  let TASA_BASE = 0.12;
   const valores = {};
   let temporizador = null;
   let solicitud = 0;
@@ -74,7 +112,7 @@
   let ultimoNivel = null;
 
   async function evaluar(entrada, modo) {
-    const cuerpo = { entrada, ...(modo === "reglas" ? { modo: "reglas" } : { modo: "aprendido", modelo: modo }) };
+    const cuerpo = { entrada, ...(modo === "reglas" ? { modo: "reglas" } : { modo: "aprendido", modelo: modo, origen: "real" }) };
     const r = await fetch("api/evaluar", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(cuerpo) });
     if (!r.headers.get("content-type")?.includes("json")) throw new Error(`la API respondió ${r.status}`);
     return r.json();
@@ -83,16 +121,27 @@
   /* ---------------------------------------------------------------- planilla */
   /* Tres bloques (ley de Hick): lo que más mueve el resultado va primero y abierto; los datos de
      matrícula casi nunca cambian (pregrado, activo) y quedan plegados con su resumen a la vista. */
+  /* Los datos del primer cuatrimestre (contrato ampliado) son opcionales: si faltan, el modelo real usa el valor
+     usual de la base y lo dice. Lo que más pesa (titulación y notas) va abierto; actividad y admisión, plegadas. */
   const GRUPOS = [
     { id: "rendimiento", titulo: "Rendimiento", campos: ["promedio_acumulado", "porcentaje_asistencia", "materias_cursadas_periodo_anterior", "materias_reprobadas"] },
+    { id: "cuatrimestre", titulo: "Primer cuatrimestre", nota: "Lo usa el modelo de la base real; las reglas no.", campos: ["titulacion", "nota_media_cuatrimestre", "nota_minima_cuatrimestre", "asignaturas_no_presentadas"] },
+    { id: "actividad", titulo: "Campus y aula virtual", plegado: true, campos: ["dias_campus_sep_nov", "dias_campus_dic_ene", "dias_aula_virtual", "entregas_por_asignatura"] },
+    { id: "admision", titulo: "Admisión", plegado: true, campos: ["nota_acceso", "nota_bachillerato", "opcion_titulacion", "tipo_ingreso"] },
     { id: "situacion", titulo: "Carga y situación", campos: ["creditos_inscritos", "estrato", "trabaja", "deuda_matricula"] },
     { id: "matricula", titulo: "Matrícula", plegado: true, campos: ["id_estudiante", "semestre", "nivel_formacion", "estado_matricula"] },
   ];
   function resumirMatricula() {
+    for (const g of GRUPOS.filter((x) => x.plegado && x.id !== "matricula")) {
+      const r = document.getElementById(`resumen-${g.id}`);
+      if (!r) continue;
+      const hay = g.campos.filter((k) => valores[k] !== undefined).length;
+      r.textContent = hay === g.campos.length ? "completo" : hay ? `${hay} de ${g.campos.length} datos; el resto, lo usual` : "sin datos: se usa lo usual";
+    }
     const r = document.getElementById("resumen-matricula");
     if (!r) return;
     const partes = [valores.nivel_formacion, valores.estado_matricula, valores.semestre !== undefined ? `semestre ${valores.semestre}` : null].filter(Boolean);
-    const faltan = GRUPOS[2].campos.filter((k) => valores[k] === undefined).length;
+    const faltan = GRUPOS.find((g) => g.id === "matricula").campos.filter((k) => valores[k] === undefined).length;
     r.textContent = faltan ? `${faltan === 1 ? "falta 1 dato" : `faltan ${faltan} datos`}` : partes.join(" · ").replace(/_/g, " ");
     r.classList.toggle("con-faltantes", faltan > 0);
     if (faltan) r.closest("details").open = true;
@@ -105,20 +154,25 @@
     for (const g of GRUPOS) {
       const caja = document.createElement(g.plegado ? "details" : "fieldset");
       caja.className = "grupo-campos";
-      caja.innerHTML = g.plegado ? `<summary><span class="rotulo">${g.titulo}</span><span class="resumen-grupo" id="resumen-matricula"></span></summary><div class="campos-rejilla"></div>`
-        : `<legend class="rotulo">${g.titulo}</legend><div class="campos-rejilla"></div>`;
+      caja.innerHTML = g.plegado ? `<summary><span class="rotulo">${g.titulo}</span><span class="resumen-grupo" id="resumen-${g.id}"></span></summary><div class="campos-rejilla"></div>`
+        : `<legend class="rotulo">${g.titulo}</legend>${g.nota ? `<p class="nota">${esc(g.nota)}</p>` : ""}<div class="campos-rejilla"></div>`;
       cont.appendChild(caja);
       for (const k of g.campos) rejillas[k] = caja.querySelector(".campos-rejilla");
     }
-    const orden = GRUPOS.flatMap((g) => g.campos).filter((k) => ESQUEMA.campos[k]);
+    const orden = GRUPOS.flatMap((g) => g.campos).filter((k) => CAMPOS[k]);
     for (const campo of orden) {
-      const def = ESQUEMA.campos[campo];
+      const def = CAMPOS[campo];
       const div = document.createElement("div");
       div.className = "campo vacio";
       div.dataset.campo = campo;
       const opcional = def.obligatorio ? "" : ' <span class="opcional">(opcional)</span>';
       let control;
-      if (def.tipo === "str") {
+      if (campo === "titulacion" && TITULACIONES) {
+        const ops = Object.entries(TITULACIONES).map(([t, [tasa, n]]) => `<option value="${esc(t)}">${esc(t)} · abandona el ${num(100 * tasa, 0)} % (${n} estudiantes)</option>`);
+        control = `<select id="c-${campo}"><option value="">no se sabe</option>${ops.join("")}</select>`;
+      } else if (campo === "tipo_ingreso") {
+        control = `<select id="c-${campo}"><option value="">no se sabe</option>${VIAS.map(([v, t]) => `<option value="${v}">${t}</option>`).join("")}</select>`;
+      } else if (def.tipo === "str") {
         control = `<input type="text" id="c-${campo}" placeholder="por ejemplo EST-123" maxlength="40">`;
       } else if (def.tipo === "enum") {
         control = `<select id="c-${campo}"><option value="">elegir…</option>${def.valores.map((v) => `<option value="${esc(v)}">${esc(v.replace("_", " "))}</option>`).join("")}</select>`;
@@ -136,8 +190,10 @@
       }
       const etiqueta = def.tipo === "bool" ? `<span class="etiqueta" id="l-${campo}">${esc(ETIQUETAS[campo])}${opcional}</span>`
         : `<label for="c-${campo}" id="l-${campo}">${esc(ETIQUETAS[campo])}${opcional}</label>`;
+      const usual = MEDIANAS[campo] !== undefined ? ` Lo usual: ${num(MEDIANAS[campo], Number.isInteger(MEDIANAS[campo]) ? 0 : 1)}; si no se sabe, se usa ese valor.` : "";
+      const pista = (PISTAS[campo] || "") + usual;
       div.innerHTML = `<div class="campo-cabeza">${etiqueta}<span class="valor" id="v-${campo}"></span></div>${control}
-        ${PISTAS[campo] ? `<span class="pista" id="p-${campo}">${PISTAS[campo]}</span>` : ""}`;
+        ${pista ? `<span class="pista" id="p-${campo}">${pista.trim()}</span>` : ""}`;
       (rejillas[campo] || cont).appendChild(div);
       fijar(campo, undefined);
     }
@@ -158,7 +214,7 @@
       marcarCaso(b);
     }));
     $("#btn-limpiar").addEventListener("click", (ev) => {
-      for (const k of Object.keys(ESQUEMA.campos)) fijar(k, undefined);
+      for (const k of Object.keys(CAMPOS)) fijar(k, undefined);
       if (location.hash) history.replaceState(null, "", location.pathname);
       marcarCaso(ev.currentTarget);
       actualizar();
@@ -167,7 +223,7 @@
   }
 
   function cargarEnPlanilla(datos) {
-    for (const k of Object.keys(ESQUEMA.campos)) fijar(k, datos[k]);
+    for (const k of Object.keys(CAMPOS)) fijar(k, datos[k]);
     actualizar();
   }
 
@@ -175,7 +231,7 @@
     const el = ev.target;
     const div = el.closest(".campo");
     if (!div) return;
-    const campo = div.dataset.campo, def = ESQUEMA.campos[campo];
+    const campo = div.dataset.campo, def = CAMPOS[campo];
     if (def.tipo === "str" || def.tipo === "enum") fijar(campo, el.value.trim() === "" ? undefined : el.value, "texto");
     else if (el.type === "range" || el.type === "number") {
       const texto = el.value.replace(",", ".");
@@ -187,7 +243,7 @@
 
   /* `origen` es el control que generó el cambio; ese no se reescribe para no mover el cursor. */
   function fijar(campo, valor, origen = null) {
-    const def = ESQUEMA.campos[campo];
+    const def = CAMPOS[campo];
     if (valor === undefined) delete valores[campo]; else valores[campo] = valor;
     const div = document.querySelector(`.campo[data-campo="${campo}"]`);
     div.classList.toggle("vacio", valor === undefined);
@@ -197,17 +253,17 @@
       etiqueta.textContent = valor === undefined ? (def.obligatorio ? "falta" : "no se sabe") : valor ? "sí" : "no";
     } else if (def.tipo === "str" || def.tipo === "enum") {
       if (origen !== "texto") $(`#c-${campo}`).value = valor ?? "";
-      etiqueta.textContent = valor === undefined ? "falta" : "";
+      etiqueta.textContent = valor === undefined ? (def.obligatorio ? "falta" : "no se sabe") : "";
     } else {
       if (origen !== "caja") $(`#c-${campo}`).value = valor ?? "";
       const rango = $(`#r-${campo}`);
       if (origen !== "deslizador") rango.value = valor ?? def.rango[0];
-      etiqueta.textContent = valor === undefined ? "falta" : String(valor).replace(".", ",") + (SUFIJO[campo] || "");
+      etiqueta.textContent = valor === undefined ? (def.obligatorio ? "falta" : "no se sabe") : String(valor).replace(".", ",") + (SUFIJO[campo] || "");
     }
   }
 
   const modoActual = () => document.querySelector('input[name="modo"]:checked').value;
-  const faltantes = () => Object.entries(ESQUEMA.campos).filter(([k, d]) => d.obligatorio && valores[k] === undefined).map(([k]) => k);
+  const faltantes = () => Object.entries(CAMPOS).filter(([k, d]) => d.obligatorio && valores[k] === undefined).map(([k]) => k);
 
   function actualizar() {
     clearTimeout(temporizador);
@@ -274,7 +330,10 @@
     const prob = salida.probabilidad !== undefined ? `; probabilidad estimada ${pct(salida.probabilidad)}` : "";
     const extras = [];
     if (r34) extras.push("La regla R3.4 (promedio menor que 3,0 y asistencia menor que 70 %) fuerza el nivel alto.");
-    if (salida.datos_no_informados?.length) extras.push(`No se informó ${salida.datos_no_informados.map((c) => nombre(c)).join(", ")}: no se inventa y se usa el valor que no baja el riesgo.`);
+    const noInf = salida.datos_no_informados || [];
+    if (noInf.includes("deuda_matricula") && modo === "reglas") extras.push("No se informó la deuda de matrícula: no se inventa y se usa el valor que no baja el riesgo.");
+    const ampliadosNoInf = noInf.filter((c) => AMPLIADOS.has(c));
+    if (ampliadosNoInf.length) extras.push(`No se informó ${ampliadosNoInf.map((c) => nombre(c)).join(", ")}: se usa el valor usual de la base real y el modelo sabe que falta.`);
     $("#ficha-resumen").innerHTML = `<strong>${salida.en_riesgo ? "Se considera en riesgo de desertar." : "No se considera en riesgo."}</strong>
       Puntaje ${salida.puntaje} de 100${prob}. Acción: ${esc(ACCIONES[salida.accion])}. ${esc(extras.join(" "))}`;
     $("#ficha-detalle").hidden = false;
@@ -335,7 +394,7 @@
     for (let i = 0; i <= 90; i++) { const zz = -5 + i * 0.1; d += `${i ? "L" : "M"}${X(zz).toFixed(1)},${Y(1 / (1 + Math.exp(-zz))).toFixed(1)}`; }
     svg.appendChild(s("path", { d, fill: "none", stroke: "var(--acento)", "stroke-width": 2.5 }));
     svg.appendChild(s("line", { x1: m.izq, x2: W - m.der, y1: Y(TASA_BASE), y2: Y(TASA_BASE), stroke: "var(--tenue)", "stroke-dasharray": "5 4" }));
-    svg.appendChild(s("text", { x: W - m.der, y: Y(TASA_BASE) + 14, "text-anchor": "end", class: "etiqueta-svg", texto: `de cada 100 simulados desertan ${num(100 * TASA_BASE, 0)}` }));
+    svg.appendChild(s("text", { x: W - m.der, y: Y(TASA_BASE) + 14, "text-anchor": "end", class: "etiqueta-svg", texto: `de cada 100 estudiantes de la base real desertan ${num(100 * TASA_BASE, 0)}` }));
     svg.appendChild(s("line", { x1: X(z), x2: X(z), y1: Hh - m.aba, y2: Y(p), stroke: "var(--tinta)", "stroke-dasharray": "3 3" }));
     svg.appendChild(s("line", { x1: m.izq, x2: X(z), y1: Y(p), y2: Y(p), stroke: "var(--tinta)", "stroke-dasharray": "3 3" }));
     svg.appendChild(s("circle", { cx: X(z), cy: Y(p), r: 6, fill: `var(--${salida.nivel})`, stroke: "var(--hoja)", "stroke-width": 2 }));
@@ -400,10 +459,18 @@
   }
 
   /* ---------------------------------------------------------------- página Evaluar */
-  async function iniciarEvaluador(R) {
-    if (R) TASA_BASE = R.datos.tasa_desercion;
+  async function iniciarEvaluador() {
     svgRecorrido = crearRecorrido($("#recorrido"));
     try { ESQUEMA = await json("reportes/esquema.json"); } catch (e) { ESQUEMA = ESQUEMA_RESPALDO; }
+    const ampliado = Object.fromEntries(Object.entries(ESQUEMA.ampliado || AMPLIADO_RESPALDO).map(([k, d]) => [k, { ...d, obligatorio: false }]));
+    AMPLIADOS = new Set(Object.keys(ampliado));
+    CAMPOS = { ...ESQUEMA.campos, ...ampliado };
+    try {
+      const [real, modelo] = await Promise.all([json("reportes/real/resultados.json"), json("reportes/real/modelos/logistica.json")]);
+      TASA_BASE = real.datos.tasa_desercion;
+      TITULACIONES = modelo.ampliado.titulaciones;
+      MEDIANAS = modelo.ampliado.medianas;
+    } catch (e) { /* sin los pesos publicados: titulación como texto y sin «lo usual» */ }
     crearCampos();
     prepararFlotante();
     // Empieza con un ejemplo ya calificado: el resultado se ve sin llenar nada. También se puede abrir un caso: evaluar.html#caso-R01
