@@ -1,5 +1,5 @@
 /* Vista Estudiantes. Los tokens y las piezas comunes (bento, celda, rotulo, num, sello, ficha) están en estilos.css.
-   Orden de la pantalla: cabecera → flujo vivo → tablero de cuatro gráficas → filtros → lista y ficha.
+   Orden de la pantalla: cabecera → carga viva (un botón) → detalle: método, tablero de cuatro gráficas, filtros, lista y ficha.
    El semáforo (alto, medio, bajo) se usa solo para riesgo; todo texto va en tokens de tinta. */
 
 /* ------------------------------------------------------------------ cabecera */
@@ -18,28 +18,121 @@
 .est-opciones-cuerpo .selector-operacion { flex: none; width: 100%; max-width: none; }
 @media (max-width: 620px) { .est-opciones-cuerpo { right: auto; left: 0; } }
 
-/* ------------------------------------------------------------------ el flujo vivo */
-.flujo-zona { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
-.flujo { position: relative; background: var(--hoja); border: 1px solid var(--renglon); border-radius: 14px; box-shadow: var(--sombra); padding: 24px 20px 16px; }
-.flujo-espera { padding: 6px 0; }
-.flujo-pasos { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.estacion { position: relative; border-top: 2px solid var(--renglon); padding: 24px 16px 0 0; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-.estacion::before { content: ""; position: absolute; top: -8px; left: 0; width: 14px; height: 14px; border-radius: 50%; background: var(--hoja); border: 2.5px solid var(--acento); }
-.estacion-cifra { font-size: clamp(1.6rem, 2.8vw, 2.2rem); font-weight: 650; line-height: 1.1; }
-.estacion-que { font-size: 0.92rem; }
-.estacion-sub { font-size: var(--paso-1); color: var(--tinta-2); overflow-wrap: anywhere; }
-/* Las fichas que viajan: el JS las mueve con transform. En reposo quedan estacionadas donde terminaron. */
-.flujo-carril { position: absolute; left: 20px; right: 20px; top: 25px; height: 0; pointer-events: none; }
-.ficha-viaje { position: absolute; top: -4px; left: 3px; width: 8px; height: 8px; border-radius: 50%; background: var(--acento); opacity: 0; }
-.ficha-viaje.llego-alto { background: var(--alto); } .ficha-viaje.llego-medio { background: var(--medio); } .ficha-viaje.llego-bajo { background: var(--bajo); }
-.ficha-viaje.llego-devuelto { background: var(--hoja); box-shadow: inset 0 0 0 1.5px var(--tenue); }
+/* ------------------------------------------------------------------ la carga viva */
+/* Un solo panel: al entrar, la base y un botón; al pulsarlo, la lectura a cámara lenta; al final, el resumen y la acción.
+   Los puntos van en un canvas encima de .carga-cuerpo (el JS mide las cajas y los mueve con requestAnimationFrame). */
+.carga { background: var(--hoja); border: 1px solid var(--renglon); border-radius: 14px; box-shadow: var(--sombra); padding: clamp(16px, 2.2vw, 24px); margin-bottom: 24px; scroll-margin-top: 76px; }
+.carga-espera { padding: 6px 0; }
+.carga-error { color: var(--alto); margin-top: 8px; }
+.enlace-boton:disabled { opacity: 0.6; cursor: progress; }
+
+/* estado inicial: una sola decisión */
+.carga-inicio { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 20px 40px; align-items: center; }
+.carga-base { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.carga-base h2 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; font-size: var(--paso2); font-weight: 650; line-height: 1.15; }
+.carga-base h2 .cifra-grande { color: var(--tinta); }
+.carga-archivo { color: var(--tinta-2); font-size: 0.95rem; overflow-wrap: anywhere; }
+.carga-ultima { color: var(--tinta-2); font-size: var(--paso-1); }
+.carga-accion { display: flex; flex-direction: column; gap: 10px; align-items: stretch; min-width: 0; }
+.boton-grande { min-height: 58px; padding: 14px 26px; font-size: 1.1rem; border-radius: 10px; box-shadow: 0 10px 24px -14px color-mix(in srgb, var(--acento) 80%, transparent); }
+@media (max-width: 760px) { .carga-inicio { grid-template-columns: 1fr; } }
+
+/* cabeza, barra de avance y etapas */
+.carga-cabeza { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; }
+.carga-cabeza .rotulo { overflow-wrap: anywhere; min-width: 0; }
+.carga-cabeza .enlace-boton { margin: 0; padding: 4px 0; color: var(--tinta-2); }
+.progreso { position: relative; height: 6px; margin: 8px 0 10px; border-radius: 999px; background: var(--hoja-2); overflow: hidden; }
+.progreso i { position: absolute; inset: 0; background: var(--acento); border-radius: inherit; transform: scaleX(0); transform-origin: left center; will-change: transform; }
+.etapas { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.etapa { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 8px; align-items: center; min-width: 0; color: var(--tenue); transition: color 200ms linear; }
+.etapa-num { grid-row: 1 / 3; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font: 700 0.8rem/1 var(--letra-texto); border: 1.5px solid var(--renglon); background: var(--hoja); color: var(--tenue); }
+.etapa-nombre { font-weight: 700; font-size: 0.92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.etapa-dato { font-size: var(--paso-1); color: var(--tinta-2); height: 1.35em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.etapa.activa { color: var(--tinta); }
+.etapa.activa .etapa-num { border-color: var(--acento); color: var(--acento); box-shadow: 0 0 0 3px var(--acento-suave); }
+.etapa.hecha { color: var(--tinta); }
+.etapa.hecha .etapa-num { background: var(--acento); border-color: var(--acento); color: var(--hoja); }
+.etapa.hecha .etapa-num { font-size: 0; }
+.etapa.hecha .etapa-num::after { content: "✓"; font-size: 0.8rem; }
+
+/* titular: qué está pasando; al final, el resumen y la acción principal. Reserva su alto para que nada salte. */
+.carga-titular { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 24px; min-height: 84px; padding: 12px 0; border-bottom: 1px solid var(--renglon); margin-bottom: 14px; }
+.titular-texto { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1 1 420px; }
+.titular-texto h2 { font-size: var(--paso2); font-weight: 650; line-height: 1.2; }
+.titular-texto p { color: var(--tinta-2); font-size: 0.95rem; max-width: none; }
+.carga-acciones { display: flex; flex-wrap: wrap; gap: 10px; }
+.carga-acciones:empty { display: none; }
+
+/* cuerpo: consola y pozo a la izquierda; niveles y equipo a la derecha; el canvas encima de todo */
+.carga-cuerpo { position: relative; display: grid; grid-template-columns: minmax(0, 0.95fr) minmax(0, 2fr); gap: 20px 28px; align-items: start; }
+.carga-lienzo { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 2; }
+.carga-consola, .carga-escena { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.consola { list-style: none; margin: 0; padding: 8px 10px; background: var(--hoja-2); border-radius: 8px; font-size: 0.8rem; color: var(--tinta-2); font-variant-numeric: tabular-nums; }
+.consola li { height: 1.5em; line-height: 1.5em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; gap: 8px; align-items: center; }
+.consola li:last-child { color: var(--tinta); }
+.consola b { color: var(--tinta); font-weight: 700; }
+.consola .sale, .consola .marca { color: var(--acento); font-weight: 700; }
+.consola .punto { width: 8px; height: 8px; vertical-align: middle; }
+.consola span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.zona-rotulo { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+.zona-rotulo b { font-family: var(--letra-titulo); font-size: var(--paso1); font-weight: 700; color: var(--tinta); }
+.zona-rotulo .de { color: var(--tinta-2); font-size: var(--paso-1); }
+.pozo-puntos, .nivel-puntos { width: 100%; }
+.validacion { margin: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.validacion div { display: flex; flex-direction: column-reverse; justify-content: flex-end; gap: 2px; border-top: 1px solid var(--renglon); padding-top: 6px; min-width: 0; }
+.validacion dt { font-size: 0.78rem; color: var(--tinta-2); line-height: 1.25; }
+.validacion dd { margin: 0; font-family: var(--letra-titulo); font-size: var(--paso1); font-weight: 700; color: var(--tinta); }
+
+.niveles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.nivel { min-width: 0; }
+.nivel .zona-rotulo { font-size: 0.9rem; font-weight: 700; color: var(--tinta); }
+.nivel .zona-rotulo span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.nivel .zona-rotulo b { margin-left: auto; }
+.nivel-puntos { border-bottom: 2px solid var(--renglon); box-sizing: content-box; padding-bottom: 2px; }
+.equipo-rotulo { margin-top: 4px; }
+.equipo { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.persona { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px 8px; align-items: center; align-content: start; padding: 8px 10px; border: 1px solid var(--renglon); border-radius: 10px; background: var(--papel); min-width: 0; }
+.avatar { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; flex: none; background: var(--acento-suave); color: var(--acento); font: 700 0.82rem/1 var(--letra-texto); letter-spacing: 0.02em; }
+.persona-quien { display: flex; flex-direction: column; min-width: 0; }
+.persona-quien b { font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.persona-quien small { font-size: 0.75rem; color: var(--tinta-2); line-height: 1.25; }
+.persona-cuenta { font-family: var(--letra-titulo); font-size: var(--paso2); font-weight: 700; line-height: 1; color: var(--tinta); }
+.persona-rutas { grid-column: 1 / -1; list-style: none; margin: 0; padding: 4px 0 0; border-top: 1px solid var(--renglon); display: flex; flex-direction: column; gap: 2px; font-size: 0.76rem; color: var(--tinta-2); }
+.persona-rutas li { display: flex; justify-content: space-between; gap: 6px; line-height: 1.35; }
+.persona-rutas span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.persona-rutas b { color: var(--tinta); font-weight: 700; }
+
+@media (max-width: 1020px) { .equipo { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 760px) {
-  .flujo { padding: 16px; }
-  .flujo-pasos { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; }
-  .estacion { padding-top: 14px; }
-  .flujo-carril { display: none; }
+  .carga-cuerpo { grid-template-columns: 1fr; }
+  .consola li:nth-child(1) { display: none; }
+  .carga-titular { min-height: 0; }
+  .etapa { grid-template-columns: 1fr; justify-items: center; text-align: center; row-gap: 3px; }
+  .etapa-num { grid-row: auto; }
+  .etapa-nombre { font-size: 0.72rem; max-width: 100%; }
+  .etapa-dato { display: none; }
+  .niveles { gap: 10px; }
+  .nivel .zona-rotulo { flex-wrap: wrap; gap: 0 6px; font-size: 0.8rem; }
+  .nivel .zona-rotulo b { flex-basis: 100%; margin-left: 0; }
 }
-@media (prefers-reduced-motion: reduce) { .flujo-carril { display: none; } }
+/* En el teléfono todo el panel debe caber mientras corre: menos consola, equipo en una fila de cuatro. */
+@media (max-width: 560px) {
+  .solo-ancho { display: none; }
+  .consola li:nth-child(-n+2) { display: none; }
+  .consola span:nth-of-type(4) { display: none; }
+  .titular-texto h2 { font-size: var(--paso1); }
+  .titular-texto p { font-size: 0.88rem; }
+  .carga-cuerpo { gap: 12px; }
+  .carga-consola, .carga-escena { gap: 8px; }
+  .equipo { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .persona { grid-template-columns: 1fr; justify-items: center; text-align: center; padding: 8px 4px; gap: 2px; }
+  .persona-quien small, .persona-rutas { display: none; }
+  .persona-quien b { font-size: 0.8rem; }
+  .persona-cuenta { font-size: var(--paso1); }
+}
+@media (max-width: 480px) {
+  .carga-acciones, .carga-acciones .boton { width: 100%; }
+}
 .avisos:empty { display: none; }
 .aviso-registro { max-width: none; display: flex; flex-wrap: wrap; gap: 2px 14px; align-items: baseline; font-size: var(--paso-1); color: var(--tinta-2); border-left: 3px solid var(--humano); padding-left: 12px; }
 .aviso-registro .rotulo { color: var(--tinta); }
@@ -168,3 +261,29 @@
 .datos-registro .datos-titulo { font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--tinta); font-weight: 700; }
 .datos-registro dd small { font-weight: 400; color: var(--tinta-2); font-family: inherit; }
 .sin-dato { font-weight: 400; font-style: italic; color: var(--tinta-2); }
+
+/* ------------------------------------------------------------------ titulaciones: qué es un código */
+.explica-tit { font-size: 0.88rem; color: var(--tinta-2); max-width: none; }
+.codigo-tit { text-decoration: none; font-weight: 700; }
+.titulacion-elegida { font-size: var(--paso-1); color: var(--tinta); background: var(--acento-suave); border-radius: 6px; padding: 6px 10px; }
+.fila-tit { cursor: help; }
+.ficha-titulacion { font-size: var(--paso-1); color: var(--tinta-2); margin-top: -6px; }
+
+/* ------------------------------------------------------------------ ficha: ruta, persona asignada y señales */
+.plan-porque { font-size: 0.9rem; color: var(--tinta-2); }
+.pieza-asignado { flex-direction: row; align-items: center; gap: 12px; flex-wrap: wrap; background: var(--acento-suave); border-color: transparent; }
+.pieza-asignado p { display: flex; flex-direction: column; gap: 2px; flex: 1 1 200px; min-width: 0; color: var(--tinta); }
+.pieza-asignado .avatar { background: var(--hoja); }
+.pieza-asignado a { font-size: 0.9rem; font-weight: 700; }
+.senales-zona { display: flex; flex-direction: column; gap: 10px; }
+.senal-fuente { font: 700 0.78rem/1.3 var(--letra-texto); color: var(--tinta); }
+.senales { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 0.92rem; }
+.senales li { display: grid; grid-template-columns: 12px minmax(0, 1fr); gap: 8px; align-items: baseline; }
+.grav { display: inline-block; width: 10px; height: 10px; border-radius: 50%; flex: none; border: 1.5px solid var(--tinta); box-sizing: border-box; }
+.grav-alta { background: var(--tinta); }
+.grav-media { background: linear-gradient(90deg, var(--tinta) 50%, transparent 50%); }
+.grav-leve { background: transparent; border-color: var(--tenue); }
+.senal-leyenda { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.senal-leyenda span { display: inline-flex; align-items: center; gap: 6px; }
+.pesos summary { cursor: pointer; font-size: 0.88rem; font-weight: 700; color: var(--tinta-2); }
+.pesos[open] summary { margin-bottom: 8px; }
