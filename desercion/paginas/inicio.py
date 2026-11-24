@@ -3,6 +3,7 @@
 Es un tablero en rejilla bento: una frase que dice qué es el sistema y celdas vivas que
 public/js/inicio.js llena con la última lectura de la base real (/api/estudiantes) y con las
 notas del modelo (reportes/real/resultados.json). Una sola acción principal: ver a los estudiantes.
+Al final, una celda a todo el ancho abre la Bandeja de Bienestar (la app que usaría una institución).
 Sus estilos están en public/estilos-inicio.css.
 """
 ESTILOS = ["estilos-inicio.css"]
@@ -52,6 +53,14 @@ def cuerpo(lista_pasos=None):
             <span class="rotulo" id="t-avisos-rotulo">Lo que el sistema resolvió solo</span>
             <ul id="t-avisos" class="t-avisos"><li>Cargando…</li></ul>
           </section>
+          <a class="celda t-enlace t-bandeja" href="bienestar.html">
+            <div class="t-bandeja-texto">
+              <span class="rotulo">Bandeja de Bienestar</span>
+              <p>Así lo usaría el área de Bienestar de una universidad: a quién contactar esta semana, la agenda del día,
+                los avisos de los profesores, mensajes por WhatsApp y un informe para la dirección.</p>
+            </div>
+            <span class="t-ir">Abrir la bandeja</span>
+          </a>
         </div>
         <p class="nota t-honesto">Prototipo académico. La operación lee una base real y pública: estudiantes de primer
           año de la Universitat Politècnica de València (España). Su modelo usa un contrato ampliado: además de los 12 datos,
