@@ -271,6 +271,12 @@
     return true;
   }
 
+  function programadaTexto(real) {
+    const lp = window.SAT.lecturaProgramada(), hoyMismo = lp.ultima.toDateString() === new Date().toDateString();
+    return `Lectura automática ${hoyMismo ? "de hoy" : "de ayer"} a las ${lp.texto} La base se lee sola todos los días a esa hora `
+      + `(la próxima, ${hoyMismo ? "mañana" : "hoy"} a las ${lp.texto}); ${real}. Nadie tiene que pulsar nada.`;
+  }
+
   function pintarTitular(P, etapa, animar) {
     const tx = P.titularEl;
     let h, sub;
@@ -279,6 +285,7 @@
       h = `${miles(P.n)} leídos · ${miles(P.alertas)} alertas${P.m ? ` · asignadas a ${miles(personas)} personas` : ""}`;
       const real = `el proceso real tardó ${miles(Math.round(P.msReal))} ms`;
       sub = P.modoFinal === "animada" && !P.saltada ? `${capital(real)}; aquí se mostró a cámara lenta.`
+        : P.modoFinal === "programada" ? programadaTexto(real)
         : P.modoFinal === "guardada" ? `Lectura de hoy a las ${esc(hora(P.guardada.fecha))} en este navegador; ${real}.`
           : `${capital(real)}.`;
       if (E.deCopia) sub += " Se usó la copia de la última corrida guardada: la base no respondió.";
@@ -350,7 +357,7 @@
   function pintarFinal(P) { P.t = FIN; medir(P); dibujar(P, FIN); actualizar(P, FIN, performance.now()); }
 
   function pintarAcciones(P, animar) {
-    $("#btn-saltar").outerHTML = `<button type="button" class="enlace-boton" id="btn-releer">Volver a leer la base</button>`;
+    $("#btn-saltar").outerHTML = `<button type="button" class="enlace-boton" id="btn-releer">Leer ahora y verlo en vivo</button>`;
     $("#btn-releer").addEventListener("click", () => cargar({ animar: true }));
     P.acciones.innerHTML = `<a class="boton boton-tinta" href="bienestar.html">Ir a la Bandeja de Bienestar</a>
       <button type="button" class="boton" id="btn-detalle">Ver el detalle aquí abajo</button>`;
@@ -403,7 +410,7 @@
 
   let cargando = false;
   /* animar: true = el visitante pulsó el botón; false = ya se leyó hoy aquí, enlace a un estudiante o cambio de modelo. */
-  async function cargar({ animar, guardada = null, recalcular = false }) {
+  async function cargar({ animar, guardada = null, recalcular = false, programada = false }) {
     if (cargando) return;
     cargando = true;
     const boton = $("#btn-cargar") || $("#btn-releer");
@@ -422,7 +429,7 @@
     E.carga = P;
     construirPanel(P);
     const animada = animar && !reducido();
-    P.modoFinal = animada ? "animada" : guardada ? "guardada" : "directa";
+    P.modoFinal = animada ? "animada" : programada ? "programada" : guardada ? "guardada" : "directa";
     P.guardada = guardada;
     $("#btn-saltar").addEventListener("click", () => P.saltar && P.saltar());
     if (animada) {
@@ -778,12 +785,11 @@
       cancelAnimationFrame(pendiente);
       pendiente = requestAnimationFrame(() => { const P = E.carga; if (P && P.geo && document.contains(P.cuerpo)) { medir(P); dibujar(P, P.t ?? FIN); } });
     });
-    const previa = cargaGuardada();
     const pedido = /[A-Z]+\d*-\d+/.test(location.hash);
-    /* Si hoy ya se leyó en este navegador (o se pidió un estudiante por enlace), el resultado va directo. */
-    if (previa && esHoy(previa.fecha)) return cargar({ animar: false, guardada: previa });
+    /* La base se lee sola cada día (lectura programada): al entrar se muestra ese resultado, sin pulsar nada. El botón
+       «Leer ahora y verlo en vivo» repite la lectura con la animación. Un enlace a un estudiante va directo a su ficha. */
     if (pedido) return cargar({ animar: false });
-    return pintarInicio();
+    return cargar({ animar: false, programada: true });
   }
 
   window.SAT = Object.assign(window.SAT || {}, { iniciarEstudiantes });

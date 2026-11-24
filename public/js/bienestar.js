@@ -279,8 +279,9 @@
     const f = $("#ap-franja");
     f.hidden = !["semana", "agenda"].includes(B.vista) || B.deCopia;
     if (f.hidden) return;
-    const carga = leerCarga(), ej = B.datos.ejecucion || {};
-    const cuando = carga ? carga.fecha : ej.fecha;
+    const carga = leerCarga(), lp = window.SAT.lecturaProgramada();
+    const manual = carga && new Date(carga.fecha) > lp.ultima;   // alguien la leyó a mano después de la automática
+    const cuando = manual ? carga.fecha : lp.ultima.toISOString();
     const ids = B.reg.semana.ids, personas = new Set(ids.map((id) => (plan(B.porId.get(id) || {}) || {}).asignada).filter(Boolean));
     const alertas = carga && Number.isFinite(Number(carga.alertas)) ? Number(carga.alertas) : B.alto.length;
     let deCuando = "";
@@ -288,7 +289,7 @@
       deCuando = dia(new Date(cuando)) === hoy() ? ` de hoy ${hora(cuando)}` : ` del ${fecha(cuando)}, ${hora(cuando)}`;
     }
     const reparto = personas.size ? `, repartidas entre ${personas.size} ${personas.size === 1 ? "persona" : "personas"}` : "";
-    f.innerHTML = `<b>Recibido de la carga${esc(deCuando)}:</b> <span>${miles(alertas)} alertas</span> · <span>${ids.length} para esta semana${reparto}</span>`
+    f.innerHTML = `<b>Recibido de la lectura ${manual ? "" : "automática "}${esc(deCuando.replace(/^ de /, "de ").replace(/^ del /, "del "))}:</b> <span>${miles(alertas)} alertas</span> · <span>${ids.length} para esta semana${reparto}</span>`
       + `${equipo().length ? " · <span>mensajes de primer contacto listos</span>" : ""}`;
   }
 
@@ -1141,7 +1142,7 @@
       if (B.avisos.length > antes) { const a = B.avisos.at(-1); avisar(`Nuevo aviso de ${a.docente} sobre ${a.codigo}: el sistema subió su prioridad`); }
     });
     $("#ap-lectura").textContent = B.deCopia ? "Sin conexión: copia de la última lectura"
-      : `Base leída ${ej.fecha ? `hoy, ${hora(ej.fecha)}` : ""}: ${miles(ej.leidos || d.estudiantes.length)} registros`;
+      : `Lectura automática diaria, ${window.SAT.lecturaProgramada().texto}: ${miles(ej.leidos || d.estudiantes.length)} registros`;
     const n = (f) => d.estudiantes.filter(f).length;
     const devueltos = n((e) => !e.nivel);
     $("#ap-alcance").textContent = `A la lista de trabajo llega solo el riesgo alto (${miles(B.alto.length)}). Los ${miles(n((e) => e.nivel === "medio"))} de riesgo medio van a tutoría académica`

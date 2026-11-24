@@ -260,7 +260,18 @@
     return lista;
   }
 
-  window.SAT = Object.assign(window.SAT || {}, { $, esc, pct, num, miles, json, NOMBRES, nombre, FUENTES, fuente, ACCIONES, MOTIVOS, mostrarGlobo, ocultarGlobo, conGlobo, s, lienzo, escala, marcasBonitas, figura, leyenda, grafLineas, grafBarras, reducido, alVerUnaVez, aparecer, secuencia });
+  /* Lectura automática de la base [SUPUESTO del prototipo]: todos los días a las 6:00. En el prototipo la tarea se
+     simula: los resultados se calculan con la base cuando se abre la página, y la hora que se muestra es la de la última
+     lectura programada. En una institución sería una tarea programada en el servidor. */
+  const HORA_LECTURA = 6;
+  function lecturaProgramada(ahora = new Date()) {
+    const ultima = new Date(ahora); ultima.setHours(HORA_LECTURA, 0, 0, 0);
+    if (ahora < ultima) ultima.setDate(ultima.getDate() - 1);
+    const proxima = new Date(ultima); proxima.setDate(proxima.getDate() + 1);
+    return { ultima, proxima, hora: HORA_LECTURA, texto: `${HORA_LECTURA}:00 a. m.` };
+  }
+
+  window.SAT = Object.assign(window.SAT || {}, { lecturaProgramada, $, esc, pct, num, miles, json, NOMBRES, nombre, FUENTES, fuente, ACCIONES, MOTIVOS, mostrarGlobo, ocultarGlobo, conGlobo, s, lienzo, escala, marcasBonitas, figura, leyenda, grafLineas, grafBarras, reducido, alVerUnaVez, aparecer, secuencia });
 })();
 
 if (["localhost", "127.0.0.1"].includes(location.hostname)) {
