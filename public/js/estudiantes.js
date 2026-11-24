@@ -264,7 +264,7 @@
         <span class="fila-id"><b>${esc(e.id)}</b><small>${esc(e.titulacion)}</small>${e.decision === "provisional" ? `<em class="marca-prov">provisional</em>` : ""}</span>${derecha}</button></li>`;
     });
     $("#lista").innerHTML = partes.join("") || `<li class="lista-vacia">Ningún estudiante con ese filtro.</li>`;
-    $("#cuenta-lista").textContent = todos.length ? `${miles(lista.length)} de ${miles(todos.length)}, del puntaje más alto al más bajo.` : "";
+    $("#cuenta-lista").textContent = todos.length ? `${miles(lista.length)} de ${miles(todos.length)}, del puntaje más alto al más bajo; en cada nivel, los provisionales van al final.` : "";
     $("#btn-mas").hidden = lista.length >= todos.length;
     if (!todos.some((e) => e.id === E.elegido)) elegir(todos.length ? todos[0].id : null, false);
   }

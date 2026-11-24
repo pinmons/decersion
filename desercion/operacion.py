@@ -246,7 +246,10 @@ def procesar(modelo="logistica"):
     orden = {"alto": 0, "medio": 1, "bajo": 2}
     for f in estudiantes:
         f.pop("accion", None) if f["decision"] == "error" else None
-    estudiantes.sort(key=lambda f: (orden.get(f.get("nivel"), 3), -(f.get("puntaje") or 0), f["id"]))
+    # Dentro de cada nivel van primero los resultados definitivos y después los provisionales: sus puntajes salen
+    # de modelos distintos y no se pueden comparar, y el provisional (sin notas) es el más débil de los dos.
+    estudiantes.sort(key=lambda f: (orden.get(f.get("nivel"), 3), f["decision"] == "provisional",
+                                    -(f.get("puntaje") or 0), f["id"]))
     t_fin = time.perf_counter()
     return {
         "ejecucion": {"fecha": datetime.now(timezone.utc).isoformat(timespec="seconds"), "modelo": modelo,
