@@ -73,7 +73,14 @@
         f.innerHTML = `<span class="t-fila-nombre">${esc(nombre)}</span>
           <span class="t-fila-barra" aria-hidden="true">${NIVELES.map(([k]) => (p[k] ? `<i class="seg-${k}" style="flex:${p[k]} 1 0"></i>` : "")).join("")}</span>
           <b class="num">${volumen ? miles(p.alto) : pct(p.alto / p.n, 0)}</b>`;
-        return conGlobo(f, `<b>${esc(nombre)}</b><br>${miles(p.n)} estudiantes calificados<br>${NIVELES.map(([k, t]) => `${t}: ${miles(p[k])} (${pct(p[k] / p.n, 0)})`).join("<br>")}`);
+        const ficha = (d.fichas_titulacion || {})[nombre.replace("Titulación ", "")];
+        const historia = ficha && ficha.tasa != null
+          ? `<br>En años anteriores: ${miles(ficha.n_historico)} estudiantes; abandonó el ${pct(ficha.tasa, 0)} en primer año`
+            + (d.tasa_global != null ? ` (en toda la universidad, el ${pct(d.tasa_global, 0)})` : "")
+            + (ficha.nota_acceso_media != null ? `<br>Nota de acceso media: ${num(ficha.nota_acceso_media, 1)} sobre 14` : "")
+          : "";
+        return conGlobo(f, `<b>${esc(nombre)}</b> · código anónimo de una carrera de la UPV<br>${miles(p.n)} estudiantes calificados ahora: `
+          + `${NIVELES.map(([k, t]) => `${t.toLowerCase()} ${miles(p[k])}`).join(", ")}${historia}`);
       }));
       aparecer(caja.children, { pausa: 60, duracion: 300, desde: "translateX(-8px)" });
     }
