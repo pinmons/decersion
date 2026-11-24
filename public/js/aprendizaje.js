@@ -1,7 +1,8 @@
 /* Script clásico. Pasos 4 y 5 de "Cómo se construyó": cómo aprende una neurona y la red neuronal.
-   Todo se explica siguiendo a un estudiante real del contrato (R01, R02 o R03) con los pesos guardados del
-   modelo (public/reportes/modelos/*.json). Los cálculos aquí son ilustrativos: la decisión del sistema siempre
-   sale de la API (desercion/inferencia.py), y estos números coinciden con ella. */
+   Todo se explica siguiendo a un estudiante de ejemplo (R01, R02 o R03, los de «Probar un caso») con los pesos
+   del modelo entrenado con la base real (public/reportes/real/modelos/*.json). Los cálculos aquí son ilustrativos:
+   la decisión del sistema siempre sale de la API (desercion/inferencia.py), y estos números coinciden con ella
+   (las variables del contrato ampliado se calculan como en desercion/contrato_ampliado.py). */
 (function () {
   "use strict";
   const { $, esc, pct, num, miles, nombre, s, lienzo, escala, figura, leyenda, conGlobo, grafLineas, grafBarras,
@@ -11,34 +12,62 @@
   const signoColor = (w) => (w >= 0 ? "var(--div-pos)" : "var(--div-neg)");
   const el = (tag, clase, html) => { const e = document.createElement(tag); if (clase) e.className = clase; if (html !== undefined) e.innerHTML = html; return e; };
   const formula = (html, nota) => el("div", "formula", html + (nota ? `<small>${nota}</small>` : ""));
+  const falta = (v) => v === undefined || v === null || v === "";
+  const dato = (e, k, f) => (falta(e[k]) ? "sin dato (se usa lo usual)" : f(e[k]));
   const DESCRIPCION = {
-    semestre: (e) => `semestre ${e.semestre}`,
     promedio_acumulado: (e) => `promedio ${num(e.promedio_acumulado, 1)}`,
     creditos_inscritos: (e) => `${e.creditos_inscritos} créditos`,
+    materias_cursadas_periodo_anterior: (e) => `${e.materias_cursadas_periodo_anterior} materias`,
     tasa_reprobacion: (e) => `${e.materias_reprobadas} de ${e.materias_cursadas_periodo_anterior} perdidas`,
-    porcentaje_asistencia: (e) => `asistencia ${num(e.porcentaje_asistencia, 0)} %`,
-    estrato: (e) => `estrato ${e.estrato}`,
-    trabaja: (e) => (e.trabaja ? "trabaja" : "no trabaja"),
-    deuda_matricula: (e) => (e.deuda_matricula ? "debe matrícula" : "no debe matrícula"),
+    trabaja: (e) => (e.trabaja ? "tiempo parcial (trabaja)" : "tiempo completo"),
+    asignaturas_no_presentadas: (e) => dato(e, "asignaturas_no_presentadas", (v) => `${v} sin presentar`),
+    dias_campus_sep_nov: (e) => dato(e, "dias_campus_sep_nov", (v) => `${num(v, 0)} días`),
+    dias_campus_dic_ene: (e) => dato(e, "dias_campus_dic_ene", (v) => `${num(v, 0)} días`),
+    sin_registro_wifi: (e) => (falta(e.dias_campus_sep_nov) || falta(e.dias_campus_dic_ene) ? "sí" : "no"),
+    dias_aula_virtual: (e) => dato(e, "dias_aula_virtual", (v) => `${num(v, 0)} días por asignatura`),
+    entregas_por_asignatura: (e) => dato(e, "entregas_por_asignatura", (v) => `${num(v, 1)} entregas`),
+    nota_acceso: (e) => dato(e, "nota_acceso", (v) => `${num(v, 2)} de 14`),
+    sin_nota_acceso: (e) => (falta(e.nota_acceso) ? "sí" : "no"),
+    sin_nota_bachillerato: (e) => (falta(e.nota_bachillerato) ? "sí" : "no"),
+    opcion_titulacion: (e) => dato(e, "opcion_titulacion", (v) => `opción ${v}`),
+    sin_opcion_titulacion: (e) => (falta(e.opcion_titulacion) ? "sí" : "no"),
+    ingreso_ordinario: (e) => (falta(e.tipo_ingreso) || e.tipo_ingreso === "NAP" ? "sí" : "no"),
+    abandono_titulacion: (e) => `titulación ${e.titulacion || "desconocida"}`,
   };
 
   /* ---------------------------------------------------------------- cálculos con los pesos guardados */
-  function rasgos(e, variables) {
-    return variables.map((v) => {
+  // Igual que desercion/contrato_ampliado.py: indicadoras «sin dato», tasa de la titulación, vía ordinaria, mediana y recorte.
+  const INDICADORAS = { sin_registro_wifi: ["dias_campus_sep_nov", "dias_campus_dic_ene"], sin_aula_virtual: ["dias_aula_virtual", "entregas_por_asignatura"],
+    sin_nota_acceso: ["nota_acceso"], sin_nota_bachillerato: ["nota_bachillerato"], sin_opcion_titulacion: ["opcion_titulacion"] };
+  const RANGO = { nota_media_cuatrimestre: [0, 10], nota_minima_cuatrimestre: [0, 10], asignaturas_no_presentadas: [0, 12], dias_campus_sep_nov: [0, 91],
+    dias_campus_dic_ene: [0, 62], dias_aula_virtual: [0, 153], entregas_por_asignatura: [0, 200], nota_acceso: [0, 14], nota_bachillerato: [0, 10], opcion_titulacion: [1, 30] };
+  const CONTRATO = new Set(["promedio_acumulado", "creditos_inscritos", "materias_cursadas_periodo_anterior", "tasa_reprobacion", "trabaja", "semestre",
+    "porcentaje_asistencia", "estrato", "deuda_matricula", "materias_reprobadas"]);
+  function valorAmpliado(e, v, aux) {
+    if (INDICADORAS[v]) return INDICADORAS[v].some((k) => falta(e[k])) ? 1 : 0;
+    if (v === "abandono_titulacion") return aux.titulaciones[e.titulacion] ? aux.titulaciones[e.titulacion][0] : aux.tasa_global;
+    if (v === "ingreso_ordinario") return falta(e.tipo_ingreso) || e.tipo_ingreso === "NAP" ? 1 : 0;
+    if (falta(e[v])) return aux.medianas[v];
+    const [lo, hi] = aux.recortes[v] || RANGO[v];
+    return Math.min(hi, Math.max(lo, Number(e[v])));
+  }
+  function rasgos(e, M) {
+    return M.variables.map((v) => {
+      if (M.ampliado && !CONTRATO.has(v)) return valorAmpliado(e, v, M.ampliado);
       if (v === "tasa_reprobacion") return e.materias_reprobadas / e.materias_cursadas_periodo_anterior;
       if (v === "trabaja" || v === "deuda_matricula") return e[v] === undefined || e[v] === null ? 1 : Number(e[v]);
       return Number(e[v]);
     });
   }
   function logistica(e, L) {
-    const x = rasgos(e, L.variables);
+    const x = rasgos(e, L);
     const z = x.map((v, j) => (v - L.escalador.media[j]) / L.escalador.desviacion[j]);
     const contrib = z.map((v, j) => v * L.pesos[j]);
     const logit = L.sesgo + contrib.reduce((a, b) => a + b, 0);
     return { x, z, contrib, logit, pBruta: sig(logit), p: sig(logit - L.ajuste_prior) };
   }
   function red(e, M) {
-    const x = rasgos(e, M.variables);
+    const x = rasgos(e, M);
     const a0 = x.map((v, j) => (v - M.escalador.media[j]) / M.escalador.desviacion[j]);
     const capas = [a0];
     let a = a0;
@@ -130,7 +159,7 @@
       const r = logistica(e, L);
       envoltura.innerHTML = `<table class="tabla-paso"><thead><tr><th>Variable</th><th>Dato del estudiante</th><th class="n">x</th>
         <th class="n">media μ</th><th class="n">desviación σ</th><th class="n">estandarizado z</th></tr></thead><tbody>
-        ${L.variables.map((v, j) => `<tr><td>${esc(nombre(v))}</td><td>${esc(DESCRIPCION[v](e))}</td><td class="n">${num(r.x[j], v === "tasa_reprobacion" ? 2 : 1)}</td>
+        ${L.variables.map((v, j) => `<tr><td>${esc(nombre(v))}</td><td>${esc(DESCRIPCION[v] ? DESCRIPCION[v](e) : "")}</td><td class="n">${num(r.x[j], r.x[j] % 1 ? 2 : 0)}</td>
           <td class="n">${num(L.escalador.media[j], 2)}</td><td class="n">${num(L.escalador.desviacion[j], 2)}</td><td class="n"><strong>${num(r.z[j], 2)}</strong></td></tr>`).join("")}
         </tbody></table>`;
       aparecer(envoltura.querySelectorAll("tbody tr"), { pausa: 35, desde: "translateX(-6px)" });
@@ -140,7 +169,7 @@
   }
 
   function neuronaPorEtapas(L) {
-    const W = 680, H = 370, xIn = 196, xN = 440, yN = 185, rN = 46;
+    const W = 720, H = 520, xIn = 250, xN = 480, yN = 260, rN = 46;
     const nV = L.variables.length;
     const yIn = (i) => 26 + i * ((H - 70) / (nV - 1));
     const svg = lienzo(W, H, "Una neurona: las variables estandarizadas se multiplican por sus pesos, se suman con el sesgo y la sigmoide da la probabilidad.");
@@ -164,20 +193,20 @@
     const textoSesgo = s("text", { x: xN, y: yN + rN + 18, "text-anchor": "middle", class: "etiqueta-svg" });
     capa[2].append(textoSesgo);
     // mini sigmoide
-    const X = escala(-4, 3, 520, 660), Y = escala(0, 1, yN + 40, yN - 60);
+    const X = escala(-4, 3, 560, 700), Y = escala(0, 1, yN + 40, yN - 60);
     let d = "";
     for (let i = 0; i <= 70; i++) { const z = -4 + i * 0.1; d += `${i ? "L" : "M"}${X(z).toFixed(1)},${Y(sig(z)).toFixed(1)}`; }
-    capa[3].append(s("line", { x1: xN + rN, x2: 516, y1: yN, y2: yN, stroke: "var(--tinta)", "stroke-width": 1.5 }),
-      s("rect", { x: 516, y: yN - 66, width: 148, height: 112, rx: 8, fill: "var(--papel)", stroke: "var(--renglon)" }),
+    capa[3].append(s("line", { x1: xN + rN, x2: 556, y1: yN, y2: yN, stroke: "var(--tinta)", "stroke-width": 1.5 }),
+      s("rect", { x: 556, y: yN - 66, width: 148, height: 112, rx: 8, fill: "var(--papel)", stroke: "var(--renglon)" }),
       s("path", { d, fill: "none", stroke: "var(--acento)", "stroke-width": 2 }),
-      s("text", { x: 590, y: yN + 62, "text-anchor": "middle", class: "etiqueta-svg", texto: "sigmoide" }));
+      s("text", { x: 630, y: yN + 62, "text-anchor": "middle", class: "etiqueta-svg", texto: "sigmoide" }));
     const puntoSig = s("circle", { r: 5.5, fill: "var(--alto)", stroke: "var(--hoja)", "stroke-width": 2 });
     capa[3].append(puntoSig);
-    const textoBruta = s("text", { x: 590, y: yN - 72, "text-anchor": "middle", class: "etiqueta-svg" });
+    const textoBruta = s("text", { x: 630, y: yN - 72, "text-anchor": "middle", class: "etiqueta-svg" });
     capa[3].append(textoBruta);
-    const textoFinal = s("text", { x: 590, y: H - 18, "text-anchor": "middle", class: "texto-svg-fuerte" });
-    const textoFinal2 = s("text", { x: 590, y: H - 4, "text-anchor": "middle", class: "etiqueta-svg", texto: "tras corregir los pesos de clase" });
-    capa[4].append(s("line", { x1: 590, x2: 590, y1: yN + 70, y2: H - 34, stroke: "var(--tinta)", "stroke-dasharray": "3 3" }), textoFinal, textoFinal2);
+    const textoFinal = s("text", { x: 630, y: H - 18, "text-anchor": "middle", class: "texto-svg-fuerte" });
+    const textoFinal2 = s("text", { x: 630, y: H - 4, "text-anchor": "middle", class: "etiqueta-svg", texto: "tras corregir los pesos de clase" });
+    capa[4].append(s("line", { x1: 630, x2: 630, y1: yN + 70, y2: H - 34, stroke: "var(--tinta)", "stroke-dasharray": "3 3" }), textoFinal, textoFinal2);
     svg.append(...capa);
     const pulsos = s("g");
     svg.append(pulsos);
@@ -205,7 +234,7 @@
       textoBruta.textContent = `σ(${num(r.logit, 2)}) = ${pct(r.pBruta)}`;
       textoFinal.textContent = `probabilidad ${pct(r.p)}`;
     };
-    const etapas = controlEtapas(["entran las 8 variables estandarizadas", "cada una se multiplica por su peso",
+    const etapas = controlEtapas([`entran las ${nV} variables estandarizadas`, "cada una se multiplica por su peso",
       "se suman con el sesgo", "la sigmoide convierte la suma en un número entre 0 y 1", "se corrige por los pesos de clase"], mostrar);
     alCambiarEstudiante(pintar);
     alVerUnaVez(svg, () => etapas.reproducir(), "0px 0px -35% 0px");
@@ -294,7 +323,7 @@
   }
 
   function neuronaPorEpoca(nombres, hist, mejor) {
-    const W = 640, H = 330, xIn = 214, xN = 420, yN = 160, rN = 40;
+    const W = 680, H = 480, xIn = 254, xN = 460, yN = 235, rN = 40;
     const wmax = Math.max(...hist.flatMap((h) => h.pesos.map(Math.abs)));
     const yIn = (i) => 24 + i * ((H - 48) / (nombres.length - 1));
     const svg = lienzo(W, H, "La neurona en una época del entrenamiento: el grosor de cada línea es el tamaño del peso.");
@@ -306,8 +335,8 @@
     });
     svg.append(s("circle", { cx: xN, cy: yN, r: rN, fill: "var(--hoja)", stroke: "var(--tinta)", "stroke-width": 2 }),
       s("text", { x: xN, y: yN + 4, "text-anchor": "middle", class: "texto-svg-fuerte", texto: "Σ → σ" }),
-      s("line", { x1: xN + rN, x2: 516, y1: yN, y2: yN, stroke: "var(--tinta)", "stroke-width": 2 }),
-      s("text", { x: 524, y: yN + 4, class: "texto-svg-fuerte", texto: "probabilidad" }));
+      s("line", { x1: xN + rN, x2: 556, y1: yN, y2: yN, stroke: "var(--tinta)", "stroke-width": 2 }),
+      s("text", { x: 564, y: yN + 4, class: "texto-svg-fuerte", texto: "probabilidad" }));
     const pie = s("text", { x: xN, y: H - 6, "text-anchor": "middle", class: "etiqueta-svg" });
     svg.appendChild(pie);
     svg.actualizar = (k) => {
@@ -366,26 +395,25 @@
     svgES.insertBefore(s("rect", { x: X(mejor), y: m.arr, width: X(hist.length) - X(mejor), height: alto - m.arr - m.aba, fill: "var(--medio)", opacity: 0.14 }), svgES.firstChild.nextSibling);
     svgES.appendChild(s("text", { x: (X(mejor) + X(hist.length)) / 2, y: alto - m.aba - 10, "text-anchor": "middle", class: "etiqueta-svg", texto: `${cfg.paciencia} épocas sin mejorar` }));
 
-    // Paso 4.8: peso de la tasa de reprobación a medida que sube su L2
-    const pasosT = co.pasos_tope;
-    const tope = pasosT.length ? figura(grafLineas({
-      series: [{ nombre: "peso de la tasa de reprobación", color: "var(--div-pos)", puntos: true,
-        valores: [[0, co.antes_tope ? hist[mejor - 1].pesos[L.variables.indexOf("tasa_reprobacion")] : 0], ...pasosT.map((p, i) => [i + 1, p.peso])] }],
-      alto: 200, xEtiqueta: "reentrenamiento", yEtiqueta: "peso", formatoY: (v) => num(v, 2),
-      formatoX: (v) => (v === 0 ? "L2 ×1" : pasosT[v - 1] ? `×${pasosT[v - 1].multiplicador_l2}` : ""), etiqueta: "Peso de la tasa de reprobación con más L2" }),
-      `Con L2 ×${pasosT.at(-1).multiplicador_l2} solo sobre ella, su peso bajó y su parte de la importancia pasó de ${pct(Math.max(...co.antes_tope.pct_train))} a ${pct(Math.max(...co.despues_tope.pct_train))}.`) : null;
+    // Paso 4.8: qué variables recibieron más castigo L2 por el tope de dominancia (por fuente de datos)
+    const frenadas = L.variables.map((v, j) => ({ etiqueta: nombre(v), valor: L.l2_por_variable[j] })).filter((f) => f.valor > 1).sort((a, b) => b.valor - a.valor);
+    const tope = frenadas.length ? figura(grafBarras({ filas: frenadas, formato: (v) => `×${num(v, 0)}`, min: 0, anchoEtiqueta: 230,
+      grupos: [{ clave: "valor", color: "var(--serie-1)" }], etiqueta: "Multiplicador de L2 por variable" }),
+      `Solo estas variables recibieron más castigo; el resto quedó con ×1. Así la fuente que más pesaba pasó de ${pct(Math.max(...co.antes_tope.grupos_pct_train))}
+      a ${pct(Math.max(...co.despues_tope.grupos_pct_train))} de la importancia en entrenamiento.`) : null;
 
     secuencia(c, 4, [
       { id: "a-numeros", titulo: "Del registro a números", nodos: [
-        `La neurona solo entiende números. De los 12 campos del contrato salen <strong>${L.variables.length} variables</strong>: la tasa de reprobación
-        (perdidas ÷ cursadas), sí y no como 1 y 0, y el resto tal cual. Luego cada una se <strong>estandariza</strong> con la media y la desviación de los
+        `La neurona solo entiende números. Del registro (contrato y contrato ampliado) salen <strong>${L.variables.length} variables</strong>: la tasa de
+        reprobación (perdidas ÷ cursadas), sí y no como 1 y 0, las indicadoras «sin dato» (1 si el dato falta, y entonces se usa la mediana de entrenamiento),
+        la tasa de abandono de la titulación y el resto tal cual. Luego cada una se <strong>estandariza</strong> con la media y la desviación de los
         ${miles(n)} estudiantes de entrenamiento, para que todas queden en la misma escala.`,
         formula("z = (x − μ) / σ", "un valor 0 es un estudiante promedio; 1, una desviación por encima"),
         tablaRasgos(L)] },
       { id: "a-neurona", titulo: "La neurona: multiplicar, sumar y convertir en probabilidad", nodos: [
         `Cada variable entra con su <strong>peso</strong>. La neurona multiplica, suma todo con un <strong>sesgo</strong> y pasa el resultado por la
         <strong>sigmoide</strong>, que lo aplasta entre 0 y 1. Use los botones para ver cada etapa con el estudiante elegido.`,
-        formula("logit = b + w₁·z₁ + w₂·z₂ + … + w₈·z₈ &nbsp;&nbsp; p = 1 / (1 + e<sup>−logit</sup>)"),
+        formula(`logit = b + w₁·z₁ + w₂·z₂ + … + w<sub>${L.variables.length}</sub>·z<sub>${L.variables.length}</sub> &nbsp;&nbsp; p = 1 / (1 + e<sup>−logit</sup>)`),
         ...neuronaPorEtapas(L), contribuciones(L),
         `Durante el entrenamiento los desertores pesan más (ver 4.3), y eso infla la probabilidad. Para reportarla se resta
         ln(${num(pc.positivo, 2)} / ${num(pc.negativo, 2)}) = ${num(L.ajuste_prior, 2)} al logit: es la última etapa de la animación.`] },
@@ -414,13 +442,16 @@
         figura(svgES, `Se detuvo en la época ${hist.length} y recuperó los pesos de la ${mejor}.`)] },
       { id: "a-l2", titulo: "Regularización L2 y el tope de dominancia", nodos: [
         `La <strong>regularización L2</strong> suma a la pérdida un castigo por pesos grandes, para que ninguno crezca sin control. Con ella se aplicó el
-        <strong>tope de dominancia</strong>: como la tasa de reprobación se llevaba más del 35 % de la importancia, su castigo se fue duplicando hasta repartir el peso.`,
-        formula("L<sub>total</sub> = L + (λ / 2) · Σ cⱼ · wⱼ²", `cⱼ = 1 para todas, ${pasosT.length ? pasosT.at(-1).multiplicador_l2 : 1} para la tasa de reprobación`), tope] },
+        <strong>tope de dominancia</strong>: las notas y la titulación se llevaban más del 35 % de la importancia, así que el castigo de sus variables se fue
+        duplicando hasta repartir el peso (detalle en el paso 7).`,
+        formula("L<sub>total</sub> = L + (λ / 2) · Σ cⱼ · wⱼ²", "cⱼ = 1 salvo en las variables frenadas"), tope] },
       { id: "a-final", titulo: "Lo que aprendió", nodos: [
         figura(grafBarras({ filas: L.variables.map((v, j) => ({ etiqueta: nombre(v), valor: L.pesos[j], color: signoColor(L.pesos[j]) })).sort((a, b) => b.valor - a.valor),
           min: -0.5, max: 0.5, formato: (v) => num(v, 3), anchoEtiqueta: 150, etiqueta: "Pesos finales de la neurona" }),
-          `Pesos finales. Más tasa de reprobación, trabajar y deber matrícula suben el riesgo; mejor promedio, más asistencia, estrato más alto y más créditos lo bajan.
-          El semestre casi no pesa. En el paso siguiente estos pesos se convierten en puntos.`)] },
+          (() => { const orden = L.variables.map((v, j) => [v, L.pesos[j]]).sort((a, b) => b[1] - a[1]);
+            const suben = orden.filter((x) => x[1] > 0.02).slice(0, 4).map((x) => nombre(x[0])), bajan = orden.filter((x) => x[1] < -0.02).reverse().slice(0, 4).map((x) => nombre(x[0]));
+            return `Pesos finales. Suben el riesgo, sobre todo: ${suben.join(", ")}. Lo bajan: ${bajan.join(", ")}. Varias variables
+            terminaron cerca de cero por el tope. En el paso siguiente estos pesos se convierten en puntos.`; })())] },
     ]);
   }
 
@@ -428,7 +459,7 @@
   function arquitectura(M) {
     const capas = [M.variables.length, ...M.capas, 1];
     const nombres = ["Entrada", "Capa oculta 1", "Capa oculta 2", "Salida"];
-    const activ = ["8 variables estandarizadas", "ReLU", "ReLU", "sigmoide"];
+    const activ = [`${M.variables.length} variables estandarizadas`, "ReLU", "ReLU", "sigmoide"];
     const params = capas.slice(1).map((n, k) => capas[k] * n + n);
     const W = 700, H = 210, ancho = 132, gap = (W - 4 * ancho) / 3;
     const svg = lienzo(W, H, `Arquitectura ${capas.join(", ")}: ${params.reduce((a, b) => a + b)} parámetros.`);
@@ -465,7 +496,7 @@
 
   function redAnimada(M) {
     const capas = [M.variables.length, ...M.capas, 1];
-    const W = 700, H = 420, xs = [190, 360, 520, 640];
+    const W = 740, H = 520, xs = [250, 410, 560, 680];
     const ys = capas.map((n) => Array.from({ length: n }, (_, i) => (n === 1 ? (H - 30) / 2 : 14 + i * ((H - 50) / (n - 1)))));
     const svg = lienzo(W, H, "La red neuronal recorrida por un estudiante: cada círculo se rellena según cuánto se activa.");
     const lineas = [];
@@ -507,7 +538,7 @@
       lineas.forEach((g, i) => g.classList.toggle("apagada", i >= k));
       salidaTxt.textContent = k >= 3 ? pct(actual.p) : "";
     };
-    const etapas = controlEtapas(["entran las 8 variables estandarizadas", "la primera capa oculta: 16 neuronas con ReLU",
+    const etapas = controlEtapas([`entran las ${M.variables.length} variables estandarizadas`, "la primera capa oculta: 16 neuronas con ReLU",
       "la segunda capa oculta: 8 neuronas con ReLU", "la neurona de salida y la sigmoide"], mostrar);
     alCambiarEstudiante((e) => {
       actual = red(e, M);
@@ -582,7 +613,7 @@
 
   function redPesos(M) {
     const capas = [M.variables.length, ...M.capas, 1];
-    const W = 660, H = 400, xs = [190, 340, 480, 600];
+    const W = 720, H = 520, xs = [270, 420, 560, 680];
     const ys = capas.map((n) => Array.from({ length: n }, (_, i) => (n === 1 ? (H - 24) / 2 : 14 + i * ((H - 52) / (n - 1)))));
     const svg = lienzo(W, H, "La red con sus pesos reales: después de la primera capa todos son positivos.");
     M.W.forEach((Wk, k) => {
@@ -616,7 +647,7 @@
     const ev = R.evaluacion.modelos;
     c.append(el("p", "", `El aprendizaje profundo apila neuronas en <strong>capas</strong>. Cada neurona hace lo mismo que la del paso anterior
       (multiplicar, sumar, activar), pero la salida de una capa es la entrada de la siguiente. Así la red puede aprender combinaciones, como que
-      trabajar pesa más cuando la asistencia es baja.`), selectorEstudiante());
+      perder materias pesa más cuando además se entra poco al aula virtual.`), selectorEstudiante());
     secuencia(c, 5, [
       { id: "r-capas", titulo: "De una neurona a una red", nodos: [
         `La red tiene ${M.variables.length} entradas, dos capas ocultas de ${M.capas.join(" y ")} neuronas y una neurona de salida. En total tiene
@@ -656,9 +687,10 @@
           alto: 220, xEtiqueta: "época", yEtiqueta: "AUC en validación", formatoY: (v) => num(v, 3), etiqueta: "AUC de validación por época" }),
           "La red tarda más en aprender (tiene muchos más parámetros), pero termina un poco por encima.", leyenda([["var(--serie-1)", "neurona sola"], ["var(--serie-2)", "red neuronal"]]))] },
       { id: "r-monotonia", titulo: "Monotonía por construcción", nodos: [
-        `En la primera versión, la red bajaba el riesgo en un caso raro cuando la asistencia bajaba. Las pruebas lo detectaron y se corrigió: los pesos de
-        entrada de promedio (−), tasa de reprobación (+) y asistencia (−) tienen el signo fijo, y todos los pesos después de la primera capa son ≥ 0.
-        Como ReLU nunca baja, la salida no puede ir en contra del sentido común en esas tres variables.`,
+        `En una primera versión, la red bajaba el riesgo en un caso raro cuando la asistencia bajaba. Las pruebas lo detectaron y se corrigió: las variables
+        con un sentido claro tienen el signo fijo en la primera capa (${(M.signos_entrada || []).filter((x) => x).length} de ${M.variables.length}: más promedio,
+        más días en el campus o en el aula virtual nunca suben el riesgo; más reprobación o más abandono en la titulación nunca lo bajan), y todos los pesos
+        después de la primera capa son ≥ 0. Como ReLU nunca baja, la salida no puede ir en contra del sentido común en esas variables.`,
         redPesos(M),
         `En la red entrenada hay ${negativosOcultos} pesos negativos después de la primera capa (deben ser 0) y ${ceros} quedaron exactamente en cero por la restricción.`] },
       { id: "r-resumen", titulo: "Resumen de métodos", nodos: [
@@ -672,11 +704,11 @@
           <tr><td>Inicialización</td><td>pesos pequeños al azar</td><td>He: √(2 / entradas)</td></tr>
           <tr><td>Regularización</td><td>L2 λ = ${e.config_logistica.l2}, tope de dominancia</td><td>L2 λ = ${cfg.l2}, dropout ${pct(cfg.dropout, 0)}</td></tr>
           <tr><td>Early stopping</td><td>paciencia ${e.config_logistica.paciencia}, mejor época ${e.info_logistica.mejor_epoca}</td><td>paciencia ${cfg.paciencia}, mejor época ${e.info_red.mejor_epoca}</td></tr>
-          <tr><td>Restricciones</td><td>ninguna</td><td>monotonía en promedio, tasa de reprobación y asistencia</td></tr>
+          <tr><td>Restricciones</td><td>signo fijo en las variables del contrato ampliado</td><td>monotonía en ${(M.signos_entrada || []).filter((x) => x).length} variables</td></tr>
           <tr><td>AUC en prueba</td><td class="n">${num(ev["regresión logística"].auc, 3)}</td><td class="n">${num(ev["red neuronal (MLP)"].auc, 3)}</td></tr>
           <tr><td>Se puede explicar con puntos</td><td>sí (tarjeta de puntaje)</td><td>solo por aproximación</td></tr></tbody></table>`),
-        `Todo se implementó desde cero en NumPy y se entrenó con datos sintéticos. La red ordena un poco mejor, pero la neurona sola es la que se puede
-        convertir en una tarjeta de puntaje que un consejero entiende: por eso es el modelo principal.`] },
+        `Todo se implementó desde cero en NumPy y se entrenó con ${miles(R.datos.division.train)} estudiantes reales. La red ordena un poco mejor, pero la neurona
+        sola es la que se puede convertir en una tarjeta de puntaje que un consejero entiende: por eso es el modelo principal.`] },
     ]);
     // contenido de ReLU en dos columnas
     const dos = $("#r-relu .dos-columnas");

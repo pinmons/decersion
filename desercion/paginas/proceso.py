@@ -68,7 +68,7 @@ def cuerpo(lista_pasos=None):
           <p class="rotulo">Cuaderno metodológico</p>
           <h1>Cómo se hizo: de las reglas al modelo</h1>
           <p>De las reglas escritas a mano a una red neuronal que aprende sus pesos, en nueve pasos y cuatro partes.
-            Cada número y cada gráfica salen de la ejecución real del entrenamiento con datos sintéticos (semilla 2026).</p>
+            Cada número y cada gráfica salen del entrenamiento con la base real de la UPV (semilla 2026).</p>
         </header>
         <a class="boton boton-tinta abrir-leccion" href="aprendizaje.html">Explorar cómo aprende una neurona →</a>
         <div class="bento grupos">

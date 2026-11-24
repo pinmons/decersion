@@ -67,7 +67,7 @@ def cuerpo(lista_pasos=None):
           año de la Universitat Politècnica de València (España). Su modelo usa un contrato ampliado: además de los 12 datos,
           las notas del primer cuatrimestre, la actividad en el campus y en el aula virtual, la admisión y la tasa de abandono
           de la titulación. La asistencia y el trabajo son aproximaciones y el estrato no existe. «Probar un
-          caso» califica con ese mismo modelo; «Cómo se hizo» muestra el construido antes con datos sintéticos. No se usa para decidir sobre
+          caso» y «Cómo se hizo» usan ese mismo modelo. No se usa para decidir sobre
           estudiantes reales.</p>
       </div>
     </section>"""

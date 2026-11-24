@@ -1,5 +1,5 @@
 /* Script clásico. Página "Reporte": el reporte completo del entrenamiento en HTML, construido con
-   public/reportes/resultados.json (el mismo origen que reportes/reporte_entrenamiento.md). */
+   public/reportes/real/resultados.json (la corrida con la base real; el mismo origen que reportes/real/reporte_entrenamiento.md). */
 (function () {
   "use strict";
   const { $, esc, pct, num, miles, nombre, aparecer, alVerUnaVez } = window.SAT;
@@ -17,25 +17,26 @@
       ["resumen", "Resumen", `
         <p>Se construyó un sistema de alerta temprana de deserción para estudiantes de pregrado en los semestres 2 a 4. La línea base califica con
         reglas escritas a mano; el modo aprendido usa una regresión logística (una neurona) y una red neuronal, entrenadas desde cero en NumPy con
-        ${miles(d.n_validos)} estudiantes <strong>sintéticos</strong>. Las métricas describen qué tan bien se recupera una función simulada, no el
-        desempeño con estudiantes reales.</p>
+        ${miles(d.n_validos)} estudiantes <strong>reales</strong> de primer año de la Universitat Politècnica de València (España), con lo que se sabe al
+        cerrar el primer cuatrimestre. Las métricas se midieron con ${miles(ev.n_test)} estudiantes que ningún modelo vio.</p>
         <dl class="cifras"><div><dt>AUC de la neurona</dt><dd>${num(m["regresión logística"].auc, 3)}</dd></div>
           <div><dt>AUC de la red</dt><dd>${num(m["red neuronal (MLP)"].auc, 3)}</dd></div>
           <div><dt>AUC de las reglas</dt><dd>${num(m["reglas (línea base)"].auc, 3)}</dd></div>
-          <div><dt>Techo posible</dt><dd>${num(ev.auc_techo, 3)}</dd></div></dl>
+          <div><dt>Abandonan en prueba</dt><dd>${pct(ev.tasa_test)}</dd></div></dl>
         <p class="hallazgo"><strong>Conclusión.</strong> ${esc(ev.conclusion)}</p>`],
       ["datos", "1. Datos", `
-        <p>Se generaron ${miles(d.n_generados)} registros: ${miles(d.n_validos)} válidos y ${d.n_descartados} con defectos a propósito, que el Paso 1
-        del contrato descartó (se colaron ${d.defectuosos_colados}). Tasa de deserción simulada: ${pct(d.tasa_desercion)} (objetivo ${pct(d.tasa_objetivo, 0)}).
-        ${d.sin_deuda_informada} estudiantes válidos no informan la deuda (es opcional).</p>
+        <p>Base: StudentDropoutDataset (Universitat Politècnica de València, Zenodo, CC BY 4.0), primer año de grado, cohortes 2021 y 2022. De
+        ${miles(d.n_generados)} estudiantes con etiqueta (sin los que tienen impago de matrícula, que la fuente nunca marca como abandono), ${d.n_descartados}
+        los remitió el Paso 1 del contrato y entraron ${miles(d.n_validos)}. Abandona el ${pct(d.tasa_desercion)}.</p>
         ${tabla(["Salida del Paso 1", "Registros"], Object.entries(d.descartes_por_motivo).map(([k, v]) => [esc(k), v]), [1])}
         ${tabla(["Conjunto", "Estudiantes", "Tasa de deserción"], [["Entrenamiento", miles(d.division.train), pct(d.division.tasa_train)],
           ["Validación", miles(d.division.val), pct(d.division.tasa_val)], ["Prueba", miles(d.division.test), pct(d.division.tasa_test)]], [1, 2])}
-        <p>Fórmula de la etiqueta [SUPUESTO]: <code>${esc(d.formula_latente)}</code></p>
+        <p>Abandono = dos cursos seguidos sin matricularse en la titulación. Lo que falta del contrato ampliado se completa con la mediana de entrenamiento
+        y una indicadora «sin dato».</p>
         ${ver("datos.html", "Ver los datos explicados paso a paso")}`],
       ["variables", "2. Variables", `
         <p>Candidatas: ${dep.candidatas.map((n) => esc(nombre(n))).join(", ")}. ${dep.decisiones.map((x) => `Se quitó <strong>${esc(nombre(x.se_quita))}</strong>
-        (r = ${num(x.correlacion, 2)} con ${esc(nombre(x.se_queda))}).`).join(" ")} Quedaron ${nombres.length} variables, estandarizadas con la media y la
+        (${x.se_queda ? `r = ${num(x.correlacion, 2)} con ${esc(nombre(x.se_queda))}` : x.vif !== undefined ? `VIF ${num(x.vif, 1)}` : "vale lo mismo para todos"}).`).join(" ")} Quedaron ${nombres.length} variables, estandarizadas con la media y la
         desviación de entrenamiento.</p>
         ${tabla(["Variable", "VIF antes", "VIF después"], dep.candidatas.map((n) => [esc(nombre(n)), num(dep.antes.vif[n], 2), dep.despues.vif[n] !== undefined ? num(dep.despues.vif[n], 2) : "quitada"]), [1, 2])}
         ${ver("variables.html", "Ver las variables explicadas paso a paso")}`],
@@ -58,8 +59,9 @@
       ["control", "5. Cuánto pesa cada variable", `
         ${tabla(["Variable", "Importancia neurona", "Importancia red", "Δ AUC sin ella", "Peso medio ± desv."], co.importancia_test.variables.map((n, j) => [esc(nombre(n)),
           pct(co.importancia_test.logistica_pct[j]), pct(co.importancia_test.red_pct[j]), num(co.ablacion[j].delta_auc, 4), `${num(co.estabilidad.pesos_media[j], 3)} ± ${num(co.estabilidad.pesos_desv[j], 3)}`]), [1, 2, 3, 4])}
-        ${co.pasos_tope.length ? `<p>Tope de dominancia (35 %): la ${esc(nombre(co.pasos_tope[0].variable))} pasó de ${pct(Math.max(...co.antes_tope.pct_train))} a
-          ${pct(Math.max(...co.despues_tope.pct_train))} con L2 ×${co.pasos_tope.at(-1).multiplicador_l2}; AUC en prueba ${num(co.antes_tope.auc_test, 4)} → ${num(co.despues_tope.auc_test, 4)}.</p>` : ""}
+        ${co.pasos_tope.length ? `<p>Tope de dominancia (35 % por fuente de datos): la fuente que más pesaba pasó de ${pct(Math.max(...co.antes_tope.grupos_pct_train))} a
+          ${pct(Math.max(...co.despues_tope.grupos_pct_train))} de la importancia en entrenamiento, en ${co.pasos_tope.length} reentrenamientos; AUC en prueba
+          ${num(co.antes_tope.auc_test, 3)} → ${num(co.despues_tope.auc_test, 3)}.</p>` : ""}
         ${co.estrato ? tabla(["Estrato", "n", "Deserción real", "En alto (con)", "En alto (sin)", "Recall (con)", "Recall (sin)"], co.estrato.con_estrato.map((a, i) => [a.estrato, a.n, pct(a.tasa_real),
           pct(a.fraccion_alto), pct(co.estrato.sin_estrato[i].fraccion_alto), pct(a.recall_alto), pct(co.estrato.sin_estrato[i].recall_alto)]), [1, 2, 3, 4, 5, 6]) : ""}
         ${ver("pesos.html", "Ver el control de dominancia paso a paso")}`],
@@ -77,11 +79,12 @@
           + `<p>${esc(r4.lectura)}</p>` : "<p>No se encontraron los resultados de la ronda 4.</p>"}
         ${ver("pruebas.html", "Ver las pruebas caso por caso")}`],
       ["limitaciones", "8. Limitaciones", `<ul>
-        <li>Los datos son sintéticos: el modelo aprendió una fórmula inventada. Con datos reales los pesos, la importancia y el error cambiarán
+        <li>Son estudiantes de una universidad española, no colombiana: antes de usarlo en otra institución hay que reentrenar con sus datos
           (<code>python -m desercion.entrenamiento --csv archivo.csv</code>).</li>
+        <li>La base no registra asistencia, trabajo, estrato ni deuda: la asistencia y el trabajo se aproximan, y el estrato y la deuda no se usan.</li>
         <li>Las propiedades de la ronda 4 se verificaron en casos y barridos concretos, no en todo el espacio posible.</li>
         <li>La corrección de probabilidad por pesos de clase es aproximada; con datos reales conviene recalibrar.</li>
-        <li>El estrato es una variable sensible: usarlo puede reforzar desigualdades.</li>
+        <li>La ronda 4 corre con los pesos de referencia entrenados con datos simulados (los oráculos se escribieron para ellos).</li>
         <li>Los oráculos de las rondas 1 a 4 son borradores escritos por el modelo y deben firmarlos personas del equipo.</li></ul>`],
       ["supuestos", "9. Supuestos para revisar", supuestos ? `<ol class="supuestos">${supuestos.map((x) => `<li>${esc(x)}</li>`).join("")}</ol>` : "<p>No se encontró la lista de supuestos.</p>"],
     ];

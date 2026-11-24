@@ -52,96 +52,80 @@
           <tr><td>R3.4</td><td colspan="2">promedio &lt; 3,0 y asistencia &lt; 70 % fuerza alto, en los dos modos</td></tr></tbody></table></div>`)] },
       { id: "c-aprendido", titulo: "Qué cambia con el modelo aprendido", nodos: [
         `El modelo aprendido <strong>solo reemplaza el puntaje y los cortes</strong>: los pesos salen de los datos en vez de escribirse a mano. La validación,
-        la regla R3.4 y las garantías son las mismas, y las rondas 1 a 3 siguen pasando 35 de 35 en modo reglas.`] },
+        la regla R3.4 y las garantías son las mismas, y las rondas 1 a 3 siguen pasando 35 de 35 en modo reglas.`,
+        `Con la base real, el modelo recibe además un <strong>contrato ampliado</strong>: notas del cuatrimestre, días en el campus y en el aula virtual,
+        admisión y titulación, todos opcionales (si falta uno se usa el valor usual y se dice). Estrato, deuda y asistencia siguen en el contrato porque los
+        piden las reglas, pero el modelo real no los usa: la base no los trae. El paso siguiente muestra qué variables quedan.`] },
     ]);
   }
 
   /* ================================================================== 2. datos */
-  function diagramaFabrica() {
-    const W = 760, H = 300;
-    const svg = lienzo(W, H, "Cómo se generó cada estudiante simulado: dos factores ocultos producen las variables, y una función distinta de las reglas produce la probabilidad de desertar.");
-    svg.appendChild(s("defs", {}, [s("marker", { id: "punta-fab", viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, markerUnits: "userSpaceOnUse", orient: "auto" }, [s("path", { d: "M0,0 L10,5 L0,10 z", fill: "var(--tenue)" })])]));
-    const flecha = (x1, y1, x2, y2, extra = {}) => svg.appendChild(s("path", { d: `M${x1},${y1} C${(x1 + x2) / 2},${y1} ${(x1 + x2) / 2},${y2} ${x2},${y2}`, fill: "none", stroke: "var(--tenue)", "stroke-width": 1.3, "marker-end": "url(#punta-fab)", ...extra }));
-    const latentes = [{ id: "S", t: "Socioeconómico", y: 80 }, { id: "A", t: "Académico", y: 210 }];
-    const vars = [["estrato", "S"], ["trabaja", "S"], ["deuda", "S"], ["promedio", "A"], ["reprobadas", "A"], ["asistencia", "A"], ["créditos", "A"]];
-    const yVar = (i) => 22 + i * 38;
-    vars.forEach(([v, f], i) => flecha(150, latentes.find((l) => l.id === f).y, 268, yVar(i) + 13));
-    vars.forEach((_, i) => flecha(400, yVar(i) + 13, 506, 150));
-    latentes.forEach((l) => {
-      svg.appendChild(s("circle", { cx: 100, cy: l.y, r: 46, fill: "var(--acento-suave)", stroke: "var(--acento)", "stroke-width": 1.5 }));
-      svg.appendChild(s("text", { x: 100, y: l.y - 4, "text-anchor": "middle", class: "texto-svg-fuerte", texto: `Factor ${l.id}` }));
-      svg.appendChild(s("text", { x: 100, y: l.y + 13, "text-anchor": "middle", class: "etiqueta-svg", texto: l.t }));
-    });
-    svg.appendChild(s("line", { x1: 100, x2: 100, y1: 128, y2: 162, stroke: "var(--acento)", "stroke-dasharray": "3 3" }));
-    svg.appendChild(s("text", { x: 108, y: 149, class: "etiqueta-svg", texto: "r = 0,30" }));
-    vars.forEach(([v], i) => {
-      svg.appendChild(s("rect", { x: 270, y: yVar(i), width: 128, height: 26, rx: 5, fill: "var(--hoja)", stroke: "var(--renglon)" }));
-      svg.appendChild(s("text", { x: 334, y: yVar(i) + 17, "text-anchor": "middle", class: "texto-svg", texto: v }));
-    });
-    svg.appendChild(s("rect", { x: 508, y: 104, width: 120, height: 92, rx: 8, fill: "var(--hoja)", stroke: "var(--tinta)", "stroke-width": 1.5 }));
-    [["Función latente z", "texto-svg-fuerte", 126], ["no lineal", "etiqueta-svg", 146], ["con interacciones", "etiqueta-svg", 161], ["y ruido N(0; 0,6)", "etiqueta-svg", 176]]
-      .forEach(([t, cl, y]) => svg.appendChild(s("text", { x: 568, y, "text-anchor": "middle", class: cl, texto: t })));
-    flecha(628, 150, 664, 150);
-    svg.appendChild(s("rect", { x: 666, y: 118, width: 86, height: 64, rx: 8, fill: "var(--alto-fondo)", stroke: "var(--alto)", "stroke-width": 1.5 }));
-    svg.appendChild(s("text", { x: 709, y: 144, "text-anchor": "middle", class: "texto-svg-fuerte", texto: "¿desertó?" }));
-    svg.appendChild(s("text", { x: 709, y: 162, "text-anchor": "middle", class: "etiqueta-svg", texto: "sí con prob. p" }));
-    svg.appendChild(s("text", { x: 568, y: 226, "text-anchor": "middle", class: "etiqueta-svg", texto: "no usa las reglas" }));
-    svg.appendChild(s("text", { x: 568, y: 240, "text-anchor": "middle", class: "etiqueta-svg", texto: "del contrato" }));
-    return svg;
-  }
+  const FUENTE_DE = { promedio_acumulado: "notas", materias_cursadas_periodo_anterior: "notas", tasa_reprobacion: "notas", asignaturas_no_presentadas: "notas",
+    materias_reprobadas: "notas", nota_media_cuatrimestre: "notas", nota_minima_cuatrimestre: "notas",
+    dias_campus_sep_nov: "actividad", dias_campus_dic_ene: "actividad", sin_registro_wifi: "actividad", dias_aula_virtual: "actividad",
+    entregas_por_asignatura: "actividad", sin_aula_virtual: "actividad", porcentaje_asistencia: "actividad",
+    creditos_inscritos: "admision", trabaja: "admision", nota_acceso: "admision", sin_nota_acceso: "admision", nota_bachillerato: "admision",
+    sin_nota_bachillerato: "admision", opcion_titulacion: "admision", sin_opcion_titulacion: "admision", ingreso_ordinario: "admision",
+    semestre: "admision", estrato: "admision", deuda_matricula: "admision", abandono_titulacion: "titulacion" };
+  const FUENTES_TXT = { notas: "Notas del primer cuatrimestre", actividad: "Actividad (campus y aula virtual)", admision: "Matrícula y admisión", titulacion: "Titulación" };
 
-  function embudo(d) {
-    const W = 760, H = 190, izq = 150, der = 14;
-    const svg = lienzo(W, H, `De ${miles(d.n_generados)} registros generados, ${d.n_descartados} los descartó el Paso 1; los ${miles(d.n_validos)} válidos se dividieron en entrenamiento, validación y prueba.`);
-    const X = escala(0, d.n_generados, izq, W - der);
+  /* De la fuente a los estudiantes con los que se entrena, en una sola barra por etapa. */
+  function embudo(d, impagos) {
+    const W = 760, H = 220, izq = 160, der = 14;
+    const total = d.n_generados + impagos;
+    const svg = lienzo(W, H, `De ${miles(total)} estudiantes del extracto, ${impagos} con impago quedan fuera, ${d.n_descartados} los remite el Paso 1 y
+      ${miles(d.n_validos)} se dividen en entrenamiento, validación y prueba.`);
+    const X = escala(0, total, izq, W - der);
     const fila = (y, etiqueta, sub) => {
       svg.appendChild(s("text", { x: izq - 10, y: y + 15, "text-anchor": "end", class: "texto-svg-fuerte", texto: etiqueta }));
       svg.appendChild(s("text", { x: izq - 10, y: y + 30, "text-anchor": "end", class: "etiqueta-svg", texto: sub }));
     };
-    const seg = (x0, ancho, y, alto, color, globo, texto, opacidad = 1) => {
-      const r = s("rect", { x: x0, y, width: Math.max(1.5, ancho - 2), height: alto, rx: 2, fill: color, opacity: opacidad });
+    const seg = (x0, ancho, y, alto, color, globo, texto) => {
+      const r = s("rect", { x: x0, y, width: Math.max(1.5, ancho - 2), height: alto, rx: 2, fill: color });
       conGlobo(r, globo); svg.appendChild(r);
-      if (texto && ancho > 70) svg.appendChild(s("text", { x: x0 + 8, y: y + alto / 2 + 4, class: "texto-svg", texto, fill: "var(--hoja)" }));
+      if (texto && ancho > 90) svg.appendChild(s("text", { x: x0 + 8, y: y + alto / 2 + 4, class: "texto-svg", texto, fill: "var(--hoja)" }));
     };
-    fila(10, "Generados", `${miles(d.n_generados)} registros`);
-    seg(X(0), X(d.n_validos) - X(0), 10, 34, "var(--acento)", `<b>Válidos</b><br>${miles(d.n_validos)} pasan el Paso 1`, `${miles(d.n_validos)} válidos`);
+    fila(10, "Extracto", `${miles(total)} estudiantes`);
+    seg(X(0), X(d.n_validos) - X(0), 10, 34, "var(--acento)", `<b>Entran</b><br>${miles(d.n_validos)} estudiantes`, `${miles(d.n_validos)} entran`);
     let x = X(d.n_validos);
     for (const [motivo, n] of Object.entries(d.descartes_por_motivo)) {
       const w = X(n) - X(0);
-      seg(x, w + 2, 10, 34, motivo.startsWith("error") ? "var(--alto)" : "var(--humano)", `<b>Descartado: ${esc(motivo)}</b><br>${n} registros`);
+      seg(x, w + 2, 10, 34, "var(--humano)", `<b>Paso 1: ${esc(motivo)}</b><br>${n} registros van a una persona`);
       x += w;
     }
-    svg.appendChild(s("text", { x: W - der, y: 60, "text-anchor": "end", class: "etiqueta-svg", texto: `${d.n_descartados} descartados por el Paso 1 (en rojo, error; en violeta, abstención)` }));
-    fila(92, "División", "70 / 15 / 15 %");
+    seg(x, X(impagos) - X(0) + 2, 10, 34, "var(--tenue)", `<b>Fuera: impago de matrícula</b><br>${impagos} estudiantes; la fuente no marca a ninguno como abandono`);
+    svg.appendChild(s("text", { x: W - der, y: 60, "text-anchor": "end", class: "etiqueta-svg", texto: `${impagos} con impago fuera (gris) · ${d.n_descartados} remitidos por el Paso 1 (violeta)` }));
+    fila(100, "División", "70 / 15 / 15 %");
     const Xv = escala(0, d.n_validos, izq, W - der);
     let x0 = Xv(0);
     for (const [clave, nombre_] of [["train", "entrenamiento"], ["val", "validación"], ["test", "prueba"]]) {
       const n = d.division[clave], tasa = d.division[`tasa_${clave}`];
       const w = Xv(n) - Xv(0);
-      seg(x0, w * (1 - tasa), 92, 34, "var(--serie-1)", `<b>${nombre_}</b><br>${miles(n)} estudiantes; ${pct(tasa)} desertan`);
-      svg.appendChild(s("text", { x: x0, y: 142, class: "texto-svg-fuerte", texto: nombre_ }));
-      svg.appendChild(s("text", { x: x0, y: 156, class: "etiqueta-svg", texto: miles(n) }));
-      seg(x0 + w * (1 - tasa), w * tasa, 92, 34, "var(--serie-2)", `<b>${nombre_}: desertan</b><br>${miles(Math.round(n * tasa))} estudiantes (${pct(tasa)})`);
+      seg(x0, w * (1 - tasa), 100, 34, "var(--serie-1)", `<b>${nombre_}</b><br>${miles(n)} estudiantes; ${pct(tasa)} abandonan`);
+      svg.appendChild(s("text", { x: x0, y: 150, class: "texto-svg-fuerte", texto: nombre_ }));
+      svg.appendChild(s("text", { x: x0, y: 164, class: "etiqueta-svg", texto: miles(n) }));
+      seg(x0 + w * (1 - tasa), w * tasa, 100, 34, "var(--serie-2)", `<b>${nombre_}: abandonan</b><br>${miles(Math.round(n * tasa))} estudiantes (${pct(tasa)})`);
       x0 += w;
     }
-    svg.appendChild(s("text", { x: izq, y: 182, class: "etiqueta-svg", texto: "La división es estratificada: en los tres conjuntos deserta el mismo porcentaje. La prueba no se tocó hasta el paso 7." }));
+    svg.appendChild(s("text", { x: izq, y: 196, class: "etiqueta-svg", texto: "Estratificada y con semilla fija (2026): en los tres conjuntos abandona el mismo porcentaje." }));
+    svg.appendChild(s("text", { x: izq, y: 212, class: "etiqueta-svg", texto: "La prueba no se usa hasta la evaluación final." }));
     return svg;
   }
 
-  /* Cómo quedaron los datos, sin imagen: para cada variable, el promedio de quienes desertaron frente al de quienes no. */
+  /* Cómo quedaron los datos: para cada variable, el promedio de quienes abandonaron frente al de quienes no. */
   function comparaMedias(rc) {
-    const filas = [["promedio_acumulado", 2], ["porcentaje_asistencia", 1], ["materias_reprobadas", 2], ["creditos_inscritos", 1]].filter(([k]) => rc.numericos[k]);
+    const filas = [["promedio_acumulado", 2], ["porcentaje_asistencia", 1], ["materias_reprobadas", 2], ["materias_cursadas_periodo_anterior", 1]].filter(([k]) => rc.numericos[k] && rc.numericos[k].desv > 0);
     const W = 520, altoF = 46, izq = 150, der = 26, H = 10 + filas.length * altoF + 6;
-    const svg = lienzo(W, H, "Promedio de cada variable entre quienes desertaron y quienes no: " + filas.map(([k, dgt]) =>
+    const svg = lienzo(W, H, "Promedio de cada variable entre quienes abandonaron y quienes no: " + filas.map(([k, dgt]) =>
       `${nombre(k)} ${num(rc.numericos[k].media_desertores, dgt)} frente a ${num(rc.numericos[k].media_no_desertores, dgt)}`).join("; ") + ".");
     filas.forEach(([k, dgt], i) => {
       const v = rc.numericos[k], y = 10 + i * altoF + 16, X = escala(v.min, v.max, izq, W - der);
-      svg.appendChild(s("text", { x: izq - 14, y: y + 4, "text-anchor": "end", class: "texto-svg-fuerte", texto: nombre(k) }));
+      svg.appendChild(s("text", { x: izq - 14, y: y + 4, "text-anchor": "end", class: "texto-svg-fuerte", texto: k === "porcentaje_asistencia" ? "presencia (%)" : nombre(k) }));
       svg.appendChild(s("line", { x1: izq, x2: W - der, y1: y, y2: y, stroke: "var(--renglon)", "stroke-width": 6, "stroke-linecap": "round" }));
       svg.appendChild(s("line", { x1: X(v.media_desertores), x2: X(v.media_no_desertores), y1: y, y2: y, stroke: "var(--tinta-2)", "stroke-width": 2 }));
       svg.appendChild(s("text", { x: izq, y: y + 20, class: "etiqueta-svg", texto: num(v.min, 0) }));
       svg.appendChild(s("text", { x: W - der, y: y + 20, "text-anchor": "end", class: "etiqueta-svg", texto: num(v.max, 0) }));
-      for (const [valor, color, quien] of [[v.media_no_desertores, "var(--serie-1)", "no desertaron"], [v.media_desertores, "var(--serie-2)", "desertaron"]]) {
+      for (const [valor, color, quien] of [[v.media_no_desertores, "var(--serie-1)", "siguieron"], [v.media_desertores, "var(--serie-2)", "abandonaron"]]) {
         const punto = s("circle", { cx: X(valor), cy: y, r: 7, fill: color, stroke: "var(--hoja)", "stroke-width": 2 });
         conGlobo(punto, `<b>${esc(nombre(k))}</b><br>Quienes ${quien}: ${num(valor, dgt)} en promedio`);
         svg.appendChild(punto);
@@ -150,47 +134,63 @@
       svg.appendChild(s("text", { x: X(v.media_desertores) + (izqEs ? -12 : 12), y: y - 10, "text-anchor": izqEs ? "end" : "start", class: "etiqueta-svg", texto: num(v.media_desertores, dgt) }));
       svg.appendChild(s("text", { x: X(v.media_no_desertores) + (izqEs ? 12 : -12), y: y - 10, "text-anchor": izqEs ? "start" : "end", class: "etiqueta-svg", texto: num(v.media_no_desertores, dgt) }));
     });
-    return figura(svg, "La raya es el rango completo de cada variable; cada punto, el promedio de un grupo. Entre más separados, más distingue esa variable.",
-      leyenda([["var(--serie-1)", "no desertaron", "punto"], ["var(--serie-2)", "desertaron", "punto"]]));
+    return figura(svg, "La raya es el rango de cada campo; cada punto, el promedio de un grupo. Entre más separados, más distingue ese campo. La presencia combina wifi y aula virtual (la base no registra asistencia).",
+      leyenda([["var(--serie-1)", "siguieron", "punto"], ["var(--serie-2)", "abandonaron", "punto"]]));
   }
-  function tasasPorGrupo(rc, tasaGlobal) {
-    const rotulo = { estrato: (v) => `estrato ${v}`, trabaja: (v) => (v === "true" ? "trabaja" : "no trabaja"),
-      deuda_matricula: (v) => (v === "true" ? "debe matrícula" : v === "false" ? "no debe" : "deuda sin dato") };
-    const filas = ["estrato", "trabaja", "deuda_matricula"].flatMap((k) => (rc.categoricos[k] || []).map((f) => ({
-      etiqueta: rotulo[k](f.valor), valor: f.tasa_desercion, detalle: `${miles(f.n)} estudiantes (${pct(f.fraccion, 0)} del total)` })));
-    return figura(grafBarras({ filas, formato: (v) => pct(v, 0), min: 0, grupos: [{ clave: "valor", color: "var(--serie-2)" }], anchoEtiqueta: 120, ancho: 520,
-      linea: { valor: tasaGlobal, etiqueta: `todos: ${pct(tasaGlobal, 0)}`, color: "var(--tinta-2)" }, etiqueta: "Porcentaje que deserta en cada grupo" }),
-      "Qué parte de cada grupo deserta. La raya punteada es el promedio de todos.");
+  function tasasPorGrupo(R) {
+    const d = R.datos, rc = d.resumen_campos, ev = R.datos_evidentes;
+    const filas = (rc.categoricos.trabaja || []).map((f) => ({ etiqueta: f.valor === "true" ? "tiempo parcial" : "tiempo completo", valor: f.tasa_desercion,
+      detalle: `${miles(f.n)} estudiantes (${pct(f.fraccion, 1)} del total)` }));
+    if (ev) filas.push({ etiqueta: "no aprobó nada", valor: ev.tasa_desercion, detalle: `${miles(ev.n)} estudiantes (${pct(ev.fraccion, 1)} del total)` });
+    return figura(grafBarras({ filas, formato: (v) => pct(v, 0), min: 0, grupos: [{ clave: "valor", color: "var(--serie-2)" }], anchoEtiqueta: 140, ancho: 520,
+      linea: { valor: d.tasa_desercion, etiqueta: `todos: ${pct(d.tasa_desercion, 0)}`, color: "var(--tinta-2)" }, etiqueta: "Porcentaje que abandona en cada grupo" }),
+      "Qué parte de cada grupo abandona. La matrícula a tiempo parcial es lo que la base tiene más parecido a «trabaja».");
+  }
+  function faltantes(d) {
+    const f = d.faltantes_ampliado || {};
+    const filas = Object.entries(f).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1]).map(([k, n]) => ({ etiqueta: nombre(k), valor: n / d.n_validos,
+      detalle: `${miles(n)} de ${miles(d.n_validos)} estudiantes` }));
+    return figura(grafBarras({ filas, formato: (v) => pct(v, 1), min: 0, grupos: [{ clave: "valor", color: "var(--tinta-2)" }], anchoEtiqueta: 210, ancho: 560,
+      etiqueta: "Datos que faltan en la base" }), "Lo que falta se completa con la mediana de entrenamiento y una indicadora «sin dato» que el modelo ve: no se inventa nada en silencio.");
   }
 
-  function pasoDatos(c, R) {
-    const d = R.datos;
+  function pasoDatos(c, R, B) {
+    const d = R.datos, dep = R.dependencia;
+    const impagos = B && B.fuente ? Number((B.fuente.poblacion.match(/(\d+) estudiantes con impago/) || [])[1] || 0) : 0;
+    const fuente = B && B.fuente ? B.fuente : null;
+    const porFuente = {};
+    dep.finales.forEach((v) => { const f = FUENTE_DE[v] || "admision"; (porFuente[f] = porFuente[f] || []).push(v); });
     secuencia(c, 2, [
-      { id: "d-por-que", titulo: "Por qué datos sintéticos", nodos: [
-        `No hay registros reales de estudiantes con la etiqueta de si desertaron, así que se simularon ${miles(d.n_generados)}. Lo delicado es no generar
-        la etiqueta con las mismas reglas que se quieren aprender: el modelo solo se copiaría a sí mismo. Cuando haya datos reales, se cargan con
-        <code>--csv</code> y todo lo demás se repite igual.`] },
-      { id: "d-fabrica", titulo: "Cómo se fabricó cada estudiante", nodos: [
-        figura(desplazable(diagramaFabrica()), `Cada estudiante sale de dos factores ocultos. Por eso las variables vienen correlacionadas como en la vida
-          real (un promedio bajo va con más materias perdidas; un estrato bajo, con más trabajo y deuda), y la deserción se sortea con una función que no
-          tiene los escalones de las reglas.`),
-        `La tasa de deserción se ajustó al ${pct(d.tasa_objetivo, 0)} (SPADIES reporta cerca de 12 % anual, concentrado en los primeros semestres).`,
-        html(`<details><summary>Ver la fórmula con la que se generó la etiqueta [SUPUESTO]</summary><p class="nota"><code>${esc(d.formula_latente || "")}</code></p></details>`)] },
-      { id: "d-validacion", titulo: "Qué pasó la validación y cómo se repartió", nodos: [
+      { id: "d-fuente", titulo: "De dónde salen los datos", nodos: [
+        `Son estudiantes <strong>reales y anonimizados</strong> de primer año de la ${esc(fuente ? fuente.institucion : "Universitat Politècnica de València")},
+        publicados en ${fuente ? `<a href="${esc(fuente.doi)}">${esc(fuente.repositorio)}</a> (${esc(fuente.licencia)})` : "Zenodo"}: cohortes 2021 y 2022. Colombia publica
+        la deserción solo en totales (SPADIES), no estudiante por estudiante, y esta es la base pública más cercana con notas y actividad.`,
+        `Se usa <strong>solo lo que se sabe al cerrar el primer cuatrimestre</strong> (septiembre a enero): notas, días en el campus (wifi), actividad en el
+        aula virtual, matrícula y admisión. Nada posterior entra al modelo. <strong>Abandono</strong> = dos cursos seguidos sin matricularse en la titulación.`,
+        html(`<details><summary>Cómo se armaron los 12 campos del contrato con esta base [SUPUESTOS]</summary><p class="nota">La asistencia se aproxima con la presencia
+          (wifi y aula virtual); «trabaja», con la matrícula a tiempo parcial; el estrato no existe (vale 3 para todos) y la deuda no se usa. Por eso esos campos
+          no entran al modelo real. Todo está en <code>desercion/datos_reales.py</code>.</p></details>`)] },
+      { id: "d-validacion", titulo: "Quién entra y cómo se repartió", nodos: [
         html(`<dl class="cifras">
-          <div><dt>Estudiantes válidos</dt><dd>${miles(d.n_validos)}</dd></div>
-          <div><dt>Desertan en la simulación</dt><dd>${pct(d.tasa_desercion)}</dd></div>
-          <div><dt>Descartados por el Paso 1</dt><dd>${d.n_descartados}</dd></div>
-          <div><dt>Techo de AUC posible</dt><dd>${num(d.auc_techo_test, 3)}</dd></div></dl>`),
-        figura(desplazable(embudo(d)), `Los ${d.n_descartados} registros con defectos a propósito pasaron por la misma validación del contrato y ninguno entró
-          al entrenamiento. El techo de AUC es lo mejor que podría lograr un modelo perfecto: el resto es ruido de la simulación.`),
+          <div><dt>Estudiantes que entran</dt><dd>${miles(d.n_validos)}</dd></div>
+          <div><dt>Abandonan</dt><dd>${pct(d.tasa_desercion)}</dd></div>
+          <div><dt>Remitidos por el Paso 1</dt><dd>${d.n_descartados}</dd></div>
+          <div><dt>Fuera por impago</dt><dd>${impagos}</dd></div></dl>`),
+        figura(desplazable(embudo(d, impagos)), `Los ${impagos} estudiantes con impago quedan fuera porque la fuente no marca a ninguno como abandono: con ellos el modelo
+          aprendía que «no tener nota de acceso» protege. Los ${d.n_descartados} que remite el Paso 1 (dato faltante o contradictorio) los revisa una persona.`),
         html(`<ul class="tres-usos">
           <li><span>Entrenamiento</span><b>${miles(d.division.train)}</b>Con estos estudiantes se aprenden los pesos.</li>
           <li><span>Validación</span><b>${miles(d.division.val)}</b>Deciden cuándo parar, los cortes y el tope. El modelo no aprende de ellos.</li>
           <li><span>Prueba</span><b>${miles(d.division.test)}</b>Guardados bajo llave hasta la evaluación final.</li></ul>`)] },
-      { id: "d-distribuciones", titulo: "Cómo quedaron los datos", nodos: [
-        "Antes de entrenar conviene mirar si los datos tienen sentido: quienes desertan deberían traer peor promedio, menos asistencia y más materias perdidas.",
-        div("cuerpo", [comparaMedias(d.resumen_campos), tasasPorGrupo(d.resumen_campos, d.tasa_desercion)])] },
+      { id: "d-variables", titulo: `Las ${dep.finales.length} variables que usa el modelo`, nodos: [
+        html(`<div class="tabla-envoltura"><table><thead><tr><th>Fuente</th><th class="n">n</th><th>Variables</th></tr></thead><tbody>${["notas", "actividad", "admision", "titulacion"]
+          .filter((f) => porFuente[f]).map((f) => `<tr><td>${FUENTES_TXT[f]}</td><td class="n">${porFuente[f].length}</td><td>${porFuente[f].map((v) => esc(nombre(v))).join(", ")}</td></tr>`).join("")}</tbody></table></div>`),
+        `La <strong>tasa de abandono de la titulación</strong> se calcula solo con estudiantes de entrenamiento y, para ellos mismos, «fuera de pliegue» (en 5 partes): la
+        tasa de cada estudiante sale de las otras cuatro, para que su propio desenlace no se filtre en su dato. El paso siguiente explica cómo se llegó de ${dep.candidatas.length} candidatas a ${dep.finales.length}.`] },
+      { id: "d-faltantes", titulo: "Datos que faltan", nodos: [faltantes(d)] },
+      { id: "d-distribuciones", titulo: "Cómo se ven los datos", nodos: [
+        "Antes de entrenar conviene mirar si los datos tienen sentido: quienes abandonan deberían traer peor promedio, menos presencia y más materias perdidas.",
+        div("cuerpo", [comparaMedias(d.resumen_campos), tasasPorGrupo(R)])] },
     ]);
   }
 
@@ -198,9 +198,9 @@
   function mapaCalor(dep) {
     const nombres = dep.candidatas, n = nombres.length, P = dep.antes.pearson, S = dep.antes.spearman;
     const quitadas = new Set(dep.decisiones.map((x) => x.se_quita));
-    const celda = 44, izq = 196, arr = 8, abajo = 150;
+    const celda = n > 12 ? 30 : 44, izq = 230, arr = 8, abajo = 200;
     const W = izq + n * celda + 90, H = arr + n * celda + abajo;
-    const svg = lienzo(W, H, "Matriz de correlación de Pearson entre las diez variables candidatas, en datos de entrenamiento.");
+    const svg = lienzo(W, H, `Matriz de correlación de Pearson entre las ${n} variables candidatas, en datos de entrenamiento.`);
     nombres.forEach((a, i) => {
       const et = nombre(a) + (quitadas.has(a) ? " (quitada)" : "");
       svg.appendChild(s("text", { x: izq - 8, y: arr + i * celda + celda / 2 + 4, "text-anchor": "end", class: quitadas.has(a) ? "etiqueta-svg" : "texto-svg", texto: et }));
@@ -212,7 +212,7 @@
         const color = s("rect", { x, y, width: celda - 2, height: celda - 2, rx: 3, fill: r >= 0 ? "var(--div-pos)" : "var(--div-neg)", "fill-opacity": Math.min(1, Math.abs(r)) });
         conGlobo(color, `<b>${esc(nombre(a))} y ${esc(nombre(b))}</b><br>Pearson ${num(r, 2)} · Spearman ${num(S[i][j], 2)}`);
         svg.appendChild(color);
-        if (i !== j && Math.abs(r) >= 0.15) svg.appendChild(s("text", { x: x + celda / 2 - 1, y: y + celda / 2 + 4, "text-anchor": "middle", "pointer-events": "none",
+        if (i !== j && Math.abs(r) >= (n > 12 ? 0.5 : 0.15)) svg.appendChild(s("text", { x: x + celda / 2 - 1, y: y + celda / 2 + 4, "text-anchor": "middle", "pointer-events": "none",
           class: Math.abs(r) > 0.55 ? "texto-svg-fuerte" : "etiqueta-svg", fill: Math.abs(r) > 0.55 ? "var(--hoja)" : null, texto: num(r, 2) }));
         if (i < j && Math.abs(r) > 0.8) svg.appendChild(s("rect", { x: x - 1, y: y - 1, width: celda, height: celda, rx: 4, fill: "none", stroke: "var(--tinta)", "stroke-width": 2.5, "pointer-events": "none" }));
       });
@@ -222,7 +222,7 @@
 
   function vifPesas(dep) {
     const filas = dep.candidatas.map((n) => ({ n, a: dep.antes.vif[n], d: dep.despues.vif[n] }));
-    const W = 440, izq = 140, der = 44, altoF = 28, arr = 26;
+    const W = 600, izq = 270, der = 44, altoF = 28, arr = 26;
     const H = arr + filas.length * altoF + 10;
     const X = escala(0, Math.ceil(Math.max(...filas.map((f) => f.a)) / 5) * 5, izq, W - der);
     const svg = lienzo(W, H, "VIF de cada variable antes y después de quitar las redundantes.");
@@ -250,28 +250,33 @@
 
   function pasoVariables(c, R) {
     const dep = R.dependencia;
-    const [d1, d2] = dep.decisiones;
+    const constantes = dep.decisiones.filter((x) => !x.se_queda && x.vif === undefined);
+    const pares = dep.decisiones.filter((x) => x.se_queda);
+    const porVif = dep.decisiones.filter((x) => x.vif !== undefined);
+    const filaDec = (x) => `<tr><td><strong>${esc(nombre(x.se_quita))}</strong></td><td>${x.se_queda ? `${esc(nombre(x.se_queda))} (r = ${num(x.correlacion, 2)})`
+      : x.vif !== undefined ? `VIF ${num(x.vif, 1)}` : "—"}</td><td>${esc(x.motivo)}</td></tr>`;
     secuencia(c, 3, [
-      { id: "v-candidatas", titulo: "De 12 campos a 10 candidatas", nodos: [
-        `El identificador no sirve para predecir, y nivel de formación y estado de matrícula son iguales para todos (pregrado y activo). Quedan 9 campos y se
-        agrega una variable construida: la <strong>tasa de reprobación</strong> = perdidas ÷ cursadas, porque perder 2 de 3 no es lo mismo que 2 de 8.`] },
+      { id: "v-candidatas", titulo: `${dep.candidatas.length} candidatas`, nodos: [
+        `Del contrato salen 9 campos útiles (el identificador no predice; nivel y estado son iguales para todos) más una construida, la <strong>tasa de reprobación</strong>
+        = perdidas ÷ cursadas, porque perder 2 de 3 no es lo mismo que 2 de 8. El contrato ampliado suma notas del cuatrimestre, actividad, admisión, indicadoras
+        de «sin dato» y la tasa de abandono de la titulación: <strong>${dep.candidatas.length} candidatas</strong> en total.`] },
+      { id: "v-constantes", titulo: "Lo que no distingue a nadie", nodos: [
+        `${constantes.length} candidatas valen lo mismo para todos en esta base y se quitan antes de medir: ${constantes.map((x) => `<strong>${esc(nombre(x.se_quita))}</strong>`).join(", ")}.
+        El semestre es 2 para todos (primer año al cerrar el primer cuatrimestre), el estrato no existe en la base y la deuda no se usa.`] },
       { id: "v-correlacion", titulo: "Cuánto se parecen entre sí", nodos: [
         "Si dos variables cargan casi la misma información, el modelo reparte el peso entre ellas de forma inestable y hasta puede darle a una un signo al revés.",
         figura(desplazable(mapaCalor(dep)), `Correlación de Pearson en entrenamiento (rojo: suben juntas; azul: una sube y la otra baja). Los recuadros marcan
-          los dos pares por encima de 0,8. Pase el puntero para ver también Spearman.`)] },
+          los pares por encima de 0,8; se escriben los valores desde 0,5. Pase el puntero para ver también Spearman.`)] },
       { id: "v-vif", titulo: "VIF y qué se quitó", nodos: [
-        div("dos-columnas", [
-          figura(vifPesas(dep), "VIF antes (círculo vacío) y después (círculo lleno). Más de 10 es multicolinealidad grave."),
-          div("cuerpo", [
-            p(`El <strong>VIF</strong> mide cuánto se puede adivinar una variable a partir de las demás. Se quitó <strong>${esc(nombre(d1.se_quita))}</strong>
-              porque la ${esc(nombre(d1.se_queda))} ya la contiene (r = ${num(d1.correlacion, 2)}).`),
-            d2 ? p(`Se quitó <strong>${esc(nombre(d2.se_quita))}</strong>: mide lo mismo que los ${esc(nombre(d2.se_queda))} (r = ${num(d2.correlacion, 2)}).`) : null,
-            p(`Quedan <strong>${dep.finales.length} variables</strong>, todas con VIF menor que 2,5.`),
-          ])])] },
+        `El <strong>VIF</strong> mide cuánto se puede adivinar una variable a partir de las demás (más de 10 es grave). Se resolvió primero cada par con |r| &gt; 0,8 y
+        después lo que siguiera con VIF alto.`,
+        html(`<div class="tabla-envoltura"><table><thead><tr><th>Se quita</th><th>Frente a</th><th>Por qué</th></tr></thead><tbody>${[...pares, ...porVif].map(filaDec).join("")}</tbody></table></div>`),
+        figura(desplazable(vifPesas(dep)), `VIF antes (círculo vacío) y después (círculo lleno). Quedan <strong>${dep.finales.length} variables</strong>, la mayor con VIF
+          ${num(Math.max(...Object.values(dep.despues.vif)), 2)}.`)] },
       { id: "v-escala", titulo: "Todas en la misma escala", nodos: [
         html(`<div class="formula">z = (x − μ) / σ<small>μ y σ se calculan solo con entrenamiento</small></div>`),
-        `Sin estandarizar, la asistencia (0 a 100) dominaría los gradientes frente al promedio (0 a 5), y la regularización castigaría según las unidades.
-        En el paso siguiente se ve esta transformación con un estudiante concreto.`] },
+        `Sin estandarizar, los días en el aula virtual (0 a 83) dominarían los gradientes frente al promedio (0 a 5), y la regularización castigaría según las
+        unidades. En el paso siguiente se ve esta transformación con un estudiante concreto.`] },
     ]);
   }
 
@@ -325,59 +330,65 @@
       { id: "t-como", titulo: "De pesos a puntos", nodos: [
         html(`<div class="formula">βⱼ = wⱼ / σⱼ &nbsp;&nbsp; puntosⱼ = (βⱼ · xⱼ − mínimoⱼ) × ${num(t.escala, 2)}<small>de unidades estandarizadas a unidades reales</small></div>`),
         `El puntaje es lineal en el logit (logit = ${num(t.logit_base, 2)} + puntaje / ${num(t.escala, 2)}), así que ordena a los estudiantes exactamente igual que la probabilidad.`,
-        figura(desplazable(reparto(t)), "El reparto de los 100 puntos. Una asistencia de 0 % o un promedio de 0,0 son posibles en el contrato, por eso esas dos variables tienen los rangos más amplios.")] },
+        figura(desplazable(reparto(t)), `El reparto de los 100 puntos. Los puntos máximos dependen del peso y del rango posible de cada variable: por eso los créditos
+          inscritos y la matrícula a tiempo parcial reparten más puntos aunque pocos estudiantes estén en el extremo. Las que dan 0 puntos quedaron con peso nulo tras el tope.`)] },
       { id: "t-cortes", titulo: "Los cortes se eligen con datos", nodos: [
-        `Los cortes bajo, medio y alto ya no se fijan a mano en 30 y 60: se eligen en <strong>validación</strong> con un objetivo explícito. El nivel alto
-        debe capturar al menos el 70 % de los desertores, y en el bajo no puede quedar más del 10 %.`,
+        `Los cortes bajo, medio y alto ya no se fijan a mano en 30 y 60: se eligen en <strong>validación</strong> con un objetivo explícito: el nivel alto
+        debe capturar al menos el ${pct(cl.objetivo.recall_alto_min, 0)} de los desertores sin pasar del ${pct(cl.objetivo.fraccion_alto_max, 0)} de los estudiantes,
+        y en el bajo no puede quedar más del ${pct(cl.objetivo.desertores_en_bajo_max, 0)} de los desertores.`,
         figura(desplazable(comparaCortes(cl, cr)), `La neurona marca alto desde ${cl.corte_alto} puntos: ahí captura el ${pct(cl.en_validacion.recall_alto, 0)} de los
-          desertores de validación. En la red, el puntaje es 100 × probabilidad.`)] },
+          desertores de validación marcando al ${pct(cl.en_validacion.fraccion_alto, 0)} de los estudiantes. En la red, el puntaje es 100 × probabilidad.`)] },
       { id: "t-hallazgo", titulo: "Un hallazgo para el equipo", nodos: [
-        html(`<p class="hallazgo">La meta también pedía no poner a más del 25 % de los estudiantes en alto. Con lo que estos datos permiten, capturar el 70 % de los
-          desertores obliga a marcar al <strong>${pct(cl.en_validacion.fraccion_alto, 0)}</strong>. Se priorizó no dejar escapar desertores; el equipo decide si
-          acepta ese volumen de remisiones o baja la meta.</p>`)] },
+        html(`<p class="hallazgo">${cl.objetivo_cumplido ? "Se cumplen las dos condiciones del nivel alto." : `Las dos condiciones no caben a la vez: capturar el
+          ${pct(cl.objetivo.recall_alto_min, 0)} de los desertores obligaría a marcar a más del ${pct(cl.objetivo.fraccion_alto_max, 0)} de los estudiantes. Con la base real
+          se priorizó no desbordar a Bienestar: el alto marca al ${pct(cl.en_validacion.fraccion_alto, 0)} y detecta el ${pct(cl.en_validacion.recall_alto, 0)};
+          el resto de la detección queda en medio (tutoría académica). El equipo decide si cambia ese equilibrio.`}</p>`)] },
     ]);
   }
 
   /* ================================================================== 6. cuánto pesa cada variable */
   function pasoPesos(c, R) {
-    const co = R.control, it = co.importancia_test, nombres = it.variables;
+    const co = R.control, it = co.importancia_test, nombres = it.variables, fuentes = (R.grupos && R.grupos.fuentes) || [];
+    const filasG = (it.grupos || []).map((g) => ({ etiqueta: FUENTES_TXT[g.fuente] || g.fuente, log: g.logistica_pct * 100, red: g.red_pct * 100 })).sort((a, b) => b.log - a.log);
     const filas = nombres.map((n, i) => ({ etiqueta: nombre(n), log: it.logistica_pct[i] * 100, red: it.red_pct[i] * 100 })).sort((a, b) => b.log - a.log);
-    const items = [{ id: "w-importancia", titulo: "Importancia por permutación", nodos: [
-      `Si una sola variable carga con todo, un error en ese dato arrastra la decisión. Para medirlo se <strong>desordena una variable</strong> en los datos de
-      prueba y se mira cuánto empeora el modelo.`,
-      figura(grafBarras({ filas, grupos: [{ clave: "log", color: "var(--serie-1)", nombre: "neurona" }, { clave: "red", color: "var(--serie-2)", nombre: "red neuronal" }],
-        formato: (v) => `${num(v, 1)} %`, max: 40, linea: { valor: 35, etiqueta: "tope 35 %" }, etiqueta: "Importancia por permutación en prueba", anchoEtiqueta: 140 }),
-        "Parte de la importancia total que se lleva cada variable. Ninguna pasa del tope del 35 %.",
-        leyenda([["var(--serie-1)", "neurona (logística)"], ["var(--serie-2)", "red neuronal"]]))] }];
+    const mayor = filasG.length ? filasG[0] : null;
+    const items = [{ id: "w-importancia", titulo: "Importancia por permutación, por fuente de datos", nodos: [
+      `Si una sola fuente carga con todo, un error en ese dato arrastra la decisión. Para medirlo se <strong>desordena una fuente entera</strong> en los datos de
+      prueba y se mira cuánto empeora el modelo. Se mide por fuente (notas, actividad, admisión, titulación) porque las variables de una misma fuente se suplen
+      entre sí: desordenar una sola haría creer que pesa poco.`,
+      figura(grafBarras({ filas: filasG, grupos: [{ clave: "log", color: "var(--serie-1)", nombre: "neurona" }, { clave: "red", color: "var(--serie-2)", nombre: "red neuronal" }],
+        formato: (v) => `${num(v, 1)} %`, max: 50, linea: { valor: 35, etiqueta: "tope 35 %" }, etiqueta: "Importancia por fuente en prueba", anchoEtiqueta: 220 }),
+        mayor ? `Parte de la importancia total que se lleva cada fuente. La titulación queda en el tope por poco (${num(mayor.log, 1)} % en la neurona y
+        ${num(mayor.red, 1)} % en la red): frenarla más le pasaba el peso a las notas y costaba AUC, así que se dejó y se dice.` : "",
+        leyenda([["var(--serie-1)", "neurona (logística)"], ["var(--serie-2)", "red neuronal"]])),
+      html(`<details><summary>Ver la importancia variable por variable</summary></details>`)] }];
+    items[0].nodos[2].appendChild(figura(grafBarras({ filas, grupos: [{ clave: "log", color: "var(--serie-1)", nombre: "neurona" }, { clave: "red", color: "var(--serie-2)", nombre: "red neuronal" }],
+      formato: (v) => `${num(v, 1)} %`, max: 40, etiqueta: "Importancia por variable en prueba", anchoEtiqueta: 230 }), "Parte de la importancia total de cada variable."));
     if (co.pasos_tope.length) {
-      const pasos = [{ m: 1, v: Math.max(...co.antes_tope.pct_train) }, ...co.pasos_tope.map((x) => ({ m: x.multiplicador_l2, v: x.max_pct_train }))];
-      const variable = co.pasos_tope[0].variable;
-      items.push({ id: "w-tope", titulo: "El tope de dominancia", nodos: [
-        `En la primera versión, la <strong>${esc(nombre(variable))}</strong> se llevaba el ${pct(pasos[0].v)} de la importancia (medida en entrenamiento). Se le
-        subió la regularización L2 solo a ella, de a doble, hasta bajarla a ${pct(pasos.at(-1).v)}. Costo en prueba: AUC de ${num(co.antes_tope.auc_test, 4)} a
-        ${num(co.despues_tope.auc_test, 4)}, prácticamente gratis.`,
-        figura(grafLineas({ series: [{ nombre: `máximo (${nombre(variable)})`, color: "var(--serie-1)", puntos: true, valores: pasos.map((x, i) => [i, x.v * 100]) }],
-          alto: 210, xEtiqueta: "paso", yEtiqueta: "% de la importancia", yMin: 28, yMax: 40, formatoY: (v) => `${num(v, 1)} %`,
-          formatoX: (v) => (pasos[v] ? `L2 ×${pasos[v].m}` : ""), referencias: [{ y: 35, etiqueta: "tope 35 %", color: "var(--alto)" }, { y: 33, etiqueta: "objetivo con margen 33 %" }],
-          etiqueta: "Pasos del tope de dominancia" }), "Cada punto es un reentrenamiento con el doble de L2 sobre esa variable.")] });
+      const g0 = co.antes_tope.grupos_pct_train, g1 = co.despues_tope.grupos_pct_train;
+      const pasos = [{ m: "inicio", v: Math.max(...g0) }, ...co.pasos_tope.map((x) => ({ m: `×${x.multiplicador_l2}`, v: x.max_pct_train }))];
+      const antes = fuentes.map((f, i) => `${FUENTES_TXT[f] || f} ${pct(g0[i], 0)}`).join(", ");
+      const despues = fuentes.map((f, i) => `${FUENTES_TXT[f] || f} ${pct(g1[i], 0)}`).join(", ");
+      items.push({ id: "w-tope", titulo: "El tope de dominancia (35 % por fuente)", nodos: [
+        `Sin freno, la neurona dependía de dos fuentes: ${antes} (medido en entrenamiento). En cada reentrenamiento se dobla la regularización L2 de las variables
+        de la fuente que más pesa, hasta que ninguna pase del 33 % (35 % menos un margen por ruido). Al final: ${despues}.`,
+        figura(grafLineas({ series: [{ nombre: "fuente que más pesa", color: "var(--serie-1)", puntos: true, valores: pasos.map((x, i) => [i, x.v * 100]) }],
+          alto: 220, xEtiqueta: "reentrenamiento", yEtiqueta: "% de la importancia", yMin: 25, yMax: 50, formatoY: (v) => `${num(v, 0)} %`,
+          formatoX: (v) => (pasos[v] ? pasos[v].m : ""), referencias: [{ y: 35, etiqueta: "tope 35 %", color: "var(--alto)" }, { y: 33, etiqueta: "objetivo 33 %" }],
+          etiqueta: "Pasos del tope de dominancia" }), `${co.pasos_tope.length} reentrenamientos. Costo en prueba: AUC de ${num(co.antes_tope.auc_test, 3)} a
+          ${num(co.despues_tope.auc_test, 3)}. Se paga a cambio de que el modelo no descanse en una sola fuente.`)] });
     }
     const abl = co.ablacion.map((a) => ({ etiqueta: nombre(a.variable), valor: a.delta_auc })).sort((a, b) => a.valor - b.valor);
     items.push({ id: "w-ablacion", titulo: "Ablación: quitar una variable a la vez", nodos: [
-      figura(grafBarras({ filas: abl, min: -0.11, max: 0, formato: (v) => num(v, 4), linea: { valor: -0.1, etiqueta: "colapso" }, anchoEtiqueta: 140,
+      figura(grafBarras({ filas: abl, min: -0.11, max: 0.01, formato: (v) => num(v, 4), linea: { valor: -0.1, etiqueta: "colapso" }, anchoEtiqueta: 230,
         etiqueta: "Ablación: cambio de AUC al quitar cada variable", grupos: [{ clave: "valor", color: "var(--serie-2)" }] }),
-        `Se reentrenó sin cada variable. La mayor caída de AUC es ${num(Math.min(...abl.map((a) => a.valor)), 4)}, muy lejos del colapso (−0,10): ninguna es imprescindible.`)] });
+        `Se reentrenó sin cada variable. La mayor caída de AUC es ${num(Math.min(...abl.map((a) => a.valor)), 3)}, muy lejos del colapso (−0,10): ninguna es imprescindible.`)] });
+    const cambios = co.estabilidad.cambios_de_signo || [];
     items.push({ id: "w-estabilidad", titulo: "Estabilidad: entrenar con otras muestras", nodos: [
       figura(grafBarras({ filas: nombres.map((n, i) => ({ etiqueta: nombre(n), valor: co.estabilidad.pesos_media[i], sd: co.estabilidad.pesos_desv[i], color: signoColor(co.estabilidad.pesos_media[i]) })),
-        min: -0.5, max: 0.5, error: "sd", formato: (v) => num(v, 2), anchoEtiqueta: 140, etiqueta: "Pesos en cinco muestras bootstrap" }),
-        `Peso medio y desviación en 5 reentrenamientos con muestras distintas. ${co.estabilidad.cambios_de_signo.length ? "Algún peso cambia de signo." : "Ningún peso cambia de signo: lo aprendido no es casualidad de una muestra."}`)] });
-    const e = co.estrato;
-    if (e) items.push({ id: "w-estrato", titulo: "La variable sensible: estrato", nodos: [
-      "El estrato ayuda a predecir en estos datos, pero usarlo puede concentrar las remisiones en los estratos bajos. Se entrenó también una versión sin estrato.",
-      figura(grafBarras({ filas: e.con_estrato.map((a, i) => ({ etiqueta: `estrato ${a.estrato}`, con: a.fraccion_alto * 100, sin: e.sin_estrato[i].fraccion_alto * 100,
-        detalle: `desertan en realidad: ${pct(a.tasa_real)}` })), grupos: [{ clave: "con", color: "var(--serie-1)", nombre: "con estrato" }, { clave: "sin", color: "var(--serie-2)", nombre: "sin estrato" }],
-        formato: (v) => `${num(v, 0)} %`, max: 70, anchoEtiqueta: 90, etiqueta: "Porcentaje de estudiantes en nivel alto por estrato" }),
-        `Estudiantes en nivel alto por estrato. Sin estrato, el AUC pasa de ${num(e.global_con.auc, 3)} a ${num(e.global_sin.auc, 3)}. Dejarlo o quitarlo es una decisión del equipo.`,
-        leyenda([["var(--serie-1)", "con estrato"], ["var(--serie-2)", "sin estrato"]]))] });
+        min: -0.5, max: 0.5, error: "sd", formato: (v) => num(v, 2), anchoEtiqueta: 230, etiqueta: "Pesos en cinco muestras bootstrap" }),
+        `Peso medio y desviación en 5 reentrenamientos con muestras distintas. ${cambios.length ? `Cambian de signo entre muestras: ${cambios.map((v) => esc(nombre(v))).join(" y ")};
+        son pesos cercanos a cero, así que no conviene leer su dirección. El resto conserva el signo.` : "Ningún peso cambia de signo: lo aprendido no es casualidad de una muestra."}`)] });
     secuencia(c, 7, items);
   }
 
@@ -410,36 +421,90 @@
     return svg;
   }
 
-  function pasoResultados(c, R) {
-    const ev = R.evaluacion, m = ev.modelos, nombres = Object.keys(m);
-    const fila = (et, k, f) => `<tr><td>${et}</td>${nombres.map((n) => `<td class="n">${f(m[n][k])}</td>`).join("")}</tr>`;
-    secuencia(c, 8, [
-      { id: "e-orden", titulo: "Qué tan bien ordena a los estudiantes", nodos: [
-        `Solo al final se usó el conjunto de prueba, que ningún modelo había visto. El <strong>AUC</strong> es la probabilidad de que el modelo ponga a un desertor
-        por encima de alguien que no desertó (0,5 es azar, 1 es perfecto).`,
-        figura(grafBarras({ filas: nombres.map((n) => ({ etiqueta: n, valor: m[n].auc })), min: 0.5, max: 0.9, formato: (v) => num(v, 3), anchoEtiqueta: 160,
-          linea: { valor: ev.auc_techo, etiqueta: `techo ${num(ev.auc_techo, 3)}`, color: "var(--tinta-2)" }, etiqueta: "AUC en prueba por modelo",
-          grupos: [{ clave: "valor", color: "var(--acento)" }] }), "La línea es el techo de la simulación: ni un modelo perfecto pasaría de ahí.")] },
-      { id: "e-niveles", titulo: "A quién marca en cada nivel", nodos: [
-        figura(desplazable(mosaico(m)), `Con las reglas, de cada 100 estudiantes en alto desertan ${num(m["reglas (línea base)"].confusion.alto.tasa_real * 100, 0)}, pero se escapan más
-          desertores a bajo y medio. Los modelos aprendidos marcan a más estudiantes y dejan en bajo a muy pocos desertores.`)] },
-      { id: "e-metricas", titulo: "Todas las métricas", nodos: [
-        html(`<div class="tabla-envoltura"><table><thead><tr><th>Métrica en prueba</th>${nombres.map((n) => `<th class="n">${esc(n)}</th>`).join("")}</tr></thead><tbody>
-          ${fila("Log-loss (menor es mejor)", "log_loss", (v) => num(v, 3))}${fila("Brier (menor es mejor)", "brier", (v) => num(v, 3))}
-          ${fila("Desertores detectados en alto", "recall", (v) => pct(v, 0))}${fila("Desertan de verdad entre los de alto", "precision", (v) => pct(v, 0))}
-          ${fila("F1 (equilibrio de las dos anteriores, de 0 a 1)", "f1", (v) => num(v, 2))}
-          ${fila("Estudiantes en alto", "fraccion_alto", (v) => pct(v, 0))}${fila("Accuracy", "accuracy", (v) => pct(v, 0))}</tbody></table></div>`),
-        `La accuracy engaña: un sistema que dijera «nadie deserta» acertaría el ${pct(1 - ev.tasa_test, 0)} sin detectar a nadie.`,
-        `Estas son las notas con datos simulados. Las del modelo reentrenado con estudiantes reales, con qué significa cada una, están en <a href="modelo.html">Modelo</a>.`] },
-      { id: "e-calibracion", titulo: "¿Las probabilidades dicen la verdad?", nodos: [
-        figura(grafLineas({ series: [{ nombre: "calibración perfecta", color: "var(--tenue)", punteado: true, valores: [[0, 0], [1, 1]] },
-          ...nombres.map((n, i) => ({ nombre: n, color: `var(--serie-${i + 1})`, puntos: true, valores: ev.calibracion[n].map((x) => [x[0], x[1]]) }))],
-          alto: 300, xMin: 0, xMax: 1, yMin: 0, yMax: 1, xEtiqueta: "probabilidad predicha", yEtiqueta: "tasa real de deserción", formatoY: (v) => pct(v, 0), formatoX: (v) => pct(v, 0),
-          etiqueta: "Curva de calibración en prueba" }),
-          "Si el modelo dice 30 %, ¿desertan 3 de cada 10? Los modelos aprendidos siguen la diagonal. Las reglas no fueron hechas para dar probabilidades y sobreestiman el riesgo.",
-          leyenda(nombres.map((n, i) => [`var(--serie-${i + 1})`, n])))] },
-      { id: "e-conclusion", titulo: "Conclusión", nodos: [html(`<p class="hallazgo">${esc(ev.conclusion)}</p>`)] },
-    ]);
+  function pasoResultados(c, R, D) {
+    const ev = R.evaluacion, m = ev.modelos, nombres = Object.keys(m), se = ev.sin_evidentes, uv = ev.una_variable;
+    const log = m["regresión logística"], red_ = m["red neuronal (MLP)"], reg = m["reglas (línea base)"];
+    const fila = (et, k, f, M = m) => `<tr><td>${et}</td>${nombres.map((n) => `<td class="n">${f(M[n][k])}</td>`).join("")}</tr>`;
+    const items = [
+      { id: "e-orden", titulo: "AUC: qué tan bien ordena a los estudiantes", nodos: [
+        `Solo al final se usó el conjunto de prueba (${miles(ev.n_test)} estudiantes que ningún modelo vio; abandona el ${pct(ev.tasa_test)}). El <strong>AUC</strong> es la
+        probabilidad de que el modelo ponga a quien abandonó por encima de quien siguió (0,5 es azar, 1 es perfecto).`,
+        figura(grafBarras({ filas: nombres.map((n) => ({ etiqueta: n, valor: m[n].auc })), min: 0.5, max: 0.9, formato: (v) => num(v, 3), anchoEtiqueta: 180,
+          linea: { valor: uv.auc_mejor, etiqueta: `mejor variable sola ${num(uv.auc_mejor, 3)}`, color: "var(--tinta-2)" }, etiqueta: "AUC en prueba por modelo",
+          grupos: [{ clave: "valor", color: "var(--acento)" }] }), `La raya es la mejor variable sola (${esc(nombre(uv.mejor))}): el modelo le gana por
+          ${num(log.auc - uv.auc_mejor, 3)} (logística) y ${num(red_.auc - uv.auc_mejor, 3)} (red). Las reglas escritas a mano quedan en ${num(reg.auc, 3)}.`)] },
+    ];
+    if (D && D.distribucion) {
+      const dd = D.distribucion, centros = dd.bordes.slice(0, -1).map((b, i) => (b + dd.bordes[i + 1]) / 2);
+      const corte = log.confusion ? R.entrenamiento.cortes.corte_alto : null;
+      items.push({ id: "e-solape", titulo: "Por qué el AUC no sube más", nodos: [
+        figura(grafLineas({ series: [{ nombre: `siguieron (${miles(dd.n_siguieron)})`, color: "var(--serie-1)", valores: centros.map((x, i) => [x, dd.siguieron[i] * 100]) },
+          { nombre: `abandonaron (${miles(dd.n_desertaron)})`, color: "var(--serie-2)", valores: centros.map((x, i) => [x, dd.desertaron[i] * 100]) }],
+          alto: 260, xEtiqueta: "puntaje de riesgo (tarjeta de la logística)", yEtiqueta: "% de su grupo", formatoY: (v) => `${num(v, 0)} %`,
+          marcas: corte ? [{ x: corte, etiqueta: `alto desde ${corte}` }] : [], etiqueta: "Distribución del puntaje en prueba" }),
+          `Las dos curvas se <strong>solapan</strong>: después de un cuatrimestre, muchos futuros desertores se ven igual que quienes siguen (mismas notas, misma
+          actividad). En esa franja ningún corte los separa, y eso pone el límite. Sin los casos evidentes (quienes no aprobaron nada) el AUC baja a
+          ${num(se.modelos["regresión logística"].auc, 3)} (logística) y ${num(se.modelos["red neuronal (MLP)"].auc, 3)} (red): ahí está lo difícil.`,
+          leyenda([["var(--serie-1)", "siguieron"], ["var(--serie-2)", "abandonaron"]]))] });
+    }
+    items.push({ id: "e-niveles", titulo: "A quién marca en cada nivel", nodos: [
+      figura(desplazable(mosaico(m)), `Con la logística, de cada 100 estudiantes en alto abandonan ${num(log.confusion.alto.tasa_real * 100, 0)}, ${num(log.confusion.alto.tasa_real / ev.tasa_test, 1)}
+        veces el promedio; en bajo, ${num(log.confusion.bajo.tasa_real * 100, 0)}. Los niveles ordenan bien aunque el alto tenga falsas alarmas.`)] });
+    if (D && D.ganancia) {
+      const g = D.ganancia.puntos, g20 = g.find((x) => Math.abs(x[0] - 0.2) < 1e-9);
+      items.push({ id: "e-ganancia", titulo: "Lo que vale en la práctica: la curva de ganancia", nodos: [
+        figura(grafLineas({ series: [{ nombre: "azar", color: "var(--tenue)", punteado: true, valores: [[0, 0], [1, 1]] },
+          { nombre: "modelo", color: "var(--acento)", valores: g }], alto: 280, xMin: 0, xMax: 1, yMin: 0, yMax: 1, formatoX: (v) => pct(v, 0), formatoY: (v) => pct(v, 0),
+          xEtiqueta: "estudiantes revisados, primero los de más riesgo", yEtiqueta: "desertores encontrados",
+          marcas: g20 ? [{ x: 0.2, etiqueta: `20 % → ${pct(g20[1], 0)}` }] : [], etiqueta: "Curva de ganancia en prueba" }),
+          g20 ? `Si Bienestar revisa primero al 20 % de más riesgo, encuentra el ${pct(g20[1], 0)} de quienes abandonan; al azar encontraría el 20 %.` : "",
+          leyenda([["var(--acento)", "modelo (logística)"], ["var(--tenue)", "azar"]]))] });
+    }
+    items.push({ id: "e-precision", titulo: "Por qué hay tantas falsas alarmas", nodos: [
+      html(`<dl class="cifras">
+        <div><dt>Detecta (recall, nivel alto)</dt><dd>${pct(log.recall, 0)}</dd></div>
+        <div><dt>Aciertan las alertas (precisión)</dt><dd>${pct(log.precision, 0)}</dd></div>
+        <div><dt>Abandonan en toda la prueba</dt><dd>${pct(ev.tasa_test, 0)}</dd></div></dl>`),
+      `Solo abandona el ${pct(ev.tasa_test, 0)}. Aun con un buen orden, para detectar a la mayoría hay que marcar también a muchos que siguen: en alto, ${pct(log.precision, 0)}
+      de las alertas son reales, ${num(log.precision / ev.tasa_test, 1)} veces la tasa del grupo. Se aceptó porque una llamada de Bienestar cuesta poco y un
+      desertor que se escapa cuesta mucho.`] });
+    if (D && D.barrido) {
+      const fl = D.barrido.filas, md = D.modelos["regresión logística"], mx = md.f1_maximo, ec = md.en_corte_alto;
+      items.push({ id: "e-f1", titulo: "F1: por qué no pasa de ~0,5", nodos: [
+        figura(grafLineas({ series: [{ nombre: "detección", color: "var(--serie-2)", valores: fl.map((f) => [f.corte, f.deteccion]) },
+          { nombre: "precisión", color: "var(--serie-1)", valores: fl.filter((f) => f.precision !== null && f.fraccion_marcada >= 0.02).map((f) => [f.corte, f.precision]) },
+          { nombre: "F1", color: "var(--tinta)", valores: fl.map((f) => [f.corte, f.f1]) }],
+          alto: 280, yMin: 0, yMax: 1, formatoY: (v) => num(v, 1), xEtiqueta: "corte del puntaje (alto desde…)", yEtiqueta: "valor",
+          marcas: [{ x: R.entrenamiento.cortes.corte_alto, etiqueta: `nuestro corte ${R.entrenamiento.cortes.corte_alto}` }], etiqueta: "Detección, precisión y F1 según el corte" }),
+          `La precisión se dibuja solo mientras el corte marca al menos al 2 % de los estudiantes (más arriba son unos pocos casos). Al subir el corte, la detección baja y la precisión sube; con ${pct(ev.tasa_test, 0)} de desertores se cruzan abajo. El mejor F1 posible de la logística es
+          ${num(mx.f1, 2)} (corte ${mx.corte}, detecta ${pct(mx.deteccion, 0)}); con nuestro corte es ${num(ec.f1, 2)} pero detecta ${pct(ec.deteccion, 0)}. Se eligió
+          detectar más porque dejar escapar a un desertor es el error más caro.`,
+          leyenda([["var(--serie-2)", "detección"], ["var(--serie-1)", "precisión"], ["var(--tinta)", "F1"]])),
+        html(`<div class="tabla-envoltura"><table><thead><tr><th>Modelo</th><th class="n">F1 en su corte</th><th class="n">mejor F1 con cualquier corte</th></tr></thead><tbody>
+          ${nombres.map((n) => `<tr><td>${esc(n)}</td><td class="n">${num(m[n].f1, 2)}</td><td class="n">${D.modelos[n] ? num(D.modelos[n].f1_maximo.f1, 2) : "—"}</td></tr>`).join("")}</tbody></table></div>`),
+        "Ningún modelo pasa de ~0,5 con estos datos: subirlo pide más señal (asistencia real, trabajo, deuda), no otro modelo."] });
+    }
+    items.push({ id: "e-metricas", titulo: "Todas las métricas", nodos: [
+      html(`<div class="tabla-envoltura"><table><thead><tr><th>Métrica en prueba</th>${nombres.map((n) => `<th class="n">${esc(n)}</th>`).join("")}</tr></thead><tbody>
+        ${fila("AUC", "auc", (v) => num(v, 3))}${fila("Log-loss (menor es mejor)", "log_loss", (v) => num(v, 3))}${fila("Brier (menor es mejor)", "brier", (v) => num(v, 3))}
+        ${fila("Desertores detectados en alto", "recall", (v) => pct(v, 0))}${fila("Abandonan de verdad entre los de alto", "precision", (v) => pct(v, 0))}
+        ${fila("F1 (equilibrio de las dos anteriores, de 0 a 1)", "f1", (v) => num(v, 2))}
+        ${fila("Estudiantes en alto", "fraccion_alto", (v) => pct(v, 0))}${fila("Accuracy", "accuracy", (v) => pct(v, 0))}
+        ${fila("AUC sin los casos evidentes", "auc", (v) => num(v, 3), se.modelos)}${fila("F1 sin los casos evidentes", "f1", (v) => num(v, 2), se.modelos)}</tbody></table></div>`),
+      `La accuracy engaña: un sistema que dijera «nadie abandona» acertaría el ${pct(1 - ev.tasa_test, 0)} sin detectar a nadie. Los casos evidentes son
+      ${ev.evidentes.n} estudiantes de prueba que no aprobaron ninguna materia (abandona el ${pct(ev.evidentes.tasa, 0)}); sin ellos quedan ${miles(se.n)}.`] });
+    items.push({ id: "e-calibracion", titulo: "¿Las probabilidades dicen la verdad?", nodos: [
+      figura(grafLineas({ series: [{ nombre: "calibración perfecta", color: "var(--tenue)", punteado: true, valores: [[0, 0], [1, 1]] },
+        ...nombres.map((n, i) => ({ nombre: n, color: `var(--serie-${i + 1})`, puntos: true, valores: ev.calibracion[n].map((x) => [x[0], x[1]]) }))],
+        alto: 300, xMin: 0, xMax: 1, yMin: 0, yMax: 1, xEtiqueta: "probabilidad predicha", yEtiqueta: "tasa real de abandono", formatoY: (v) => pct(v, 0), formatoX: (v) => pct(v, 0),
+        etiqueta: "Curva de calibración en prueba" }),
+        `Si el modelo dice 30 %, ¿abandonan 3 de cada 10? Brier: logística ${num(log.brier, 3)}, red ${num(red_.brier, 3)}, reglas ${num(reg.brier, 3)}. Las reglas no
+        fueron hechas para dar probabilidades.`,
+        leyenda(nombres.map((n, i) => [`var(--serie-${i + 1})`, n])))] });
+    items.push({ id: "e-conclusion", titulo: "Conclusión", nodos: [html(`<p class="hallazgo">${esc(ev.conclusion)}</p>`),
+      `Lo que se ve aquí es el mismo modelo que califica en <a href="estudiantes.html">Estudiantes</a> y en <a href="evaluar.html">Probar un caso</a>;
+      la página <a href="modelo.html">Modelo</a> lo explica para Bienestar.`] });
+    secuencia(c, 8, items);
   }
 
   /* ================================================================== 8. pruebas */
@@ -480,7 +545,10 @@
     secuencia(c, 9, [
       { id: "p-metodo", titulo: "La metodología", nodos: [
         `Desde la primera práctica es la misma: <strong>contrato</strong>, <strong>casos</strong>, un <strong>oráculo</strong> escrito aparte con la respuesta
-        esperada, <strong>ejecutar</strong>, <strong>corregir</strong> y volver a probar con <strong>casos nuevos</strong>. Los oráculos son borradores que debe firmar el equipo.`] },
+        esperada, <strong>ejecutar</strong>, <strong>corregir</strong> y volver a probar con <strong>casos nuevos</strong>. Los oráculos son borradores que debe firmar el equipo.`,
+        `Las rondas prueban el <strong>contrato y el comportamiento</strong> del sistema con casos escritos a mano (R01 a R03, simulados y nuevos). La ronda 4 corre
+        el modo aprendido con los pesos de la corrida de referencia, entrenada a propósito con datos simulados para poder fijar los oráculos. Estas pruebas no miden
+        qué tan bien predice con estudiantes reales: eso está en el <a href="resultados.html">paso 8</a>.`] },
       { id: "p-rondas", titulo: "Ronda por ronda, caso por caso", nodos: [
         "Cada cuadro es un caso; rojo es una falla. Pase el puntero por un cuadro para ver qué se esperaba y qué salió.", lista] },
       { id: "p-hallazgos", titulo: "Qué falló y cómo se corrigió", nodos: [
@@ -516,13 +584,13 @@
   const PASOS = { contrato: pasoContrato, datos: pasoDatos, variables: pasoVariables, aprendizaje: pasoNeurona, red: pasoRed,
     puntaje: pasoTarjeta, pesos: pasoPesos, resultados: pasoResultados, pruebas: pasoPruebas };
 
-  /* Dibuja un paso en #contenido. `datos` = { R, rondas, modelos } */
+  /* Dibuja un paso en #contenido. `datos` = { R, rondas, modelos, diag, base } (R = reportes/real/resultados.json) */
   function montarPaso(clave, datos) {
     const c = $("#contenido");
     c.replaceChildren();
-    const { R, rondas, modelos } = datos;
-    const args = { contrato: [], datos: [R], variables: [R], aprendizaje: [R, modelos], red: [R, modelos], puntaje: [R], pesos: [R],
-      resultados: [R], pruebas: [rondas] }[clave];
+    const { R, rondas, modelos, diag, base } = datos;
+    const args = { contrato: [], datos: [R, base], variables: [R], aprendizaje: [R, modelos], red: [R, modelos], puntaje: [R], pesos: [R],
+      resultados: [R, diag], pruebas: [rondas] }[clave];
     try { PASOS[clave](c, ...args); } catch (e) { console.error(clave, e); c.append(p(`No se pudo dibujar este paso (${esc(e.message)}).`)); }
     if (clave === "pruebas") $("#btn-rondas").addEventListener("click", correrRondasEnVivo);
   }

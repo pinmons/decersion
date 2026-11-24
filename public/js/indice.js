@@ -1,5 +1,5 @@
 /* Script clásico (sin módulos). Índice de «Cómo se hizo»: dibuja una miniatura por grupo de pasos con los
-   datos reales del entrenamiento (R = reportes/resultados.json). Si falta un dato, la miniatura lo dice. */
+   datos del entrenamiento con la base real (R = reportes/real/resultados.json). Si falta un dato, la miniatura lo dice. */
 (function () {
   "use strict";
   const { $, esc, num, miles, json, conGlobo, s, lienzo, escala, aparecer } = window.SAT;
@@ -14,7 +14,7 @@
     aparecer(caja.children, { pausa: 80, duracion: 300 });
   }
 
-  /* Los datos: cuántos registros simulados pasan la validación y cuántas variables quedan. */
+  /* Los datos: cuántos estudiantes de la base real entran y cuántas variables quedan. */
   function miniDatos(R) {
     const d = R.datos, dep = R.dependencia;
     const fila = (titulo, total, queda, que) => `<div class="mini-embudo"><span>${titulo}</span>
@@ -22,7 +22,7 @@
       <b class="num">${miles(queda)}</b><small>de ${miles(total)} ${que}</small></div>`;
     const caja = document.createElement("div");
     caja.className = "mini-embudos";
-    caja.innerHTML = fila("Registros", d.n_generados, d.n_validos, "pasan la validación")
+    caja.innerHTML = fila("Estudiantes", d.n_generados, d.n_validos, "entran al modelo")
       + fila("Variables", dep.candidatas.length, dep.finales.length, "quedan tras quitar las repetidas");
     poner("#mini-datos", caja, "La parte rayada es lo que se descartó.");
   }

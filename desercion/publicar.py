@@ -17,7 +17,8 @@ def publicar_corrida(nombre):
     origen, destino = ORIGEN / nombre, DESTINO / nombre
     (destino / "modelos").mkdir(parents=True, exist_ok=True)
     n = 0
-    for archivo in list(origen.glob("*.png")) + [origen / "resultados.json"]:
+    extras = [origen / "diagnostico.json"] if (origen / "diagnostico.json").exists() else []   # python -m desercion.diagnostico
+    for archivo in list(origen.glob("*.png")) + [origen / "resultados.json"] + extras:
         shutil.copy2(archivo, destino / archivo.name)
         n += 1
     for archivo in (RAIZ / "modelos_entrenados" / nombre).glob("*.json"):

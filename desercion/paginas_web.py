@@ -15,13 +15,13 @@ PUBLICO = RAIZ / "public"
 
 PASOS = [
     ("contrato", "El contrato", "Qué datos entran, en qué orden se revisan y qué responde el sistema en cada caso."),
-    ("datos", "Los datos", "Cómo se simularon 20 000 estudiantes y qué registros descartó la validación."),
-    ("variables", "Las variables", "Correlaciones, VIF y qué variables redundantes se quitaron antes de entrenar."),
+    ("datos", "Los datos", "La base real de la UPV: quién entra, cómo se dividió y qué variables usa el modelo."),
+    ("variables", "Las variables", "De 23 candidatas a 18: constantes, correlaciones, VIF y qué se quitó."),
     ("aprendizaje", "Cómo aprende una neurona", "Siga a un estudiante: de sus datos a números, por la neurona, la pérdida y el gradiente, hasta las épocas y la regularización."),
     ("red", "La red neuronal", "Aprendizaje profundo: capas, ReLU, backpropagation, Adam, inicialización He, dropout y monotonía."),
     ("puntaje", "De pesos a puntos", "La tarjeta de puntaje de 0 a 100 y cómo se eligieron los cortes de cada nivel."),
-    ("pesos", "Cuánto pesa cada variable", "Importancia, tope del 35 %, ablación, estabilidad y la variable sensible estrato."),
-    ("resultados", "Qué tan bien funciona", "Las métricas en prueba de los modelos aprendidos frente a las reglas del contrato."),
+    ("pesos", "Cuánto pesa cada variable", "Importancia por fuente, tope del 35 %, ablación y estabilidad."),
+    ("resultados", "Qué tan bien funciona", "AUC, ganancia, precisión y F1 en prueba, y por qué cada número es el que es."),
     ("pruebas", "Pruebas de estrés", "Las rondas 1 a 4 caso por caso, y un botón para correrlas otra vez."),
 ]
 
@@ -30,9 +30,9 @@ QUE_PORQUE = {
     "contrato": ("Las reglas fijas que dicen qué datos entran, en qué orden se revisan y qué puede responder el sistema.",
                  "Sin reglas claras, el sistema calificaría datos rotos o a estudiantes que no le corresponden, y se equivocaría sin avisar.",
                  "Que toda respuesta sea un resultado confiable, un error que se corrige en el origen o una remisión a una persona."),
-    "datos": ("La generación de 20 000 estudiantes simulados, cada uno con la marca de si desertó o no.",
-              "No hay registros reales con esa marca, y un modelo necesita miles de ejemplos para aprender.",
-              "Tener con qué entrenar y medir los modelos, y dejar listo el camino para cambiar a datos reales."),
+    "datos": ("La base real y pública de la Universitat Politècnica de València: estudiantes de primer año con la marca de si abandonaron.",
+              "Un modelo necesita miles de ejemplos reales, y Colombia solo publica la deserción en totales, no estudiante por estudiante.",
+              "Entrenar y medir con personas reales, usando solo lo que se sabe al cerrar el primer cuatrimestre."),
     "variables": ("Elegir y preparar las variables que entran al modelo.",
                   "Variables repetidas confunden al modelo, y variables en escalas distintas desequilibran el aprendizaje.",
                   "Que cada variable aporte información propia y todas compitan en igualdad de condiciones."),
@@ -40,15 +40,15 @@ QUE_PORQUE = {
                     "Los pesos de las reglas se pusieron a ojo; aquí salen de los datos, midiendo cuánto se equivoca y corrigiendo.",
                     "Obtener pesos medidos que después se convierten en una tarjeta de puntos que un consejero entiende."),
     "red": ("Una red neuronal de tres capas, entrenada con las técnicas del aprendizaje profundo.",
-            "Una red puede captar combinaciones que una sola neurona no ve, como que trabajar pesa más cuando la asistencia es baja.",
+            "Una red puede captar combinaciones que una sola neurona no ve, como que perder materias pesa más si además se entra poco al aula virtual.",
             "Comprobar si un modelo más complejo predice mejor, y a qué costo en explicabilidad."),
     "puntaje": ("Convertir los pesos aprendidos en puntos de 0 a 100 y elegir dónde empieza cada nivel.",
                 "Un consejero necesita ver por qué un estudiante sale en riesgo, no un número abstracto.",
                 "Mantener la forma de las reglas (puntos, niveles y acción) pero con pesos aprendidos de los datos."),
     "pesos": ("Medir cuánto depende el modelo de cada variable y repartir el peso si una domina.",
               "Si una sola variable decide todo, un error en ese dato arrastra la decisión completa.",
-              "Un modelo robusto y estable, con el estrato revisado aparte por ser una variable sensible."),
-    "resultados": ("La evaluación final con 3 000 estudiantes que ningún modelo había visto.",
+              "Un modelo robusto y estable, en el que ninguna fuente de datos (notas, actividad, admisión, titulación) decide sola."),
+    "resultados": ("La evaluación final con 864 estudiantes reales que ningún modelo había visto.",
                    "Medir con los mismos datos del entrenamiento daría números inflados.",
                    "Comparar con honestidad las reglas, la neurona y la red, y saber cuánto confiar en cada una."),
     "pruebas": ("Casos diseñados para romper el sistema, con la respuesta esperada escrita aparte.",
@@ -109,7 +109,7 @@ def _pagina(archivo, titulo, descripcion, pagina, seccion, cuerpo, estilos=(), s
         real y pública (Universitat Politècnica de València, España: primer año de grado) con un contrato ampliado (notas,
         actividad, admisión y titulación); en ella la asistencia y el trabajo son aproximaciones, el estrato no existe y
         los estudiantes con impago quedan fuera.
-        «Probar un caso» califica con ese mismo modelo; «Cómo se hizo» muestra el construido antes con datos sintéticos.
+        «Probar un caso» y «Cómo se hizo» usan ese mismo modelo; solo las pruebas de estrés usan casos escritos a mano.
         No se usa para decidir sobre estudiantes reales.</p>
     </div>
   </footer>
@@ -280,7 +280,7 @@ def reporte():
         </div>
       </div>
     </section>"""
-    return _pagina("reporte.html", "Reporte del entrenamiento", "Reporte completo del entrenamiento con datos sintéticos.",
+    return _pagina("reporte.html", "Reporte del entrenamiento", "Reporte completo del entrenamiento con la base real.",
                    "reporte", "reporte", cuerpo)
 
 

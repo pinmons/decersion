@@ -22,7 +22,8 @@
     const pagina = document.body.dataset.pagina || "";
     if (pagina === "estudiantes") return window.SAT.iniciarEstudiantes();
     if (pagina === "modelo") return window.SAT.iniciarModelo();
-    const R = await opcional("reportes/resultados.json");
+    // Desde la corrida con la base real (UPV): «Cómo se hizo», el reporte y la portada describen el modelo que se usa.
+    const R = await opcional("reportes/real/resultados.json");
     if (R) document.querySelectorAll('[data-cifra="n_validos"]').forEach((e) => { e.textContent = miles(R.datos.n_validos); });
 
     if (pagina === "inicio") return (window.SAT.iniciarInicio || iniciarPortada)();
@@ -35,22 +36,24 @@
     if (pagina.startsWith("paso-")) {
       const clave = pagina.slice(5);
       if (!R && clave !== "contrato") {
-        document.getElementById("contenido").textContent = "No se encontraron los resultados del entrenamiento (reportes/resultados.json).";
+        document.getElementById("contenido").textContent = "No se encontraron los resultados del entrenamiento (reportes/real/resultados.json).";
         return;
       }
       const necesita = (lista) => lista.includes(clave);
-      const [r12, r3, r4, r4v1, red, log] = await Promise.all([
+      const [r12, r3, r4, r4v1, red, log, diag, base] = await Promise.all([
         necesita(["pruebas"]) ? opcional("reportes/resultados_rondas.json") : null,
         necesita(["pruebas"]) ? opcional("reportes/resultados_ronda3.json") : null,
         necesita(["pruebas"]) ? opcional("reportes/resultados_ronda4.json") : null,
         necesita(["pruebas"]) ? opcional("reportes/resultados_ronda4_v1.json") : null,
-        necesita(["red"]) ? opcional("reportes/modelos/red_neuronal.json") : null,
-        necesita(["aprendizaje"]) ? opcional("reportes/modelos/logistica.json") : null]);
+        necesita(["red"]) ? opcional("reportes/real/modelos/red_neuronal.json") : null,
+        necesita(["aprendizaje", "puntaje"]) ? opcional("reportes/real/modelos/logistica.json") : null,
+        necesita(["resultados"]) ? opcional("reportes/real/diagnostico.json") : null,
+        necesita(["datos"]) ? opcional("reportes/real/base.json") : null]);
       if ((clave === "red" && !red) || (clave === "aprendizaje" && !log)) {
-        document.getElementById("contenido").textContent = "No se encontraron los pesos del modelo (reportes/modelos/).";
+        document.getElementById("contenido").textContent = "No se encontraron los pesos del modelo (reportes/real/modelos/).";
         return;
       }
-      montarPaso(clave, { R, rondas: { r12, r3, r4, r4v1 }, modelos: { red, log } });
+      montarPaso(clave, { R, rondas: { r12, r3, r4, r4v1 }, modelos: { red, log }, diag, base });
     }
   }
 
