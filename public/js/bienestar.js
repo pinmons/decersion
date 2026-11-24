@@ -16,7 +16,12 @@
   const CLAVE_AVISOS = "avisos-docentes-v1";  // lo que envían los profesores desde aviso-docente.html
   const DESTINOS = ["Tutoría académica", "Apoyo financiero", "Atención psicológica", "Orientación vocacional"];
   const CIERRES = ["Sigue estudiando", "Se retiró de la universidad", "No quiso recibir apoyo"];
-  const ESTADO = { contacto: "Contactado", sin_respuesta: "Sin respuesta", remision: "Remitido", cierre: "Cerrado", mensaje: "Mensaje enviado" };
+  const ESTADO = { contacto: "Contactado", sin_respuesta: "Sin respuesta", remision: "Remitido", cierre: "Cerrado", mensaje: "Mensaje enviado", sistema: "Sistema" };
+  const CLAVE_PERSONA = "bandeja-bienestar-persona";  // «Ver casos de»: la persona elegida en este navegador
+  const CLAVE_CARGA = "decersion-ultima-carga";       // la deja la página Estudiantes al terminar su carga viva
+  const INTENTOS_ESCALAR = 2;  // [SUPUESTO] dos intentos sin respuesta seguidos: el caso pasa a coordinación
+  const FUENTES_SENAL = { notas: "Notas", presencia: "Presencia", situacion: "Situación", admision: "Admisión", titulacion: "Titulación" };
+  const GRAVEDAD = { alta: "gravedad alta", media: "gravedad media", leve: "gravedad leve" };
   const AVISO = { contacto: "Contacto registrado", sin_respuesta: "Intento registrado", remision: "Remisión registrada", cierre: "Caso cerrado", mensaje: "Mensaje registrado" };
   /* Mensajes por WhatsApp. Nunca dicen «riesgo» ni «deserción»: invitan a conversar (la lección de Purdue: una
      etiqueta de riesgo puede desanimar). {nombre}, {firma}, {fecha} y {destino} se llenan con el caso. */
@@ -48,12 +53,36 @@
     directorio: ["Todos los estudiantes", "Busque a cualquier estudiante, vea su nivel de riesgo y ábrale un caso si lo necesita."],
     informe: ["Informe", "Lo que ha hecho Bienestar con la lista de riesgo, para compartir con la dirección."],
     avisos: ["Avisos de profesores", "Lo que reportan los docentes desde sus clases. No viene del modelo: es alguien que vio algo y avisó."],
+    equipo: ["Equipo", "Quién atiende qué esta semana. El sistema reparte los casos según la ruta de apoyo y equilibra la carga."],
   };
   const entero = (x) => num(x, 0);
   const fecha = (iso) => new Date(iso).toLocaleDateString("es-CO", { day: "numeric", month: "short" });
   const hora = (iso) => new Date(iso).toLocaleTimeString("es-CO", { hour: "numeric", minute: "2-digit" });
-  const programa = (e) => e.titulacion.replace("Titulación", "Programa");
   const grupo = (e) => e.nivel || "devuelto";
+
+  /* Titulación: la UPV publica la carrera anonimizada («T29» es un código). Se explica con su ficha histórica. */
+  const codigoTit = (e) => String(e.titulacion || "").replace("Titulación", "").trim();
+  function explicaTit(e) {
+    const cod = codigoTit(e), f = ((B.datos || {}).fichas_titulacion || {})[cod], g = (B.datos || {}).tasa_global;
+    if (!f || f.tasa == null) return `${cod} · código anónimo de una carrera de la UPV`;
+    return `${cod} · código anónimo de una carrera de la UPV · ${miles(f.n_historico)} estudiantes en años anteriores · `
+      + `abandona el ${Math.round(100 * f.tasa)} % en primer año${g ? ` (en toda la universidad, el ${Math.round(100 * g)} %)` : ""}`;
+  }
+  const titulacion = (e) => `<span class="tit" title="${esc(explicaTit(e))}">${esc(e.titulacion)}</span>`;
+
+  /* Equipo: cada caso de riesgo alto llega con su persona y su ruta (plan_bienestar.py). Si la API es vieja, no hay equipo. */
+  const equipo = () => (B.datos && B.datos.equipo) || [];
+  const coordinacion = () => (B.datos && B.datos.coordinacion) || { nombre: "Coordinación", rol: "Coordinación de Bienestar" };
+  const persona = (id) => equipo().find((p) => p.id === id);
+  const plan = (e) => e.plan || null;
+  const escalado = (id) => { const x = caso(id).escalado; return x && !x.resuelto && caso(id).estado !== "cerrado" ? x : null; };
+  const avatar = (p, chico) => (p ? `<i class="avatar av-${esc(p.id)}${chico ? " avatar-chico" : ""}" aria-hidden="true">${esc(p.iniciales)}</i>` : "");
+  const iniciales = (n) => String(n || "").split(/\s+/).map((x) => x[0] || "").join("").slice(0, 2).toUpperCase();
+  /* «Ver casos de»: «coordinacion» muestra los escalados; una persona, los suyos. */
+  const deLaPersona = (e) => !B.persona || (B.persona === "coordinacion" ? Boolean(escalado(e.id)) : (plan(e) || {}).asignada === B.persona);
+  const nombrePersona = () => (B.persona === "coordinacion" ? coordinacion().nombre : (persona(B.persona) || {}).nombre || "");
+  /* Lo que se ve en sus datos: la primera señal, que ya viene ordenada de la más grave a la más leve. */
+  const senalPrincipal = (e) => (e.senales || [])[0] || null;
 
   /* Fechas del calendario como texto AAAA-MM-DD en hora local, para comparar días sin líos de zona horaria. */
   const dia = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -71,7 +100,7 @@
   const vencido = (id) => { const p = caso(id).proximo; return p && caso(id).estado !== "cerrado" && diasHasta(p.fecha) <= 0; };
 
   const B = { datos: null, todos: [], porId: new Map(), alto: [], prioridad: new Map(), vista: "semana", elegido: null, abierto: null,
-    buscar: "", programa: "", nivel: "", visibles: PAGINA, deCopia: false, reg: { semana: null, casos: {} }, avisos: [] };
+    buscar: "", programa: "", nivel: "", visibles: PAGINA, deCopia: false, reg: { semana: null, casos: {} }, avisos: [], persona: "" };
 
   /* ------------------------------------------------------------------ registro guardado */
   function leerRegistro() {
@@ -90,13 +119,75 @@
   const avisosDe = (id) => B.avisos.filter((a) => a.codigo === id).sort((a, b) => b.fecha.localeCompare(a.fecha));
   const sinLeer = (id) => B.avisos.some((a) => a.codigo === id && !a.leido);
   const caso = (id) => B.reg.casos[id] || { estado: "por_contactar", historial: [] };
-  const ultimo = (id) => caso(id).historial.at(-1);
+  /* Lo que registró una persona (las líneas del sistema quedan en el historial, pero no cuentan como atención). */
+  const humanos = (c) => c.historial.filter((h) => h.tipo !== "sistema");
+  const ultimo = (id) => humanos(caso(id)).at(-1);
+  const leerPersona = () => { try { return localStorage.getItem(CLAVE_PERSONA) || ""; } catch (e) { return ""; } };
+  const guardarPersona = (v) => { try { localStorage.setItem(CLAVE_PERSONA, v); } catch (e) { /* sin almacenamiento */ } };
+  function leerCarga() {
+    try { const c = JSON.parse(localStorage.getItem(CLAVE_CARGA) || "null"); return c && c.fecha ? c : null; } catch (e) { return null; }
+  }
+
+  /* ================================================================== automatizaciones (en el navegador)
+     Cada una deja una línea del sistema en el historial del caso, para que se vea qué hizo y por qué. */
+  function lineaSistema(c, texto, fechaIso) { c.historial.push({ tipo: "sistema", fecha: fechaIso || new Date().toISOString(), texto }); }
+
+  /* Un aviso de profesor sube la prioridad: el caso aparece en «Hoy» y, si es de riesgo alto y aún nadie lo ha
+     contactado, entra a la lista de esta semana en lugar del último pendiente (el cupo sigue en 20). */
+  function procesarAvisos() {
+    const hechos = new Set(B.reg.avisosVistos || []);
+    let cambio = false;
+    B.avisos.forEach((a) => {
+      if (!a.id || hechos.has(a.id)) return;
+      hechos.add(a.id);
+      const e = B.porId.get(a.codigo);
+      if (!e) return;
+      const c = caso(e.id);
+      if (c.estado === "cerrado") return;
+      cambio = true;
+      let texto = `El sistema subió su prioridad por el aviso de ${a.docente} (${a.asignatura})`;
+      const s = B.reg.semana;
+      if (!a.ejemplo && s && B.prioridad.has(e.id) && !s.ids.includes(e.id) && !ultimo(e.id)) {
+        const fuera = [...s.ids].reverse().find((id) => !ultimo(id) && !caso(id).porAviso);
+        if (s.ids.length >= CUPO && fuera) s.ids.splice(s.ids.indexOf(fuera), 1);
+        if (s.ids.length < CUPO) { s.ids.unshift(e.id); texto += " y lo pasó a la lista de esta semana"; }
+      }
+      c.porAviso = a.fecha || new Date().toISOString();
+      if (!c.proximo || c.proximo.fecha > hoy()) c.proximo = { fecha: hoy(), que: "Contactar: aviso de profesor" };
+      lineaSistema(c, texto, a.fecha);
+      B.reg.casos[e.id] = c;
+      if (a.ejemplo && B.reg.ejemploIds && !B.reg.ejemploIds.includes(e.id)) B.reg.ejemploIds.push(e.id);
+    });
+    B.reg.avisosVistos = [...hechos];
+    if (cambio) guardarRegistro();
+    return cambio;
+  }
+
+  /* Intentos sin respuesta seguidos (desde el último contacto o remisión). */
+  function intentosSeguidos(c) {
+    let n = 0;
+    for (const h of [...humanos(c)].reverse()) { if (h.tipo === "sin_respuesta") n++; else if (h.tipo === "contacto" || h.tipo === "remision") break; }
+    return n;
+  }
+  /* Dos intentos sin respuesta: pasa a coordinación, con su etiqueta, y aparece en «Hoy». */
+  function escalarSiToca(c) {
+    if (c.escalado && !c.escalado.resuelto) return false;
+    if (intentosSeguidos(c) < INTENTOS_ESCALAR) return false;
+    const co = coordinacion();
+    c.escalado = { fecha: new Date().toISOString(), a: co.nombre };
+    c.estado = "seguimiento";
+    c.proximo = { fecha: hoy(), que: `Coordinación (${co.nombre}): decidir cómo llegarle` };
+    lineaSistema(c, `El sistema lo escaló a coordinación (${co.nombre}) tras ${INTENTOS_ESCALAR} intentos sin respuesta`);
+    return true;
+  }
 
   /* ------------------------------------------------------------------ la semana */
   function armarSemana() {
     /* Entra quien sigue por contactar y no estaba en la semana anterior; quien no respondió vuelve más adelante. */
     const antes = new Set((B.reg.semana || {}).ids || []);
-    const libres = B.alto.filter((e) => caso(e.id).estado === "por_contactar" && !antes.has(e.id));
+    /* Los que un profesor reportó van primero (el aviso sube la prioridad); después, el orden del modelo. */
+    const libres = B.alto.filter((e) => caso(e.id).estado === "por_contactar" && !antes.has(e.id))
+      .sort((a, b) => (caso(a.id).porAviso ? 0 : 1) - (caso(b.id).porAviso ? 0 : 1));
     B.reg.semana = { creada: new Date().toISOString(), ids: libres.slice(0, CUPO).map((e) => e.id) };
     guardarRegistro();
   }
@@ -104,8 +195,10 @@
 
   function listaDeVista() {
     let lista;
-    if (B.vista === "semana") lista = B.reg.semana.ids.map((id) => B.porId.get(id)).filter(Boolean);
-    else if (B.vista === "directorio") lista = B.todos;
+    if (B.vista === "semana") {
+      const pos = (id) => B.reg.semana.ids.indexOf(id), aviso = (id) => (caso(id).porAviso && !ultimo(id) ? 0 : 1);
+      lista = B.reg.semana.ids.map((id) => B.porId.get(id)).filter(Boolean).sort((a, b) => aviso(a.id) - aviso(b.id) || pos(a.id) - pos(b.id));
+    } else if (B.vista === "directorio") lista = B.todos;
     else if (B.vista === "avisos") {
       const ultimoAviso = (id) => avisosDe(id)[0].fecha;
       lista = B.todos.filter((e) => avisosDe(e.id).length).sort((a, b) => ultimoAviso(b.id).localeCompare(ultimoAviso(a.id)));
@@ -116,12 +209,14 @@
     else lista = B.todos.filter((e) => caso(e.id).estado === B.vista);
     const q = B.buscar.trim().toUpperCase();
     return lista.filter((e) => (!q || e.id.includes(q)) && (!B.programa || e.titulacion === B.programa)
-      && (B.vista !== "directorio" || !B.nivel || grupo(e) === B.nivel));
+      && (B.vista !== "directorio" || !B.nivel || grupo(e) === B.nivel) && deLaPersona(e));
   }
 
   /* ------------------------------------------------------------------ etiquetas */
   function etiquetaEstado(id) {
+    if (escalado(id)) return `<span class="etiqueta et-escalado" title="Lo atiende ${esc(escalado(id).a)}">Escalado a coordinación</span>`;
     const u = ultimo(id);
+    if (!u && caso(id).porAviso && caso(id).estado !== "cerrado") return `<span class="etiqueta et-prioridad" title="Un profesor lo reportó: el sistema subió su prioridad">Prioridad: aviso</span>`;
     if (!u) return B.prioridad.has(id) ? `<span class="etiqueta et-pendiente">Pendiente</span>` : `<span class="etiqueta et-sin-caso">Sin caso</span>`;
     let texto = ESTADO[u.tipo];
     if (u.tipo === "sin_respuesta") { const n = caso(id).historial.filter((h) => h.tipo === "sin_respuesta").length; texto = `Sin respuesta (${n})`; }
@@ -133,9 +228,23 @@
     return `<span class="etiqueta et-${e.nivel}"${prov ? ' title="Calculado con la matrícula: faltan datos académicos"' : ""}>${NIVEL[e.nivel]}${prov ? ", provisional" : ""}</span>`;
   }
   const marcaProvisional = (e) => (e.decision === "provisional" ? ` <span class="mini-prov" title="Calculado con la matrícula: faltan datos académicos">provisional</span>` : "");
+  /* El motivo es lo que se ve en sus datos (la primera señal), no los puntos del modelo: estos ponían «tiempo parcial»
+     primero incluso a quien suspendió todo. Si no hay señal, se cae a la razón del modelo. */
   function motivoDe(e) {
     if (!e.nivel) return `Devuelto: ${MOTIVOS[e.motivo] || e.motivo}`;
-    return ((e.porque || [])[0] || {}).texto || "Ningún dato le suma riesgo";
+    const s = senalPrincipal(e);
+    return s ? s.texto : ((e.porque || [])[0] || {}).texto || "Sus datos no se salen de lo usual";
+  }
+  function celdaMotivo(e) {
+    const s = e.nivel ? senalPrincipal(e) : null;
+    return `<td class="motivo">${s ? `<i class="punto punto-${esc(s.gravedad)}" title="${esc(GRAVEDAD[s.gravedad] || "")}"></i>` : ""}${esc(motivoDe(e))}</td>`;
+  }
+  /* A cargo: la persona asignada (avatar y nombre) y, debajo, la ruta de apoyo. */
+  function celdaCargo(e) {
+    const p = plan(e), quien = p && persona(p.asignada), arriba = escalado(e.id);
+    if (!quien) return `<td class="a-cargo"><span class="a-cargo-nadie">—</span></td>`;
+    return `<td class="a-cargo"><span class="a-cargo-in">${avatar(quien, true)}<span><b>${esc(quien.nombre)}</b>`
+      + `<small>${arriba ? `Coordinación: ${esc(arriba.a)}` : esc(p.ruta)}</small></span></span></td>`;
   }
 
   /* ------------------------------------------------------------------ menú, encabezado y tabla */
@@ -143,15 +252,44 @@
     document.querySelectorAll(".app-menu [data-vista]").forEach((b) => {
       if (b.dataset.vista === B.vista) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
     });
-    $("#n-semana").textContent = B.reg.semana.ids.filter((id) => !ultimo(id)).length;
+    /* Los números del menú cuentan solo los casos de la persona elegida en «Ver casos de». */
+    const mios = B.todos.filter(deLaPersona), mio = (id) => B.porId.has(id) && deLaPersona(B.porId.get(id));
+    $("#n-semana").textContent = B.reg.semana.ids.filter((id) => !ultimo(id) && mio(id)).length;
     /* «Hoy» cuenta lo que vence hoy o ya venció; en rojo si hay algo atrasado. */
-    const pendientesHoy = B.todos.filter((e) => vencido(e.id));
+    const pendientesHoy = mios.filter((e) => vencido(e.id));
     const nAgenda = $("#n-agenda");
     nAgenda.textContent = pendientesHoy.length;
     nAgenda.classList.toggle("urgente", pendientesHoy.some((e) => diasHasta(caso(e.id).proximo.fecha) < 0));
-    ["seguimiento", "cerrado"].forEach((v) => { $(`#n-${v}`).textContent = B.todos.filter((e) => caso(e.id).estado === v).length; });
-    $("#n-directorio").textContent = miles(B.todos.length);
-    $("#n-avisos").textContent = B.avisos.filter((a) => !a.leido && B.porId.has(a.codigo)).length;
+    ["seguimiento", "cerrado"].forEach((v) => { $(`#n-${v}`).textContent = mios.filter((e) => caso(e.id).estado === v).length; });
+    $("#n-directorio").textContent = miles(mios.length);
+    $("#n-avisos").textContent = B.avisos.filter((a) => !a.leido && mio(a.codigo)).length;
+  }
+
+  /* «Ver casos de»: avatar y nombre de quien se eligió. */
+  function pintarPersona() {
+    const p = persona(B.persona), co = B.persona === "coordinacion";
+    const av = $("#ap-persona-avatar");
+    av.textContent = p ? p.iniciales : co ? iniciales(coordinacion().nombre) : "EQ";
+    av.className = `avatar ${p ? `av-${p.id}` : co ? "av-coordinacion" : "av-equipo"}`;
+    $("#ap-persona").value = B.persona;
+  }
+
+  /* Lo que el sistema ya hizo, en una línea: de dónde salió la lista y que todo llega repartido y redactado. */
+  function pintarFranja() {
+    const f = $("#ap-franja");
+    f.hidden = !["semana", "agenda"].includes(B.vista) || B.deCopia;
+    if (f.hidden) return;
+    const carga = leerCarga(), ej = B.datos.ejecucion || {};
+    const cuando = carga ? carga.fecha : ej.fecha;
+    const ids = B.reg.semana.ids, personas = new Set(ids.map((id) => (plan(B.porId.get(id) || {}) || {}).asignada).filter(Boolean));
+    const alertas = carga && Number.isFinite(Number(carga.alertas)) ? Number(carga.alertas) : B.alto.length;
+    let deCuando = "";
+    if (cuando && !Number.isNaN(new Date(cuando).getTime())) {
+      deCuando = dia(new Date(cuando)) === hoy() ? ` de hoy ${hora(cuando)}` : ` del ${fecha(cuando)}, ${hora(cuando)}`;
+    }
+    const reparto = personas.size ? `, repartidas entre ${personas.size} ${personas.size === 1 ? "persona" : "personas"}` : "";
+    f.innerHTML = `<b>Recibido de la carga${esc(deCuando)}:</b> <span>${miles(alertas)} alertas</span> · <span>${ids.length} para esta semana${reparto}</span>`
+      + `${equipo().length ? " · <span>mensajes de primer contacto listos</span>" : ""}`;
   }
 
   /* «Semana del 23 al 29 de noviembre»: la semana corre siete días desde que se armó la lista. */
@@ -165,21 +303,28 @@
   function pintarEncabezado() {
     const [titulo, base] = VISTAS[B.vista];
     const fechaHoy = new Date().toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long" });
-    const sub = B.vista === "semana" ? `${rangoSemana()}. ${base}`
-      : B.vista === "agenda" ? `${fechaHoy.charAt(0).toUpperCase()}${fechaHoy.slice(1)}. ${base}` : base;
+    const quien = nombrePersona();
+    const sub = B.vista === "semana" ? `${rangoSemana()}. ${quien ? `Los casos de ${quien}, de mayor riesgo primero.` : base}`
+      : B.vista === "agenda" ? `${fechaHoy.charAt(0).toUpperCase()}${fechaHoy.slice(1)}. ${base}`
+      : quien && B.vista !== "equipo" && B.vista !== "informe" ? `${base} Solo los casos de ${quien}.` : base;
     $("#ap-titulo").textContent = titulo;
-    const ids = B.reg.semana.ids, hechos = ids.filter((id) => ultimo(id)).length;
-    $("#ap-subtitulo").innerHTML = B.vista === "semana" && hechos === ids.length
-      ? `Ya atendió a los ${ids.length} de esta semana. <button type="button" class="app-enlace" id="ap-nueva">Armar la semana siguiente</button>`
+    const todosIds = B.reg.semana.ids;
+    const ids = todosIds.filter((id) => B.porId.has(id) && deLaPersona(B.porId.get(id))), hechos = ids.filter((id) => ultimo(id)).length;
+    const todosHechos = todosIds.every((id) => ultimo(id));
+    $("#ap-subtitulo").innerHTML = B.vista === "semana" && todosHechos
+      ? `Ya atendieron a los ${todosIds.length} de esta semana. <button type="button" class="app-enlace" id="ap-nueva">Armar la semana siguiente</button>`
       : esc(sub);
-    $("#ap-avance").hidden = B.vista !== "semana";
-    const informe = B.vista === "informe";
-    ["#ap-herramientas", "#ap-tabla-zona"].forEach((s) => { $(s).hidden = informe; });
+    $("#ap-avance").hidden = B.vista !== "semana" || !ids.length;
+    const informe = B.vista === "informe", panel = informe || B.vista === "equipo";
+    ["#ap-herramientas", "#ap-tabla-zona"].forEach((s) => { $(s).hidden = panel; });
     $("#ap-informe").hidden = !informe;
+    $("#ap-equipo").hidden = B.vista !== "equipo";
     $("#ap-acciones-informe").hidden = !informe;
-    $("#ap-avance-texto").textContent = `${hechos} de ${ids.length} atendidos esta semana`;
+    $("#ap-explica").hidden = B.vista !== "directorio";
+    $("#ap-avance-texto").textContent = quien ? `${hechos} de ${ids.length} de ${quien.split(" ")[0]} atendidos` : `${hechos} de ${ids.length} atendidos esta semana`;
     $("#ap-avance-relleno").style.transform = `scaleX(${ids.length ? hechos / ids.length : 0})`;
     $("#ap-nivel").hidden = B.vista !== "directorio";
+    pintarFranja(); pintarPersona();
     const pend = pendientesSemana().length;
     $("#ap-campana").hidden = B.vista !== "semana" || !pend;
     $("#ap-campana").textContent = `Invitar por WhatsApp a los ${pend} pendientes`;
@@ -191,21 +336,23 @@
     const directorio = B.vista === "directorio", agenda = B.vista === "agenda", avisos = B.vista === "avisos";
     /* El estudiante va en una sola celda (código y, debajo, programa), como en las plataformas de notas: deja más
        espacio al motivo, que es lo que la consejera lee para decidir. En la agenda, lo primero es cuándo y qué hacer. */
+    /* «Motivo principal» = lo que se ve en sus datos; «A cargo» = quién lo atiende y por qué ruta. */
+    const cargo = `<th scope="col" class="col-cargo">A cargo</th>`;
     $("#ap-cabeza").innerHTML = directorio
-      ? `<th scope="col">Estudiante</th><th scope="col">Nivel</th><th scope="col">Motivo principal</th><th scope="col">Caso</th>`
+      ? `<th scope="col">Estudiante</th><th scope="col">Nivel</th><th scope="col">Motivo principal</th>${cargo}<th scope="col">Caso</th>`
       : avisos
         ? `<th scope="col" class="col-cuando">Recibido</th><th scope="col">Estudiante</th><th scope="col">Qué está pasando</th><th scope="col" class="col-programa">Reportado por</th><th scope="col">Nivel</th><th scope="col">Caso</th>`
       : agenda
-        ? `<th scope="col" class="col-cuando">Cuándo</th><th scope="col">Estudiante</th><th scope="col">Qué hacer</th><th scope="col">Estado</th><th scope="col" class="col-fecha">Último contacto</th>`
-        : `<th scope="col" class="col-n" title="Prioridad">#</th><th scope="col">Estudiante</th><th scope="col">Motivo principal</th><th scope="col">Estado</th><th scope="col" class="col-fecha">Última acción</th>`;
+        ? `<th scope="col" class="col-cuando">Cuándo</th><th scope="col">Estudiante</th><th scope="col">Qué hacer</th>${cargo}<th scope="col">Estado</th><th scope="col" class="col-fecha">Último contacto</th>`
+        : `<th scope="col" class="col-n" title="Prioridad">#</th><th scope="col">Estudiante</th><th scope="col">Motivo principal</th>${cargo}<th scope="col">Estado</th><th scope="col" class="col-fecha">Última acción</th>`;
     document.querySelector(".app-tabla").classList.toggle("es-agenda", agenda);
     const lista = listaDeVista(), mostrados = directorio ? lista.slice(0, B.visibles) : lista;
     $("#ap-filas").innerHTML = mostrados.map((e) => {
       const u = ultimo(e.id), hecha = B.vista === "semana" && u;
       const nuevo = sinLeer(e.id);
       const codigo = `<td class="codigo"><button type="button" aria-label="Abrir el caso de ${esc(e.id)}">${esc(e.id)}</button>${directorio ? "" : marcaProvisional(e)}
-        ${nuevo && !avisos ? `<span class="mini-aviso" title="Un profesor lo reportó">aviso</span>` : ""}<span class="programa">${esc(programa(e))}</span></td>`;
-      const motivo = `<td class="motivo">${esc(motivoDe(e))}</td>`;
+        ${nuevo && !avisos ? `<span class="mini-aviso" title="Un profesor lo reportó">aviso</span>` : ""}<span class="programa">${titulacion(e)}</span></td>`;
+      const motivo = celdaMotivo(e);
       let filas;
       if (avisos) {
         const a = avisosDe(e.id)[0], n = avisosDe(e.id).length;
@@ -216,17 +363,19 @@
           + `<td class="riesgo">${etiquetaNivel(e)}</td><td class="estado">${etiquetaEstado(e.id)}</td>`;
         return `<tr data-id="${esc(e.id)}" aria-selected="${e.id === B.elegido}"${nuevo ? ' class="fila-nueva"' : ""}>${filas}</tr>`;
       }
-      if (directorio) filas = `${codigo}<td class="riesgo">${etiquetaNivel(e)}</td>${motivo}<td class="estado">${etiquetaEstado(e.id)}</td>`;
+      if (directorio) filas = `${codigo}<td class="riesgo">${etiquetaNivel(e)}</td>${motivo}${celdaCargo(e)}<td class="estado">${etiquetaEstado(e.id)}</td>`;
       else if (agenda) {
         const p = caso(e.id).proximo, c = cuandoTexto(p.fecha);
         filas = `<td class="col-n cuando cuando-${c.clase}" title="${esc(c.largo)}">${esc(c.corto)}</td>${codigo}<td class="motivo"><strong>${esc(p.que)}</strong></td>`
-          + `<td class="estado">${etiquetaEstado(e.id)}</td><td class="fecha">${u ? fecha(u.fecha) : "—"}</td>`;
-      } else filas = `<td class="col-n">${B.prioridad.get(e.id) || "—"}</td>${codigo}${motivo}<td class="estado">${etiquetaEstado(e.id)}</td><td class="fecha">${u ? fecha(u.fecha) : "—"}</td>`;
+          + `${celdaCargo(e)}<td class="estado">${etiquetaEstado(e.id)}</td><td class="fecha">${u ? fecha(u.fecha) : "—"}</td>`;
+      } else filas = `<td class="col-n">${B.prioridad.get(e.id) || "—"}</td>${codigo}${motivo}${celdaCargo(e)}<td class="estado">${etiquetaEstado(e.id)}</td><td class="fecha">${u ? fecha(u.fecha) : "—"}</td>`;
       return `<tr data-id="${esc(e.id)}" aria-selected="${e.id === B.elegido}"${hecha ? ' class="fila-hecha"' : ""}>${filas}</tr>`;
     }).join("");
     const vacio = $("#ap-vacio");
     vacio.hidden = lista.length > 0;
     vacio.textContent = B.buscar || B.programa || B.nivel ? "Ningún estudiante coincide con la búsqueda."
+      : B.persona === "coordinacion" ? "Ningún caso escalado. Cuando un estudiante no responde a dos intentos, el sistema lo pasa a coordinación y aparece aquí."
+      : B.persona && B.vista === "semana" ? `${nombrePersona()} no tiene casos en la lista de esta semana. Elija «Todo el equipo» para ver los 20.`
       : B.vista === "seguimiento" ? "Nadie en seguimiento. Cuando registre un contacto o una remisión, el estudiante aparece aquí."
       : B.vista === "cerrado" ? "Ningún caso cerrado todavía."
       : avisos ? "Ningún profesor ha enviado avisos. El formulario para profesores está en el menú, abajo."
@@ -261,6 +410,7 @@
     const h = caso(id).historial;
     if (!h.length) return `<p class="det-sin">Todavía no hay nada registrado.</p>`;
     return `<ol class="det-historial">${h.slice().reverse().map((x) => {
+      if (x.tipo === "sistema") return `<li class="det-h-sistema"><time datetime="${esc(x.fecha)}">${fecha(x.fecha)}, ${hora(x.fecha)}</time>${esc(x.texto)}.</li>`;
       const detalle = x.tipo === "remision" ? ` a ${x.destino.toLowerCase()}` : x.tipo === "cierre" ? `: ${x.motivo.toLowerCase()}`
         : x.tipo === "mensaje" ? ` por WhatsApp: ${(x.plantilla || "").toLowerCase()}` : "";
       const sig = x.proximo ? `<span class="det-sig">Próximo paso: ${esc(x.proximo.que.toLowerCase())}, ${esc(cuandoTexto(x.proximo.fecha).largo)}.</span>` : "";
@@ -278,6 +428,67 @@
     return `<section class="det-bloque"><h3>Avisos de profesores (${lista.length})</h3><div class="det-avisos">${lista.map((a) => `
       <article class="det-aviso-doc"><header><b>${esc(a.docente)}, ${esc(a.asignatura)}</b><time datetime="${esc(a.fecha)}">${fecha(a.fecha)}, ${hora(a.fecha)}</time></header>
         <ul>${a.motivos.map((m) => `<li>${esc(m)}</li>`).join("")}</ul>${a.comentario ? `<em>«${esc(a.comentario)}»</em>` : ""}</article>`).join("")}</div>${nota}</section>`;
+  }
+
+  /* Encabezado del caso, para quien llama: quién es (titulación explicada), quién lo atiende y por qué ruta. */
+  function cabeceraCaso(e) {
+    const p = plan(e), quien = p && persona(p.asignada), arriba = escalado(e.id);
+    const tit = explicaTit(e).replace(/^[^·]+·\s*/, "");
+    return `<div class="det-cabeza">
+        <div><h2>${esc(e.id)}</h2>
+          <div class="det-etiquetas">${etiquetaNivel(e)}${etiquetaEstado(e.id)}</div></div>
+        <button type="button" class="det-cerrar" id="det-cerrar" aria-label="Cerrar el panel">✕</button>
+      </div>
+      <p class="det-tit"><b>${esc(e.titulacion)}</b>, cohorte ${e.cohorte}. <span>${esc(tit.charAt(0).toUpperCase() + tit.slice(1))}.</span></p>
+      ${quien ? `<div class="det-asignada">
+        <div class="det-quien">${avatar(quien)}<div><span>A cargo</span><b>${esc(quien.nombre)}</b><small>${esc(quien.rol)}</small></div></div>
+        <div class="det-ruta"><span>Ruta sugerida</span><b>${esc(p.ruta)}</b><small>Porque ${esc(p.porque)}.</small></div>
+      </div>` : ""}
+      ${arriba ? `<p class="det-escalado"><b>Escalado a coordinación.</b> ${esc(arriba.a)} decide cómo llegarle: no respondió a ${INTENTOS_ESCALAR} intentos.</p>` : ""}`;
+  }
+
+  /* Qué se ve en sus datos: las señales por fuente, con un punto de gravedad. Lo que no se puede trabajar con el
+     estudiante (admisión, titulación) va aparte como contexto. */
+  function bloqueSenales(e) {
+    const s = e.senales || [], trab = s.filter((x) => x.trabajable), ctx = s.filter((x) => !x.trabajable);
+    const item = (x) => `<li><i class="punto punto-${esc(x.gravedad)}" title="${esc(GRAVEDAD[x.gravedad] || "")}"></i><span>${esc(x.texto)}<span class="app-oculto"> (${esc(GRAVEDAD[x.gravedad] || "")})</span></span></li>`;
+    const grupos = Object.keys(FUENTES_SENAL).map((f) => [f, trab.filter((x) => x.fuente === f)]).filter(([, l]) => l.length);
+    return `<section class="det-bloque"><h3>Qué se ve en sus datos</h3>
+      ${fichaRapida(e)}
+      ${grupos.length ? `<dl class="det-senales">${grupos.map(([f, l]) => `<dt>${esc(FUENTES_SENAL[f])}</dt><dd><ul>${l.map(item).join("")}</ul></dd>`).join("")}</dl>`
+        : `<p class="det-sin">${s.length ? "Nada que se pueda trabajar con el estudiante se sale de lo usual." : "Sus datos no se salen de lo usual."}</p>`}
+      ${ctx.length ? `<div class="det-contexto"><p>Contexto (no se puede cambiar)</p><ul>${ctx.map(item).join("")}</ul></div>` : ""}
+    </section>`;
+  }
+
+  /* Plan sugerido: lo que ya hizo el sistema y lo que hace la persona, en tres pasos. El humano solo toca para
+     enviar, registrar la llamada y confirmar la remisión; lo demás ya viene redactado y preseleccionado. */
+  function bloquePlan(e) {
+    const p = plan(e);
+    if (!p || caso(e.id).estado === "cerrado") return "";
+    const h = humanos(caso(e.id)), hecho = (t) => h.find((x) => x.tipo === t);
+    const quien = persona(p.asignada), firma = quien ? quien.nombre : leerFirma();
+    const texto = textoMensaje("primer", { firma, id: e.id });
+    const msj = hecho("mensaje"), con = hecho("contacto"), rem = hecho("remision"), arriba = escalado(e.id);
+    const intentos = intentosSeguidos(caso(e.id));
+    const paso = (n, estado, quienHace, titulo, cuerpo) => `<li class="plan-paso${estado ? ` plan-${estado}` : ""}">
+        <span class="plan-n" aria-hidden="true">${estado === "hecho" ? "✓" : n}</span>
+        <div><p class="plan-titulo"><b>${titulo}</b><span class="plan-quien plan-quien-${quienHace === "Sistema" ? "sis" : "hum"}">${quienHace}</span></p>${cuerpo}</div></li>`;
+    return `<section class="det-bloque det-plan"><h3>Plan sugerido</h3><ol class="plan-pasos">
+      ${paso(1, msj ? "hecho" : "", "Sistema", "Mensaje de primer contacto", msj
+        ? `<p class="plan-nota">Enviado el ${fecha(msj.fecha)}. Ya está redactado por el sistema.</p>`
+        : `<p class="plan-nota">Ya redactado y firmado por ${esc(firma || "usted")}. No menciona riesgo ni deserción.</p>
+          <blockquote class="plan-texto">${esc(texto)}</blockquote>
+          <a class="boton-sec boton-wa" id="plan-wa" href="${esc(enlaceWhatsApp("", texto))}" target="_blank" rel="noopener">Enviar por WhatsApp</a>`)}
+      ${paso(2, con ? "hecho" : arriba ? "escalado" : "", "Usted", "Llamada o cita", con
+        ? `<p class="plan-nota">Contactado el ${fecha(con.fecha)}.</p>`
+        : arriba ? `<p class="plan-nota">Lo tiene ${esc(arriba.a)} (coordinación) tras ${INTENTOS_ESCALAR} intentos sin respuesta. Si aun así lo contacta, regístrelo abajo.</p>`
+        : `<p class="plan-nota">Llámelo o cítelo. Al terminar, toque «Lo contacté» abajo${intentos ? `. Lleva ${intentos} ${intentos === 1 ? "intento" : "intentos"} sin respuesta; al ${INTENTOS_ESCALAR}.º, el sistema lo pasa a coordinación` : ""}.</p>`)}
+      ${paso(3, rem ? "hecho" : "", "Usted", `Remisión a ${esc(p.ruta.toLowerCase())}`, rem
+        ? `<p class="plan-nota">Remitido a ${esc(rem.destino.toLowerCase())} el ${fecha(rem.fecha)}.</p>`
+        : `<p class="plan-nota">Después de hablar con el estudiante. El formulario ya trae la ruta elegida; puede cambiarla.</p>
+          <button type="button" class="boton-sec" data-abre="remision" aria-expanded="${B.abierto === "remision"}">Remitir a ${esc(p.ruta.toLowerCase())}…</button>`)}
+    </ol></section>`;
   }
 
   /* Un aviso en lenguaje simple cuando el estudiante no viene de la lista de riesgo alto. */
@@ -317,42 +528,45 @@
         <input type="date" id="det-fecha" min="${hoy()}" value="${esc(borrador.fecha)}"${borrador.cuando === "otra" ? "" : " hidden"}>
       </div>`;
     const nota = borrador.nota;
+    const conPlan = Boolean(plan(e));
+    /* Lo que dice el modelo (sus puntos y recomendaciones) queda plegado: para llamar sirve más lo que se ve en los datos. */
+    const modelo = e.nivel && (razones || props || ACCIONES[e.accion]) ? `<details class="det-plegable"><summary>Por qué lo marcó el modelo</summary>
+        <div class="det-plegable-cuerpo">${razones ? `<ol>${razones}</ol>` : ""}${props ? `<p class="det-sub">Qué se recomienda</p><ul>${props}</ul>` : ""}
+        ${ACCIONES[e.accion] ? `<p class="det-nota-sistema">Acción del sistema: ${esc(ACCIONES[e.accion])}.</p>` : ""}</div></details>` : "";
+    const nHist = caso(e.id).historial.length;
+    const destinoSugerido = (plan(e) || {}).ruta;
     panel.innerHTML = `
-      <div class="det-cabeza">
-        <div><h2>${esc(e.id)}</h2><p>${esc(programa(e))}, cohorte ${e.cohorte}</p>
-          <div class="det-etiquetas">${etiquetaNivel(e)}${etiquetaEstado(e.id)}</div></div>
-        <button type="button" class="det-cerrar" id="det-cerrar" aria-label="Cerrar el panel">✕</button>
-      </div>
+      ${cabeceraCaso(e)}
       ${proximo}
-      ${fichaRapida(e)}
       ${avisoOrigen(e)}
+      ${bloqueSenales(e)}
       ${bloqueAvisos(e)}
-      ${e.nivel ? `<section class="det-bloque"><h3>${e.nivel === "alto" ? "Por qué está en la lista" : "Qué le suma riesgo"}</h3>
-        ${razones ? `<ol>${razones}</ol>` : `<p class="det-sin">Ningún dato le suma riesgo.</p>`}</section>` : ""}
-      ${props || ACCIONES[e.accion] ? `<section class="det-bloque"><h3>Qué se recomienda</h3>${props ? `<ul>${props}</ul>` : ""}
-        ${ACCIONES[e.accion] ? `<p class="det-nota-sistema">Acción del sistema: ${esc(ACCIONES[e.accion])}.</p>` : ""}</section>` : ""}
+      ${bloquePlan(e)}
       ${cerrado ? `<p class="det-cerrado">Caso cerrado. ${esc(ultimo(e.id).motivo)}.</p>` : `
       <section class="det-registrar" aria-labelledby="det-reg-titulo">
-        <h3 id="det-reg-titulo">${ultimo(e.id) || B.prioridad.has(e.id) ? "Registrar seguimiento" : "Abrir un caso"}</h3>
+        <h3 id="det-reg-titulo">${ultimo(e.id) || B.prioridad.has(e.id) ? "Registrar lo que pasó" : "Abrir un caso"}</h3>
         <label class="app-oculto" for="det-nota">Nota</label>
         <textarea id="det-nota" placeholder="Nota (opcional): qué le dijo, qué acordaron…">${esc(nota)}</textarea>
         ${programar}
         <button type="button" class="det-principal" data-accion="contacto">Lo contacté</button>
         <div class="det-secundarias">
           <button type="button" class="boton-sec" data-accion="sin_respuesta">No respondió</button>
-          <button type="button" class="boton-sec" data-abre="remision" aria-expanded="${B.abierto === "remision"}">Remitir…</button>
+          ${conPlan ? "" : `<button type="button" class="boton-sec" data-abre="remision" aria-expanded="${B.abierto === "remision"}">Remitir…</button>`}
           <button type="button" class="boton-sec" data-abre="cierre" aria-expanded="${B.abierto === "cierre"}">Cerrar caso…</button>
         </div>
         ${B.abierto === "remision" ? `<div class="det-elegir"><label for="det-destino">¿A dónde lo remite?</label>
-          <div><select id="det-destino">${DESTINOS.map((d) => `<option>${d}</option>`).join("")}</select>
-          <button type="button" class="boton-sec" data-accion="remision">Guardar</button></div></div>` : ""}
+          <div><select id="det-destino">${DESTINOS.map((d) => `<option${d === destinoSugerido ? " selected" : ""}>${d}</option>`).join("")}</select>
+          <button type="button" class="boton-sec" data-accion="remision">Guardar remisión</button></div>
+          ${destinoSugerido ? `<p class="det-nota-sistema">Preseleccionada la ruta sugerida. Puede cambiarla.</p>` : ""}</div>` : ""}
         ${B.abierto === "cierre" ? `<div class="det-elegir"><label for="det-motivo">¿Por qué se cierra?</label>
           <div><select id="det-motivo">${CIERRES.map((d) => `<option>${d}</option>`).join("")}</select>
           <button type="button" class="boton-sec" data-accion="cierre">Cerrar caso</button></div></div>` : ""}
       </section>`}
       ${cerrado ? "" : bloqueMensaje(e)}
       ${bloqueVeredicto(e)}
-      <section class="det-bloque"><h3>Historial</h3>${historial(e.id)}</section>`;
+      ${modelo}
+      ${nHist > 4 ? `<details class="det-plegable"><summary>Historial (${nHist})</summary><div class="det-plegable-cuerpo">${historial(e.id)}</div></details>`
+        : `<section class="det-bloque"><h3>Historial</h3>${historial(e.id)}</section>`}`;
     if (B.mensaje && !cerrado) llenarMensaje(e);
   }
 
@@ -374,7 +588,8 @@
     if (cuando === "otra" && !$("#det-fecha").value) { avisar("Elija la fecha del próximo paso"); $("#det-fecha").focus(); return; }
     let fechaSig = cuando === "otra" ? $("#det-fecha").value : cuando ? sumarDias(Number(cuando)) : "";
     let que = $("#det-que").value;
-    if (!fechaSig && tipo === "sin_respuesta") { fechaSig = sumarDias(DIAS_REINTENTO); que = "Llamar de nuevo"; }
+    const auto = !fechaSig && tipo === "sin_respuesta";
+    if (auto) { fechaSig = sumarDias(DIAS_REINTENTO); que = "Llamar de nuevo"; }
     if (tipo !== "cierre" && fechaSig) { c.proximo = { fecha: fechaSig, que }; entrada.proximo = c.proximo; }
     else delete c.proximo;
     c.historial.push(entrada);
@@ -382,10 +597,17 @@
        para que no se pierda. */
     if (tipo === "cierre") c.estado = "cerrado";
     else if (tipo !== "sin_respuesta" || !B.prioridad.has(id)) c.estado = "seguimiento";
+    /* Automatizaciones: hablar con el estudiante resuelve el escalado; el segundo intento sin respuesta lo escala;
+       si no se eligió fecha, el sistema programa volver a llamar (y lo anota). */
+    if (tipo !== "sin_respuesta" && c.escalado && !c.escalado.resuelto) c.escalado.resuelto = entrada.fecha;
+    const escalo = tipo === "sin_respuesta" && escalarSiToca(c);
+    if (escalo) delete entrada.proximo;  // el próximo paso ahora es de coordinación, hoy
+    if (auto && !escalo) lineaSistema(c, `El sistema programó «Llamar de nuevo» para dentro de ${DIAS_REINTENTO} días`);
     B.reg.casos[id] = c; B.abierto = null;
     guardarRegistro();
     $("#det-nota").value = ""; $("#det-cuando").value = ""; $("#det-fecha").value = "";
-    avisar(`${AVISO[tipo]}: ${id}${c.proximo ? `. Próximo paso: ${cuandoTexto(c.proximo.fecha).largo}` : ""}`);
+    avisar(escalo ? `${AVISO[tipo]}: ${id}. Segundo intento sin respuesta: pasó a coordinación (${coordinacion().nombre})`
+      : `${AVISO[tipo]}: ${id}${c.proximo ? `. Próximo paso: ${cuandoTexto(c.proximo.fecha).largo}` : ""}`);
     pintarTodo();
   }
 
@@ -464,7 +686,9 @@
 
   function abrirMensaje(e) {
     if (B.mensaje && B.mensaje.id === e.id) return;
-    const plantilla = plantillaSugerida(e.id), firma = leerFirma();
+    /* Firma: la persona a cargo del caso; si no tiene, la que se guardó en este navegador. */
+    const quien = plan(e) && persona(plan(e).asignada);
+    const plantilla = plantillaSugerida(e.id), firma = quien ? quien.nombre : leerFirma();
     B.mensaje = { id: e.id, plantilla, nombre: "", celular: "", firma, texto: textoMensaje(plantilla, { firma, id: e.id }) };
     llenarMensaje(e);
   }
@@ -474,8 +698,10 @@
   function registrarMensaje(id, plantilla) {
     const c = caso(id);
     const entrada = { tipo: "mensaje", fecha: new Date().toISOString(), nota: "", plantilla: PLANTILLAS[plantilla][0] };
-    if (!c.proximo) { c.proximo = { fecha: sumarDias(DIAS_REINTENTO), que: "Revisar si respondió" }; entrada.proximo = c.proximo; }
+    const programa = !c.proximo;
+    if (programa) { c.proximo = { fecha: sumarDias(DIAS_REINTENTO), que: "Revisar si respondió" }; entrada.proximo = c.proximo; }
     c.historial.push(entrada);
+    if (programa) lineaSistema(c, `El sistema programó «Revisar si respondió» para dentro de ${DIAS_REINTENTO} días`);
     if (c.estado === "por_contactar" && !B.prioridad.has(id)) c.estado = "seguimiento";
     B.reg.casos[id] = c;
   }
@@ -483,7 +709,7 @@
   /* ------------------------------------------------------------------ campaña: invitar a los pendientes de la semana
      Como las «campañas de citas» de EAB Navigate: un mismo mensaje para todos, y un botón por estudiante que abre
      WhatsApp con el texto listo. Al final se registran como enviados los que se abrieron. */
-  const pendientesSemana = () => B.reg.semana.ids.filter((id) => !ultimo(id)).map((id) => B.porId.get(id)).filter(Boolean);
+  const pendientesSemana = () => B.reg.semana.ids.filter((id) => !ultimo(id)).map((id) => B.porId.get(id)).filter((e) => e && deLaPersona(e));
 
   function abrirCampana() {
     const firma = leerFirma();
@@ -577,13 +803,13 @@
   function contar(casos) {
     const n = { conIntento: 0, contactados: 0, remitidos: 0, cerrados: 0, atrasados: 0, destinos: {}, cierres: {}, semanas: {} };
     casos.forEach(([id, c]) => {
-      const tipos = new Set(c.historial.map((h) => h.tipo));
-      if (c.historial.length) n.conIntento++;
+      const tipos = new Set(humanos(c).map((h) => h.tipo));
+      if (humanos(c).length) n.conIntento++;
       if (tipos.has("contacto") || tipos.has("remision")) n.contactados++;
       if (tipos.has("remision")) n.remitidos++;
       if (c.estado === "cerrado") n.cerrados++;
       if (c.proximo && c.estado !== "cerrado" && diasHasta(c.proximo.fecha) < 0) n.atrasados++;
-      c.historial.forEach((h) => {
+      humanos(c).forEach((h) => {
         if (h.tipo === "remision") n.destinos[h.destino] = (n.destinos[h.destino] || 0) + 1;
         if (h.tipo === "cierre") n.cierres[h.motivo] = (n.cierres[h.motivo] || 0) + 1;
         const semanas = Math.floor((aFecha(hoy()) - aFecha(dia(new Date(h.fecha)))) / (7 * 864e5));
@@ -603,6 +829,16 @@
     }).join("")}</div>`;
   }
 
+  /* Barras de parte y total: el total en tono claro y, dentro, la parte hecha («12 de 55 contactados»). */
+  function barrasParte(filas, leyenda) {
+    const max = Math.max(1, ...filas.map(([, t]) => t));
+    return `<p class="inf-leyenda" aria-hidden="true"><span><i class="inf-l-parte"></i>${esc(leyenda[0])}</span><span><i class="inf-l-total"></i>${esc(leyenda[1])}</span></p>
+      <div class="inf-barras">${filas.map(([t, total, parte]) => `<div class="inf-fila inf-fila-parte" title="${esc(t)}: ${parte} de ${total} ${esc(leyenda[0].toLowerCase())}">
+        <span class="inf-rotulo">${esc(t)}</span>
+        <span class="inf-pista"><i class="inf-total" style="width:${(100 * total) / max}%"><i class="inf-parte" style="width:${total ? (100 * parte) / total : 0}%"></i></i></span>
+        <b>${parte}<small> de ${total}</small></b></div>`).join("")}</div>`;
+  }
+
   function columnasSemanas(semanas) {
     const filas = [5, 4, 3, 2, 1, 0].map((s) => [s === 0 ? "Esta semana" : s === 1 ? "Semana pasada" : `Hace ${s} semanas`, semanas[s] || 0]);
     const max = Math.max(1, ...filas.map(([, v]) => v));
@@ -612,8 +848,9 @@
 
   function pintarInforme() {
     const zona = $("#ap-informe");
-    const casos = Object.entries(B.reg.casos).filter(([id, c]) => c.historial.length && B.porId.has(id));
-    if (!casos.length) {
+    const todosCasos = Object.entries(B.reg.casos).filter(([id, c]) => humanos(c).length && B.porId.has(id));
+    const casos = todosCasos.filter(([id]) => deLaPersona(B.porId.get(id)));
+    if (!todosCasos.length) {
       zona.innerHTML = `<div class="inf-vacio"><h2>Todavía no hay nada que informar</h2>
         <p>El informe se arma solo con lo que registre en los casos: contactos, remisiones y cierres. Para ver cómo
           luce, puede llenarlo con un ejemplo de 70 casos simulados de las últimas semanas.</p>
@@ -621,10 +858,33 @@
       $("#ap-acciones-informe").hidden = true;
       return;
     }
-    const n = contar(casos), alto = B.alto.length;
+    const n = contar(casos), alto = B.alto.filter(deLaPersona).length;
     const sigue = n.cierres["Sigue estudiando"] || 0;
     const pct = (v, t) => (t ? `${Math.round((100 * v) / t)} %` : "—");
-    const desde = casos.flatMap(([, c]) => c.historial.map((h) => h.fecha)).sort()[0];
+    const desde = todosCasos.flatMap(([, c]) => humanos(c).map((h) => h.fecha)).sort()[0];
+    /* Lo nuevo: casos por persona y por ruta (de todo el equipo, para comparar), con cuántos se contactaron. */
+    const registrados = new Map(todosCasos);
+    const contactado = (id) => { const c = registrados.get(id); return Boolean(c && humanos(c).some((h) => h.tipo === "contacto" || h.tipo === "remision")); };
+    const porPersona = equipo().map((p) => {
+      const suyos = B.alto.filter((e) => (plan(e) || {}).asignada === p.id);
+      return [p.nombre, suyos.length, suyos.filter((e) => contactado(e.id)).length];
+    });
+    const escalados = B.todos.filter((e) => escalado(e.id)).length;
+    /* Remitidos a la ruta que sugirió el sistema (de todo el equipo). */
+    const rutas = {}, remitidos = {};
+    B.alto.forEach((e) => {
+      const r = (plan(e) || {}).ruta, c = registrados.get(e.id);
+      if (!r) return;
+      rutas[r] = (rutas[r] || 0) + 1;
+      if (c && humanos(c).some((h) => h.tipo === "remision" && h.destino === r)) remitidos[r] = (remitidos[r] || 0) + 1;
+    });
+    const porRuta = Object.entries(rutas).sort((a, b) => b[1] - a[1]).map(([r, v]) => [r, v, remitidos[r] || 0]);
+    const tarjetasEquipo = equipo().length ? `
+        <section class="inf-tarjeta"><h2>Casos por persona</h2><p class="inf-nota">Casos de riesgo alto que el sistema asignó a cada una, y cuántos ya contactó. Todo el equipo.</p>
+          ${barrasParte(porPersona, ["Contactados", "Asignados"])}
+          <p class="inf-nota">${escalados ? `<b>${escalados}</b> ${escalados === 1 ? "caso escalado" : "casos escalados"} a coordinación (${esc(coordinacion().nombre)}).` : `Ningún caso escalado a coordinación (${esc(coordinacion().nombre)}).`}</p></section>
+        <section class="inf-tarjeta"><h2>Casos por ruta de apoyo</h2><p class="inf-nota">A qué servicio sugiere llevar el sistema cada caso de riesgo alto, y cuántos se remitieron a esa ruta.</p>
+          ${barrasParte(porRuta, ["Remitidos a esa ruta", "Sugeridos"])}</section>` : "";
     const ordenar = (o) => Object.entries(o).sort((a, b) => b[1] - a[1]);
     /* ¿Acertó el sistema? Solo casos con respuesta de la consejera. */
     const revisados = casos.map(([id, c]) => [B.porId.get(id), c.veredicto]).filter(([, v]) => v && v.valor);
@@ -646,7 +906,7 @@
     zona.innerHTML = `
       ${B.reg.ejemploIds ? `<p class="inf-ejemplo">Está viendo <strong>datos de ejemplo</strong>: casos simulados para mostrar el informe, no contactos reales.
         <button type="button" class="app-enlace" data-borrar-ejemplo>Borrar el ejemplo</button></p>` : ""}
-      <p class="inf-periodo">Desde el ${new Date(desde).toLocaleDateString("es-CO", { day: "numeric", month: "long" })} hasta hoy.</p>
+      <p class="inf-periodo">Desde el ${new Date(desde).toLocaleDateString("es-CO", { day: "numeric", month: "long" })} hasta hoy${B.persona ? `. Cifras de ${esc(nombrePersona())}; las gráficas por persona y por ruta son de todo el equipo` : ""}.</p>
       <div class="inf-cifras">
         <div class="inf-cifra"><b>${n.contactados}</b><span>estudiantes contactados</span><small>${pct(n.contactados, alto)} de los ${alto} en riesgo alto</small></div>
         <div class="inf-cifra"><b>${n.remitidos}</b><span>remitidos a otro servicio</span><small>${pct(n.remitidos, n.contactados)} de los contactados</small></div>
@@ -663,20 +923,58 @@
           ${n.remitidos ? barras(ordenar(n.destinos), Object.values(n.destinos).reduce((a, b) => a + b, 0)) : `<p class="det-sin">Aún no hay remisiones.</p>`}</section>
         <section class="inf-tarjeta"><h2>Actividad por semana</h2><p class="inf-nota">Registros hechos (contactos, intentos, remisiones y cierres).</p>
           ${columnasSemanas(n.semanas)}</section>
+        ${tarjetasEquipo}
         ${tarjetaAcierto}
       </div>
       <p class="inf-nota">Prototipo: las cifras salen de lo registrado en este navegador. El riesgo viene del modelo con la base
         real de la UPV; «siguen estudiando» es lo que la consejera anotó al cerrar el caso, no un dato del registro académico.</p>`;
   }
 
+  /* ================================================================== equipo: la carga de cada persona esta semana
+     Una barra por persona, partida en contactados, con intento y pendientes. Tocar una tarjeta filtra la bandeja. */
+  function pintarEquipo() {
+    const zona = $("#ap-equipo"), gente = equipo();
+    if (!gente.length) { zona.innerHTML = `<p class="det-sin">Esta copia de los datos no trae el equipo. Recargue cuando haya conexión.</p>`; return; }
+    const ids = B.reg.semana.ids.map((id) => B.porId.get(id)).filter(Boolean);
+    const carga = gente.map((p) => {
+      const suyos = ids.filter((e) => (plan(e) || {}).asignada === p.id);
+      const h = (e) => humanos(caso(e.id));
+      const contactados = suyos.filter((e) => h(e).some((x) => x.tipo === "contacto" || x.tipo === "remision")).length;
+      const pendientes = suyos.filter((e) => !h(e).length).length;
+      const cartera = B.alto.filter((e) => (plan(e) || {}).asignada === p.id).length;
+      return { p, n: suyos.length, contactados, intento: suyos.length - contactados - pendientes, pendientes, cartera };
+    });
+    const max = Math.max(1, ...carga.map((c) => c.n));
+    const co = coordinacion(), escalados = B.todos.filter((e) => escalado(e.id));
+    const seg = (v, clase) => (v ? `<i class="${clase}" style="width:${(100 * v) / max}%"></i>` : "");
+    zona.innerHTML = `
+      <p class="eq-leyenda" aria-hidden="true"><span><i class="eq-hecho"></i>Contactados</span><span><i class="eq-intento"></i>Con algún intento</span><span><i class="eq-pend"></i>Pendientes</span></p>
+      <div class="eq-rejilla">${carga.map((c) => `
+        <button type="button" class="eq-tarjeta" data-ver-persona="${esc(c.p.id)}" aria-pressed="${B.persona === c.p.id}">
+          <span class="eq-cabeza">${avatar(c.p)}<span><b>${esc(c.p.nombre)}</b><small>${esc(c.p.rol)} · ${esc((c.p.rutas || []).join(", ").toLowerCase())}</small></span></span>
+          <span class="eq-barra" role="img" aria-label="${c.contactados} contactados, ${c.intento} con algún intento y ${c.pendientes} pendientes de ${c.n}">${seg(c.contactados, "eq-hecho")}${seg(c.intento, "eq-intento")}${seg(c.pendientes, "eq-pend")}</span>
+          <span class="eq-cifras"><span><b>${c.n}</b> esta semana</span><span><b>${c.pendientes}</b> pendientes</span><span><b>${c.contactados}</b> contactados</span></span>
+          <span class="eq-total">${c.cartera} casos de riesgo alto en su cartera</span>
+        </button>`).join("")}
+        <button type="button" class="eq-tarjeta eq-coord" data-ver-persona="coordinacion" aria-pressed="${B.persona === "coordinacion"}">
+          <span class="eq-cabeza"><i class="avatar av-coordinacion" aria-hidden="true">${esc(iniciales(co.nombre))}</i><span><b>${esc(co.nombre)}</b><small>${esc(co.rol || "Coordinación")}</small></span></span>
+          <span class="eq-cifras"><span><b>${escalados.length}</b> ${escalados.length === 1 ? "caso escalado" : "casos escalados"}</span></span>
+          <span class="eq-total">${esc(co.tarea || "Recibe los casos que no responden a dos intentos.")}</span>
+        </button>
+      </div>
+      <p class="inf-nota">El sistema asigna cada caso a quien atiende su ruta de apoyo; si esa persona ya lleva mucha más carga que otra, el caso pasa a quien tiene menos. Toque una tarjeta para ver solo sus casos.</p>`;
+  }
+
   /* ------------------------------------------------------------------ descargar casos para Excel */
   function descargarCsv() {
     const celda = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-    const cab = ["Código", "Programa", "Nivel", "Provisional", "Estado", "Última acción", "Fecha última acción", "Nota última acción",
+    const cab = ["Código", "Titulación", "Nivel", "Provisional", "A cargo", "Ruta sugerida", "Escalado a coordinación", "Estado", "Última acción", "Fecha última acción", "Nota última acción",
       "Próximo paso", "Fecha próximo paso", "Contactos", "Intentos sin respuesta", "Remisiones", "Motivo de cierre", "Avisos de profesores", "¿Acertó el sistema?", "Qué no cuadró"];
-    const filas = Object.entries(B.reg.casos).filter(([id, c]) => c.historial.length && B.porId.has(id)).map(([id, c]) => {
-      const e = B.porId.get(id), u = c.historial.at(-1), cuenta = (t) => c.historial.filter((h) => h.tipo === t).length;
-      return [id, programa(e), e.nivel || "devuelto", e.decision === "provisional" ? "sí" : "no",
+    const filas = Object.entries(B.reg.casos).filter(([id, c]) => humanos(c).length && B.porId.has(id) && deLaPersona(B.porId.get(id))).map(([id, c]) => {
+      const e = B.porId.get(id), u = humanos(c).at(-1), cuenta = (t) => c.historial.filter((h) => h.tipo === t).length;
+      const p = plan(e) || {};
+      return [id, e.titulacion, e.nivel || "devuelto", e.decision === "provisional" ? "sí" : "no",
+        (persona(p.asignada) || {}).nombre || "", p.ruta || "", escalado(id) ? "sí" : "no",
         c.estado === "cerrado" ? "cerrado" : c.estado === "seguimiento" ? "en seguimiento" : "por contactar",
         ESTADO[u.tipo], dia(new Date(u.fecha)), u.nota, c.proximo ? c.proximo.que : "", c.proximo ? c.proximo.fecha : "",
         cuenta("contacto"), cuenta("sin_respuesta"), c.historial.filter((h) => h.tipo === "remision").map((h) => h.destino).join(", "),
@@ -712,6 +1010,8 @@
         historial.push({ tipo: "sin_respuesta", fecha: enFecha(atras), nota: "" });
         c.estado = "por_contactar";
         c.proximo = { fecha: sumarDias(-Math.floor(azar() * 4) + 1), que: "Llamar de nuevo" };
+        /* Algunos tampoco respondieron al segundo intento: el sistema los escaló a coordinación. */
+        if (azar() < 0.45) { historial.push({ tipo: "sin_respuesta", fecha: enFecha(Math.max(0, atras - 2)), nota: "" }); escalarSiToca(c); }
       } else {
         historial.push({ tipo: "contacto", fecha: enFecha(atras), nota: nota() });
         if (azar() < 0.45) { atras = Math.max(0, atras - 1 - Math.floor(azar() * 3));
@@ -749,6 +1049,7 @@
         ids.push(e.id);
       }
     });
+    procesarAvisos();  // los avisos de ejemplo pasan por la misma automatización que los reales
     guardarAvisos();
     guardarRegistro();
     avisar(`Ejemplo cargado: ${ids.length} casos simulados`);
@@ -758,6 +1059,8 @@
   function borrarEjemplo() {
     (B.reg.ejemploIds || []).forEach((id) => { delete B.reg.casos[id]; });
     delete B.reg.ejemploIds;
+    const deEjemplo = new Set(B.avisos.filter((a) => a.ejemplo).map((a) => a.id));
+    B.reg.avisosVistos = (B.reg.avisosVistos || []).filter((id) => !deEjemplo.has(id));
     B.avisos = B.avisos.filter((a) => !a.ejemplo); guardarAvisos();
     guardarRegistro();
     avisar("Ejemplo borrado");
@@ -766,7 +1069,7 @@
 
   function pintarTodo() {
     pintarMenu(); pintarEncabezado();
-    if (B.vista === "informe") pintarInforme(); else pintarTabla();
+    if (B.vista === "informe") pintarInforme(); else if (B.vista === "equipo") pintarEquipo(); else pintarTabla();
     pintarDetalle();
   }
 
@@ -817,15 +1120,25 @@
     const d = B.datos, ej = d.ejecucion || {};
     ordenar(d);
     if (!semanaValida()) armarSemana();
-    if (B.todos.some((e) => vencido(e.id))) B.vista = "agenda";  // si hay algo para hoy, se abre en «Hoy»
-    else if (B.avisos.some((a) => !a.leido && B.porId.has(a.codigo))) B.vista = "avisos";  // si no, los avisos nuevos
-    /* Un aviso enviado desde el portal docente (otra pestaña del mismo navegador) llega al instante. */
+    procesarAvisos();  // avisos de profesores que llegaron mientras la bandeja estaba cerrada
+    /* «Ver casos de»: lo elegido la última vez, si esa persona sigue en el equipo. */
+    const guardada = leerPersona();
+    B.persona = guardada === "coordinacion" || persona(guardada) ? guardada : "";
+    if (equipo().length) {
+      $("#ap-persona").insertAdjacentHTML("beforeend", equipo().map((p) => `<option value="${esc(p.id)}">${esc(p.nombre)}</option>`).join("")
+        + `<option value="coordinacion">${esc(coordinacion().nombre)} (coordinación)</option>`);
+    } else document.querySelector(".app-persona").hidden = true;
+    $("#ap-explica-texto").textContent = `${d.explicacion_titulacion || "La UPV publica la carrera de cada estudiante anonimizada: «T04» es un código, no el nombre de la carrera."} Pase el puntero sobre la titulación de un estudiante para ver la ficha de su código.`;
+    const mios = B.todos.filter(deLaPersona);
+    if (mios.some((e) => vencido(e.id))) B.vista = "agenda";  // si hay algo para hoy, se abre en «Hoy»
+    else if (B.avisos.some((a) => !a.leido && B.porId.has(a.codigo) && deLaPersona(B.porId.get(a.codigo)))) B.vista = "avisos";  // si no, los avisos nuevos
+    /* Un aviso enviado desde el portal docente (otra pestaña del mismo navegador) llega al instante y sube la prioridad. */
     window.addEventListener("storage", (ev) => {
       if (ev.key !== CLAVE_AVISOS) return;
       const antes = B.avisos.length;
-      leerAvisos(); pintarMenu();
-      if (B.vista !== "informe") pintarTabla();
-      if (B.avisos.length > antes) { const a = B.avisos.at(-1); avisar(`Nuevo aviso de ${a.docente} sobre ${a.codigo}`); }
+      leerAvisos(); procesarAvisos();
+      pintarTodo();
+      if (B.avisos.length > antes) { const a = B.avisos.at(-1); avisar(`Nuevo aviso de ${a.docente} sobre ${a.codigo}: el sistema subió su prioridad`); }
     });
     $("#ap-lectura").textContent = B.deCopia ? "Sin conexión: copia de la última lectura"
       : `Base leída ${ej.fecha ? `hoy, ${hora(ej.fecha)}` : ""}: ${miles(ej.leidos || d.estudiantes.length)} registros`;
@@ -836,8 +1149,26 @@
         : ` y los ${miles(n((e) => e.nivel === "bajo"))} de riesgo bajo siguen su curso. `)
       + `Todos se pueden consultar en «Todos los estudiantes».`;
     const programas = [...new Set(B.todos.map((e) => e.titulacion))].sort();
-    $("#ap-programa").insertAdjacentHTML("beforeend", programas.map((p) => `<option value="${esc(p)}">${esc(p.replace("Titulación", "Programa"))}</option>`).join(""));
+    $("#ap-programa").insertAdjacentHTML("beforeend", programas.map((p) => `<option value="${esc(p)}">${esc(p)}</option>`).join(""));
     pintarTodo();
+
+    /* «Ver casos de»: filtra todas las vistas y se recuerda en este navegador. */
+    const fijarPersona = (v) => {
+      B.persona = v; guardarPersona(v);
+      B.elegido = null; B.mensaje = null; B.campana = null; B.visibles = PAGINA;
+      pintarTodo();
+    };
+    $("#ap-persona").addEventListener("change", (ev) => {
+      fijarPersona(ev.target.value);
+      avisar(ev.target.value ? `Viendo los casos de ${nombrePersona()}` : "Viendo los casos de todo el equipo");
+    });
+    $("#ap-equipo").addEventListener("click", (ev) => {
+      const t = ev.target.closest("[data-ver-persona]");
+      if (!t) return;
+      B.vista = t.dataset.verPersona === "coordinacion" ? "agenda" : "semana";
+      fijarPersona(t.dataset.verPersona);
+      avisar(`Viendo los casos de ${nombrePersona()}`);
+    });
 
     const filtrar = (cambio) => { Object.assign(B, cambio, { visibles: PAGINA }); pintarTabla(); };
     $("#ap-menu").addEventListener("click", (ev) => {
@@ -875,6 +1206,16 @@
         return;
       }
       if (ev.target.closest("#msj-abrir")) { setTimeout(() => avisar("Si lo envió, use «Registrar que lo envié»"), 300); return; }
+      /* Paso 1 del plan: un toque abre WhatsApp con el mensaje ya redactado y lo deja registrado. */
+      if (ev.target.closest("#plan-wa")) {
+        const id = B.elegido;
+        setTimeout(() => {  // después de que el navegador siga el enlace
+          registrarMensaje(id, "primer"); guardarRegistro();
+          avisar(`Mensaje de primer contacto registrado: ${id}`);
+          pintarTodo();
+        }, 0);
+        return;
+      }
       if (ev.target.closest("#msj-enviado")) {
         registrarMensaje(B.elegido, B.mensaje.plantilla); guardarRegistro();
         B.mensaje = null;

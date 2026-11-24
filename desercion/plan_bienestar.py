@@ -28,7 +28,7 @@ EQUIPO = [   # [SUPUESTO] equipo ficticio del prototipo
 ]
 PREFERENCIA = 6   # [SUPUESTO] un caso va a quien atiende su ruta salvo que lleve 6 casos más que quien menos lleva
 COORDINACION = {"nombre": "Sara Luna", "rol": "Coordinadora de Bienestar",
-                "tarea": "Recibe los casos que no responden a dos intentos y los que un profesor marca como urgentes."}
+                "tarea": "Recibe los casos que no responden a dos intentos de contacto."}
 
 FUENTES = {"notas": "Notas", "presencia": "Presencia", "situacion": "Situación", "admision": "Admisión",
            "titulacion": "Titulación"}
@@ -99,6 +99,19 @@ def senales(r, usual=None, tit=None, tasa_global=None):
     orden = {"alta": 0, "media": 1, "leve": 2}
     s.sort(key=lambda x: (orden[x["gravedad"]], list(FUENTES).index(x["fuente"])))
     return s
+
+
+def recortar(sen, n):
+    """Las n señales que se muestran: primero la más grave de cada fuente (así ninguna fuente queda escondida,
+    por ejemplo el tiempo parcial de alguien que además suspendió todo), luego las demás por gravedad."""
+    primeras, vistas = [], set()
+    for x in sen:
+        if x["fuente"] not in vistas:
+            primeras.append(x)
+            vistas.add(x["fuente"])
+    resto = [x for x in sen if x not in primeras]
+    elegidas = (primeras + resto)[:n]
+    return [x for x in sen if x in elegidas]   # se conserva el orden por gravedad
 
 
 def ruta(sen):

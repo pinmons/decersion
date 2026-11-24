@@ -250,7 +250,7 @@ def procesar(modelo="logistica"):
         if fila.get("nivel"):
             # Lo que Bienestar necesita para hablar con el estudiante: lo que se ve en sus datos, y a dónde llevarlo.
             sen = pb.senales(registro, usual, fichas.get(registro.get("titulacion")), tasa_global)
-            fila["senales"] = sen[:MAX_SENALES]
+            fila["senales"] = pb.recortar(sen, MAX_SENALES)
             if fila["nivel"] == "alto":
                 fila["plan"] = pb.ruta(sen)
         estudiantes.append(fila)

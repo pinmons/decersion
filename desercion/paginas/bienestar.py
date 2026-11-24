@@ -30,6 +30,16 @@ va a tutoría académica. «Todos los estudiantes» deja buscar a cualquiera (ta
 un caso, por ejemplo si llega a la oficina o lo remite un profesor. El cupo es de 20 estudiantes por semana. Los provisionales (modelo de ingreso) no se comparan
 por puntaje con los definitivos: cada grupo se ordena por el suyo y se intercalan por percentil. En el prototipo
 lo registrado se guarda en el navegador (localStorage); en una institución iría a su base de datos.
+
+Lo que el sistema ya hizo llega a la vista (el humano solo habla con el estudiante y registra):
+- Cada caso de riesgo alto llega asignado a una persona del equipo con su ruta de apoyo (desercion/plan_bienestar.py).
+  «Ver casos de» en la barra superior filtra todas las vistas por persona; la vista «Equipo» muestra la carga de cada una.
+- El motivo de cada fila es la primera señal de sus datos (lo que se ve frente a lo usual), no los puntos del modelo.
+- La ficha del caso va en el orden de quien llama: quién es y quién lo atiende, qué se ve en sus datos, y un plan de
+  tres pasos (mensaje ya redactado, la llamada, la remisión con la ruta preseleccionada).
+- Automatizaciones en el navegador, cada una con su línea en el historial: dos intentos sin respuesta escalan el caso
+  a coordinación; un aviso de profesor sube la prioridad del estudiante; el próximo paso se programa solo.
+- «Titulación T04» es un código anónimo de la UPV: se explica con la ficha histórica de cada código.
 """
 from html import escape
 
@@ -45,6 +55,7 @@ ICONOS = {
     "informe": f'<svg {_TRAZO}><path d="M4 20h16"/><path d="M7 16v-5M12 16V7M17 16v-8"/></svg>',
     "avisos": f'<svg {_TRAZO}><path d="M4 10v4h3l6 4V6L7 10z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a7.5 7.5 0 0 1 0 11"/></svg>',
     "docente": f'<svg {_TRAZO}><path d="M3 9l9-4 9 4-9 4z"/><path d="M7 11v4c0 1.5 2.2 3 5 3s5-1.5 5-3v-4M21 9v5"/></svg>',
+    "equipo": f'<svg {_TRAZO}><rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-2.5h12V16"/></svg>',
 }
 
 
@@ -72,11 +83,15 @@ def pagina(favicon, fuentes):
     </button>
     <div class="app-marca">
       <svg class="app-logo" viewBox="0 0 12 30" aria-hidden="true"><rect width="12" height="30" rx="6" fill="currentColor"/><circle cx="6" cy="7" r="3" fill="#e05a4f"/><circle cx="6" cy="15" r="3" fill="#f2b23a"/><circle cx="6" cy="23" r="3" fill="#4fb57a"/></svg>
-      <div><b>Bienestar Universitario</b><span>Alerta temprana de deserción</span></div>
+      <div><b>Bienestar<em> Universitario</em></b><span>Alerta temprana de deserción</span></div>
     </div>
     <div class="app-barra-der">
       <span class="app-lectura" id="ap-lectura">Leyendo la base…</span>
-      <span class="app-usuario" title="Usuario de demostración"><i aria-hidden="true">CB</i><span>Consejería de Bienestar</span></span>
+      <div class="app-persona">
+        <i class="avatar av-equipo" id="ap-persona-avatar" aria-hidden="true">EQ</i>
+        <label for="ap-persona"><span>Ver casos de</span>
+          <select id="ap-persona"><option value="">Todo el equipo</option></select></label>
+      </div>
     </div>
   </header>
   <div class="app-cuerpo">
@@ -88,12 +103,14 @@ def pagina(favicon, fuentes):
       <button type="button" data-vista="seguimiento">{ICONOS["seguimiento"]}<span>En seguimiento</span><b id="n-seguimiento"></b></button>
       <button type="button" data-vista="cerrado">{ICONOS["cerrado"]}<span>Cerrados</span><b id="n-cerrado"></b></button>
       <p class="app-menu-grupo">Consultar</p>
+      <button type="button" data-vista="equipo">{ICONOS["equipo"]}<span>Equipo</span></button>
       <button type="button" data-vista="directorio">{ICONOS["directorio"]}<span>Todos los estudiantes</span><b id="n-directorio"></b></button>
       <button type="button" data-vista="informe">{ICONOS["informe"]}<span>Informe</span></button>
       <a class="app-menu-final" href="aviso-docente.html" target="_blank" rel="noopener">{ICONOS["docente"]}<span>Formulario para profesores</span></a>
       <a href="index.html">{ICONOS["volver"]}<span>Volver al inicio</span></a>
     </nav>
     <main class="app-principal" id="ap-principal">
+      <p class="app-franja" id="ap-franja" hidden></p>
       <div class="app-encabezado">
         <div>
           <h1 id="ap-titulo">Por contactar esta semana</h1>
@@ -109,11 +126,12 @@ def pagina(favicon, fuentes):
         <button type="button" class="boton-sec" id="ap-imprimir">Imprimir</button>
       </div>
       <section class="app-informe" id="ap-informe" aria-label="Informe" hidden></section>
+      <section class="app-equipo" id="ap-equipo" aria-label="Equipo de Bienestar" hidden></section>
       <div class="app-herramientas" id="ap-herramientas">
         <label class="app-oculto" for="ap-buscar">Buscar por código</label>
         <input type="search" id="ap-buscar" placeholder="Buscar por código" autocomplete="off">
-        <label class="app-oculto" for="ap-programa">Programa</label>
-        <select id="ap-programa"><option value="">Todos los programas</option></select>
+        <label class="app-oculto" for="ap-programa">Titulación</label>
+        <select id="ap-programa"><option value="">Todas las titulaciones</option></select>
         <label class="app-oculto" for="ap-nivel">Nivel de riesgo</label>
         <select id="ap-nivel" hidden>
           <option value="">Todos los niveles</option><option value="alto">Riesgo alto</option><option value="medio">Riesgo medio</option>
@@ -121,6 +139,7 @@ def pagina(favicon, fuentes):
         </select>
         <button type="button" class="boton-sec boton-wa" id="ap-campana" hidden>Invitar por WhatsApp a los pendientes</button>
       </div>
+      <details class="app-explica" id="ap-explica" hidden><summary>¿Qué es «Titulación T04»?</summary><p id="ap-explica-texto"></p></details>
       <div class="app-tabla-zona" id="ap-tabla-zona">
         <table class="app-tabla">
           <thead><tr id="ap-cabeza"></tr></thead>
