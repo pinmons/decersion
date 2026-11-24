@@ -245,14 +245,16 @@
 
   /* Ficha rápida: los tres datos que una consejera pregunta primero, a la vista y sin abrir nada. */
   function fichaRapida(e) {
-    const r = e.registro, mt = e.matricula || {}, sinDato = (v, f) => (v == null ? "sin dato" : f(v));
+    const r = e.registro, sinDato = (v, f) => (v == null ? "sin dato" : f(v));
+    /* En la base real «trabaja» es la matrícula a tiempo parcial; las versiones viejas de la API la traían en «matricula». */
+    const parcial = r.trabaja ?? Boolean((e.matricula || {}).tiempo_parcial);
     const dato = (valor, rotulo) => `<div class="det-dato"><b>${esc(valor)}</b><span>${rotulo}</span></div>`;
     return `<div class="det-ficha">
       ${dato(sinDato(r.promedio_acumulado, (v) => num(v, 1)), "promedio de 0 a 5")}
       ${dato(`${r.materias_reprobadas} de ${r.materias_cursadas_periodo_anterior}`, "asignaturas perdidas")}
       ${dato(sinDato(r.porcentaje_asistencia, (v) => `${entero(v)} %`), "asistencia")}
     </div>
-    <p class="det-linea">${mt.tiempo_parcial ? "Tiempo parcial" : "Tiempo completo"}. Cohorte ${e.cohorte}-${String(e.cohorte + 1).slice(2)}. Datos del primer cuatrimestre.</p>`;
+    <p class="det-linea">${parcial ? "Tiempo parcial" : "Tiempo completo"}. Cohorte ${e.cohorte}-${String(e.cohorte + 1).slice(2)}. Datos del primer cuatrimestre.</p>`;
   }
 
   function historial(id) {
@@ -828,8 +830,10 @@
     $("#ap-lectura").textContent = B.deCopia ? "Sin conexión: copia de la última lectura"
       : `Base leída ${ej.fecha ? `hoy, ${hora(ej.fecha)}` : ""}: ${miles(ej.leidos || d.estudiantes.length)} registros`;
     const n = (f) => d.estudiantes.filter(f).length;
-    $("#ap-alcance").textContent = `A la lista de trabajo llega solo el riesgo alto (${miles(B.alto.length)}). Los ${miles(n((e) => e.nivel === "medio"))} de riesgo medio van a tutoría académica, `
-      + `los ${miles(n((e) => e.nivel === "bajo"))} de riesgo bajo siguen su curso y ${miles(n((e) => !e.nivel))} registros con datos imposibles se devolvieron al registro académico. `
+    const devueltos = n((e) => !e.nivel);
+    $("#ap-alcance").textContent = `A la lista de trabajo llega solo el riesgo alto (${miles(B.alto.length)}). Los ${miles(n((e) => e.nivel === "medio"))} de riesgo medio van a tutoría académica`
+      + (devueltos ? `, los ${miles(n((e) => e.nivel === "bajo"))} de riesgo bajo siguen su curso y ${miles(devueltos)} ${devueltos === 1 ? "registro con datos imposibles se devolvió" : "registros con datos imposibles se devolvieron"} al registro académico. `
+        : ` y los ${miles(n((e) => e.nivel === "bajo"))} de riesgo bajo siguen su curso. `)
       + `Todos se pueden consultar en «Todos los estudiantes».`;
     const programas = [...new Set(B.todos.map((e) => e.titulacion))].sort();
     $("#ap-programa").insertAdjacentHTML("beforeend", programas.map((p) => `<option value="${esc(p)}">${esc(p.replace("Titulación", "Programa"))}</option>`).join(""));
