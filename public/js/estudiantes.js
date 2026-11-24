@@ -308,7 +308,7 @@
 
   function pintarFicha(e, animar) {
     const f = $("#ficha-estudiante");
-    if (!e) { f.innerHTML = `<p class="ficha-resumen">Elija un estudiante de la lista.</p>`; return; }
+    if (!e) { f.innerHTML = `<p class="ficha-resumen">Selecciona un código de la lista para abrir su ficha.</p>`; return; }
     const cabeza = `<header class="ficha-cabecera"><h2 class="num">${esc(e.id)}</h2><p class="ficha-programa">${esc(e.titulacion)}</p></header>`;
     const datos = `<details class="ficha-datos"><summary>Sus datos en la base</summary><dl class="datos-registro">${datosDe(e)}</dl></details>`;
     if (!e.nivel) {
@@ -326,12 +326,12 @@
       const efecto = m.nivel_si_mejora ? `Hasta ${entero(m.puntos)} puntos menos${m.nivel_si_mejora !== e.nivel ? `: quedaría en <strong>${m.nivel_si_mejora}</strong>` : ""}.`
         : m.puntos ? `Le suma ${entero(m.puntos)} puntos de riesgo.` : "";
       return `<li><strong>${esc(m.texto || textos[m.variable] || m.variable)}</strong>${efecto ? `<span>${efecto}</span>` : ""}</li>`; }).join("")}</ol>`
-      : `<p class="nota">Nada que bienestar deba trabajar: basta el seguimiento rutinario.</p>`;
+      : `<p class="nota">El modelo sugiere continuar con el seguimiento habitual.</p>`;
     const [clase, frase] = veredictoReal(e);
-    const sub = `${e.puntaje} de 100${e.probabilidad != null ? ` · ${pct(e.probabilidad, 0)}` : ""}`;
+    const sub = `Puntaje: ${e.puntaje} de 100${e.probabilidad != null ? ` · Probabilidad estimada: ${pct(e.probabilidad, 0)}` : ""}`;
     f.innerHTML = `${cabeza}<div class="ficha-bento">
       <div class="pieza pieza-sello"><div class="sello sello-${e.nivel}${prov ? " sello-provisional" : ""}${animar ? " recien" : ""}"><b>Riesgo ${e.nivel}</b><small>${prov ? "provisional · " : ""}${sub}</small></div></div>
-      <div class="pieza"><p class="rotulo">Qué hacer</p><p class="pieza-accion">${esc(ACCIONES[e.accion] || e.accion || "")}</p>
+      <div class="pieza"><p class="rotulo">Apoyo sugerido</p><p class="pieza-accion">${esc(ACCIONES[e.accion] || e.accion || "")}</p>
         ${e.r34 ? `<p class="nota">Alto por la regla R3.4 del contrato: promedio menor a 3,0 y asistencia (aquí, presencia) menor a 70 %.</p>` : ""}</div>
       ${prov ? `<p class="pieza pieza-ancha pieza-aviso">Es <strong>provisional</strong>: el contrato no lo pudo calificar porque ${esc(MOTIVOS[e.motivo] || e.motivo)}${e.campo ? ` (<code>${esc(nombre(e.campo))}</code>)` : ""}, así que se calculó sin notas: con su matrícula, su actividad en el campus y en el aula virtual, y su titulación (el aviso antes de las notas). El sistema ya le pidió el dato al registro.</p>` : ""}
       ${e.sin_dato && e.sin_dato.length ? `<p class="pieza pieza-ancha nota">Sin dato en la base: ${e.sin_dato.map((c) => esc(nombre(c))).join(", ")}. El modelo usó el valor usual y lo tuvo en cuenta como dato que falta; no se inventó.</p>` : ""}

@@ -28,3 +28,5 @@ Thumbs.db
 
 # fuente original de la UPV (~270 MB): se baja de Zenodo con python -m desercion.datos_reales --extraer
 datos/reales/fuente_upv/
+
+base_datos/cuentas_locales.sqlite*

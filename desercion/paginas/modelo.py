@@ -14,8 +14,9 @@ def cuerpo():
     return f"""    <section class="seccion seccion-primera modelo-pagina">
       <div class="envoltura">
         <header class="seccion-encabezado modelo-encabezado">
-          <h1>Cómo le va al modelo</h1>
-          <p>Sus notas con estudiantes reales que nunca había visto, y cómo aprendió.</p>
+          <p class="rotulo">Evaluación con datos de primer año</p>
+          <h1>¿Qué tan bien predice el modelo?</h1>
+          <p>Elige un método y compara sus avisos con lo que ocurrió después. Un falso positivo es una alerta para alguien que continuó estudiando. Un falso negativo es un caso de abandono que pasó sin alerta.</p>
         </header>
         <div class="selector-estudiante modelo-selector">
           {SELECTOR_MODELO}

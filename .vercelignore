@@ -11,3 +11,4 @@
 /requirements-dev.txt
 /.claude/
 /scripts/
+/base_datos/cuentas_locales.sqlite*

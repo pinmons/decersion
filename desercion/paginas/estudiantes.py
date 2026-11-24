@@ -17,27 +17,25 @@ def cuerpo():
       <div class="envoltura">
         <header class="est-cabeza">
           <div class="est-titulo">
-            <p class="rotulo">Base de datos real · proceso automático</p>
+            <p class="rotulo">Primer año · Universitat Politècnica de València</p>
             <h1>Estudiantes en seguimiento</h1>
-            <p class="entrada">Nadie llena una planilla. El sistema lee la base, revisa cada registro y le da a cada
-              estudiante su resultado. Son estudiantes reales de primer año de la Universitat Politècnica de València, al
-              terminar su primer cuatrimestre.</p>
+            <p class="entrada">Busca por código o filtra por nivel de riesgo. Selecciona un estudiante para ver qué datos influyeron en su resultado y qué apoyo sugiere el sistema.</p>
             <p class="est-bandeja"><a href="bienestar.html">Ver cómo lo usaría Bienestar</a></p>
           </div>
-          <details class="est-opciones">
-            <summary>Calificó: <b id="modelo-actual">regresión logística</b></summary>
-            <div class="est-opciones-cuerpo">
-          {SELECTOR_MODELO}
-              <button type="button" class="boton" id="btn-leer">Volver a leer la base</button>
-            </div>
-          </details>
         </header>
+        <details class="auditoria"><summary>Método de evaluación · <b id="modelo-actual">regresión logística</b></summary>
+          <div class="motor-controles">{SELECTOR_MODELO}
+            <button type="button" class="boton" id="btn-leer">Actualizar los resultados</button>
+          </div>
+        </details>
+        <details class="auditoria"><summary>Lectura de la base y resumen de la cohorte</summary>
         <section class="flujo-zona" aria-label="Proceso automático">
           <div id="flujo" class="flujo"><p class="nota flujo-espera">Conectando con la base de datos…</p></div>
           <p class="nota" id="estado-lectura" aria-live="polite">Leyendo la base de datos y calificando a cada estudiante…</p>
           <div id="avisos" class="avisos"></div>
         </section>
         <div class="bento tablero" id="tablero" aria-label="Tablero de la cohorte"></div>
+        </details>
         <div class="filtros" id="lista-estudiantes">
           <div id="chips" class="chips" role="group" aria-label="Filtrar por resultado"></div>
           <div class="filtros-busqueda">
@@ -49,11 +47,12 @@ def cuerpo():
         </div>
         <div class="seguimiento">
           <div class="lista-zona">
+            <h2 class="plan-titulo">Lista de estudiantes</h2>
             <ol id="lista" class="lista-estudiantes"></ol>
             <p class="nota" id="cuenta-lista"></p>
             <button type="button" class="boton" id="btn-mas" hidden>Ver 20 más</button>
           </div>
-          <article class="ficha" id="ficha-estudiante" aria-live="polite"><p class="ficha-resumen">Elija un estudiante de la lista.</p></article>
+          <article class="ficha" id="ficha-estudiante" aria-live="polite"><p class="ficha-resumen">Selecciona un código de la lista para abrir su ficha.</p></article>
         </div>
       </div>
     </section>"""

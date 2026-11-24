@@ -50,7 +50,7 @@ ICONOS = {
 
 def pagina(favicon, fuentes):
     return f"""<!doctype html>
-<html lang="es">
+<html lang="es" data-theme="light">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -91,7 +91,7 @@ def pagina(favicon, fuentes):
       <button type="button" data-vista="directorio">{ICONOS["directorio"]}<span>Todos los estudiantes</span><b id="n-directorio"></b></button>
       <button type="button" data-vista="informe">{ICONOS["informe"]}<span>Informe</span></button>
       <a class="app-menu-final" href="aviso-docente.html" target="_blank" rel="noopener">{ICONOS["docente"]}<span>Formulario para profesores</span></a>
-      <a href="estudiantes.html">{ICONOS["volver"]}<span>Sitio del proyecto</span></a>
+      <a href="index.html">{ICONOS["volver"]}<span>Volver al inicio</span></a>
     </nav>
     <main class="app-principal" id="ap-principal">
       <div class="app-encabezado">
@@ -159,7 +159,7 @@ def pagina_docente(favicon, fuentes):
         f'            <label class="doc-opcion"><input type="checkbox" name="motivo" value="{escape(m)}"><span>{escape(m)}</span></label>'
         for m in MOTIVOS_DOCENTE)
     return f"""<!doctype html>
-<html lang="es">
+<html lang="es" data-theme="light">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -178,6 +178,7 @@ def pagina_docente(favicon, fuentes):
       <svg class="app-logo" viewBox="0 0 12 30" aria-hidden="true"><rect width="12" height="30" rx="6" fill="currentColor"/><circle cx="6" cy="7" r="3" fill="#e05a4f"/><circle cx="6" cy="15" r="3" fill="#f2b23a"/><circle cx="6" cy="23" r="3" fill="#4fb57a"/></svg>
       <div><b>Portal docente</b><span>Aviso a Bienestar Universitario</span></div>
     </div>
+    <a href="index.html">Volver al inicio</a>
   </header>
   <main class="doc-principal">
     <form class="doc-tarjeta" id="doc-form" novalidate>

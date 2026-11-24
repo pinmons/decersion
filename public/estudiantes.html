@@ -8,10 +8,11 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%232350a8'/%3E%3Ccircle cx='16' cy='9' r='3.4' fill='%23e05a4f'/%3E%3Ccircle cx='16' cy='16' r='3.4' fill='%23f2b23a'/%3E%3Ccircle cx='16' cy='23' r='3.4' fill='%234fb57a'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Literata:ital,opsz,wght@0,7..72,400..800;1,7..72,400..600&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&amp;display=swap">
   <link rel="stylesheet" href="estilos.css">
   <link rel="stylesheet" href="estilos-pasos.css">
   <link rel="stylesheet" href="estilos-estudiantes.css">
+  <link rel="stylesheet" href="cuaderno.css">
 </head>
 <body data-pagina="estudiantes">
   <!-- Generado por python -m desercion.paginas_web: edite la plantilla, no este archivo. -->
@@ -20,11 +21,12 @@
     <div class="barra-interior">
       <a class="nombre-sitio" href="index.html">
         <svg class="semaforo-logo" viewBox="0 0 12 30" aria-hidden="true"><rect width="12" height="30" rx="6" fill="currentColor"/><circle cx="6" cy="7" r="3" fill="var(--alto)"/><circle cx="6" cy="15" r="3" fill="var(--medio)"/><circle cx="6" cy="23" r="3" fill="var(--bajo)"/></svg>
-        Alerta temprana
+        <span>Alerta Temprana<small>Cuaderno Analítico</small></span>
       </a>
       <nav aria-label="Secciones">
+        <a href="index.html">Inicio</a>
         <a href="estudiantes.html" aria-current="page">Estudiantes</a>
-        <a href="modelo.html">Modelo</a>
+        <a href="modelo.html">Modelo y validación</a>
         <a href="evaluar.html">Probar un caso</a>
         <a href="proceso.html">Cómo se hizo</a>
       </nav>
@@ -36,17 +38,14 @@
       <div class="envoltura">
         <header class="est-cabeza">
           <div class="est-titulo">
-            <p class="rotulo">Base de datos real · proceso automático</p>
+            <p class="rotulo">Primer año · Universitat Politècnica de València</p>
             <h1>Estudiantes en seguimiento</h1>
-            <p class="entrada">Nadie llena una planilla. El sistema lee la base, revisa cada registro y le da a cada
-              estudiante su resultado. Son estudiantes reales de primer año de la Universitat Politècnica de València, al
-              terminar su primer cuatrimestre.</p>
+            <p class="entrada">Busca por código o filtra por nivel de riesgo. Selecciona un estudiante para ver qué datos influyeron en su resultado y qué apoyo sugiere el sistema.</p>
             <p class="est-bandeja"><a href="bienestar.html">Ver cómo lo usaría Bienestar</a></p>
           </div>
-          <details class="est-opciones">
-            <summary>Calificó: <b id="modelo-actual">regresión logística</b></summary>
-            <div class="est-opciones-cuerpo">
-          <fieldset class="selector-modo selector-operacion">
+        </header>
+        <details class="auditoria"><summary>Método de evaluación · <b id="modelo-actual">regresión logística</b></summary>
+          <div class="motor-controles"><fieldset class="selector-modo selector-operacion">
             <legend>Quién califica</legend>
             <div class="segmentado" role="radiogroup" aria-label="Modelo">
               <label><input type="radio" name="modelo-operacion" value="logistica" checked><span>Regresión logística</span></label>
@@ -54,16 +53,17 @@
               <label><input type="radio" name="modelo-operacion" value="reglas"><span>Reglas del contrato</span></label>
             </div>
           </fieldset>
-              <button type="button" class="boton" id="btn-leer">Volver a leer la base</button>
-            </div>
-          </details>
-        </header>
+            <button type="button" class="boton" id="btn-leer">Actualizar los resultados</button>
+          </div>
+        </details>
+        <details class="auditoria"><summary>Lectura de la base y resumen de la cohorte</summary>
         <section class="flujo-zona" aria-label="Proceso automático">
           <div id="flujo" class="flujo"><p class="nota flujo-espera">Conectando con la base de datos…</p></div>
           <p class="nota" id="estado-lectura" aria-live="polite">Leyendo la base de datos y calificando a cada estudiante…</p>
           <div id="avisos" class="avisos"></div>
         </section>
         <div class="bento tablero" id="tablero" aria-label="Tablero de la cohorte"></div>
+        </details>
         <div class="filtros" id="lista-estudiantes">
           <div id="chips" class="chips" role="group" aria-label="Filtrar por resultado"></div>
           <div class="filtros-busqueda">
@@ -75,11 +75,12 @@
         </div>
         <div class="seguimiento">
           <div class="lista-zona">
+            <h2 class="plan-titulo">Lista de estudiantes</h2>
             <ol id="lista" class="lista-estudiantes"></ol>
             <p class="nota" id="cuenta-lista"></p>
             <button type="button" class="boton" id="btn-mas" hidden>Ver 20 más</button>
           </div>
-          <article class="ficha" id="ficha-estudiante" aria-live="polite"><p class="ficha-resumen">Elija un estudiante de la lista.</p></article>
+          <article class="ficha" id="ficha-estudiante" aria-live="polite"><p class="ficha-resumen">Selecciona un código de la lista para abrir su ficha.</p></article>
         </div>
       </div>
     </section>

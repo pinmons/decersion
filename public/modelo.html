@@ -8,10 +8,11 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%232350a8'/%3E%3Ccircle cx='16' cy='9' r='3.4' fill='%23e05a4f'/%3E%3Ccircle cx='16' cy='16' r='3.4' fill='%23f2b23a'/%3E%3Ccircle cx='16' cy='23' r='3.4' fill='%234fb57a'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Literata:ital,opsz,wght@0,7..72,400..800;1,7..72,400..600&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&amp;display=swap">
   <link rel="stylesheet" href="estilos.css">
   <link rel="stylesheet" href="estilos-pasos.css">
   <link rel="stylesheet" href="estilos-modelo.css">
+  <link rel="stylesheet" href="cuaderno.css">
 </head>
 <body data-pagina="modelo">
   <!-- Generado por python -m desercion.paginas_web: edite la plantilla, no este archivo. -->
@@ -20,11 +21,12 @@
     <div class="barra-interior">
       <a class="nombre-sitio" href="index.html">
         <svg class="semaforo-logo" viewBox="0 0 12 30" aria-hidden="true"><rect width="12" height="30" rx="6" fill="currentColor"/><circle cx="6" cy="7" r="3" fill="var(--alto)"/><circle cx="6" cy="15" r="3" fill="var(--medio)"/><circle cx="6" cy="23" r="3" fill="var(--bajo)"/></svg>
-        Alerta temprana
+        <span>Alerta Temprana<small>Cuaderno Analítico</small></span>
       </a>
       <nav aria-label="Secciones">
+        <a href="index.html">Inicio</a>
         <a href="estudiantes.html">Estudiantes</a>
-        <a href="modelo.html" aria-current="page">Modelo</a>
+        <a href="modelo.html" aria-current="page">Modelo y validación</a>
         <a href="evaluar.html">Probar un caso</a>
         <a href="proceso.html">Cómo se hizo</a>
       </nav>
@@ -35,8 +37,9 @@
     <section class="seccion seccion-primera modelo-pagina">
       <div class="envoltura">
         <header class="seccion-encabezado modelo-encabezado">
-          <h1>Cómo le va al modelo</h1>
-          <p>Sus notas con estudiantes reales que nunca había visto, y cómo aprendió.</p>
+          <p class="rotulo">Evaluación con datos de primer año</p>
+          <h1>¿Qué tan bien predice el modelo?</h1>
+          <p>Elige un método y compara sus avisos con lo que ocurrió después. Un falso positivo es una alerta para alguien que continuó estudiando. Un falso negativo es un caso de abandono que pasó sin alerta.</p>
         </header>
         <div class="selector-estudiante modelo-selector">
           <fieldset class="selector-modo selector-operacion">

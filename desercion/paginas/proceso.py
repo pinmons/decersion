@@ -65,10 +65,12 @@ def cuerpo(lista_pasos=None):
     return f"""    <section class="seccion seccion-primera">
       <div class="envoltura">
         <header class="seccion-encabezado indice-cabeza">
-          <h1>Cómo se hizo</h1>
+          <p class="rotulo">Cuaderno metodológico</p>
+          <h1>Cómo se hizo: de las reglas al modelo</h1>
           <p>De las reglas escritas a mano a una red neuronal que aprende sus pesos, en nueve pasos y cuatro partes.
             Cada número y cada gráfica salen de la ejecución real del entrenamiento con datos sintéticos (semilla 2026).</p>
         </header>
+        <a class="boton boton-tinta abrir-leccion" href="aprendizaje.html">Explorar cómo aprende una neurona →</a>
         <div class="bento grupos">
 {grupos}
         </div>

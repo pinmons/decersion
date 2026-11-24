@@ -61,17 +61,24 @@
       const p = prog.get(e.titulacion) || { alto: 0, medio: 0, bajo: 0, n: 0 };
       p[e.nivel] += 1; p.n += 1; prog.set(e.titulacion, p);
     }
-    const filas = [...prog].filter(([, p]) => p.n >= 15).sort((a, b) => b[1].alto / b[1].n - a[1].alto / a[1].n).slice(0, 5);
-    const caja = $("#t-programas");
-    caja.replaceChildren(...filas.map(([nombre, p]) => {
-      const f = document.createElement("div");
-      f.className = "t-fila";
-      f.innerHTML = `<span class="t-fila-nombre">${esc(nombre)}</span>
-        <span class="t-fila-barra" aria-hidden="true">${NIVELES.map(([k]) => (p[k] ? `<i class="seg-${k}" style="flex:${p[k]} 1 0"></i>` : "")).join("")}</span>
-        <b class="num">${pct(p.alto / p.n, 0)}</b>`;
-      return conGlobo(f, `<b>${esc(nombre)}</b><br>${miles(p.n)} estudiantes calificados<br>${NIVELES.map(([k, t]) => `${t}: ${miles(p[k])} (${pct(p[k] / p.n, 0)})`).join("<br>")}`);
-    }));
-    aparecer(caja.children, { pausa: 60, duracion: 300, desde: "translateX(-8px)" });
+    const orden = $("#orden-programas");
+    function ordenarTitulaciones() {
+      const volumen = orden.value === "volumen";
+      const criterio = p => volumen ? p.alto : p.alto / p.n;
+      const filas = [...prog].filter(([, p]) => p.n >= 15).sort((a, b) => criterio(b[1]) - criterio(a[1])).slice(0, 5);
+      const caja = $("#t-programas");
+      caja.replaceChildren(...filas.map(([nombre, p]) => {
+        const f = document.createElement("div");
+        f.className = "t-fila";
+        f.innerHTML = `<span class="t-fila-nombre">${esc(nombre)}</span>
+          <span class="t-fila-barra" aria-hidden="true">${NIVELES.map(([k]) => (p[k] ? `<i class="seg-${k}" style="flex:${p[k]} 1 0"></i>` : "")).join("")}</span>
+          <b class="num">${volumen ? miles(p.alto) : pct(p.alto / p.n, 0)}</b>`;
+        return conGlobo(f, `<b>${esc(nombre)}</b><br>${miles(p.n)} estudiantes calificados<br>${NIVELES.map(([k, t]) => `${t}: ${miles(p[k])} (${pct(p[k] / p.n, 0)})`).join("<br>")}`);
+      }));
+      aparecer(caja.children, { pausa: 60, duracion: 300, desde: "translateX(-8px)" });
+    }
+    orden.onchange = ordenarTitulaciones;
+    ordenarTitulaciones();
 
     // lo que se resolvió sin una persona
     const CAUSA = { promedio_acumulado: "sin ninguna nota del primer cuatrimestre", porcentaje_asistencia: "sin ningún dato de presencia",

@@ -8,10 +8,11 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%232350a8'/%3E%3Ccircle cx='16' cy='9' r='3.4' fill='%23e05a4f'/%3E%3Ccircle cx='16' cy='16' r='3.4' fill='%23f2b23a'/%3E%3Ccircle cx='16' cy='23' r='3.4' fill='%234fb57a'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Literata:ital,opsz,wght@0,7..72,400..800;1,7..72,400..600&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&amp;display=swap">
   <link rel="stylesheet" href="estilos.css">
   <link rel="stylesheet" href="estilos-pasos.css">
   <link rel="stylesheet" href="estilos-inicio.css">
+  <link rel="stylesheet" href="cuaderno.css">
 </head>
 <body data-pagina="inicio">
   <!-- Generado por python -m desercion.paginas_web: edite la plantilla, no este archivo. -->
@@ -20,11 +21,12 @@
     <div class="barra-interior">
       <a class="nombre-sitio" href="index.html">
         <svg class="semaforo-logo" viewBox="0 0 12 30" aria-hidden="true"><rect width="12" height="30" rx="6" fill="currentColor"/><circle cx="6" cy="7" r="3" fill="var(--alto)"/><circle cx="6" cy="15" r="3" fill="var(--medio)"/><circle cx="6" cy="23" r="3" fill="var(--bajo)"/></svg>
-        Alerta temprana
+        <span>Alerta Temprana<small>Cuaderno Analítico</small></span>
       </a>
       <nav aria-label="Secciones">
+        <a href="index.html" aria-current="page">Inicio</a>
         <a href="estudiantes.html">Estudiantes</a>
-        <a href="modelo.html">Modelo</a>
+        <a href="modelo.html">Modelo y validación</a>
         <a href="evaluar.html">Probar un caso</a>
         <a href="proceso.html">Cómo se hizo</a>
       </nav>
@@ -34,35 +36,36 @@
   <main id="principal">
     <section class="seccion seccion-primera tablero-zona">
       <div class="envoltura">
+        <header class="bienvenida">
+          <h1>Alerta temprana de deserción</h1>
+          <p>Elige qué quieres hacer. Puedes consultar el grupo o aprender con un ejemplo.</p>
+        </header>
+        <nav class="rutas-inicio" aria-label="Por dónde empezar">
+          <a href="aviso-docente.html"><small>Para profesores</small><strong>Enviar un aviso a Bienestar</strong><span>Indica qué has observado para que el equipo pueda dar seguimiento al estudiante.</span></a>
+          <a href="evaluar.html"><small>Para estudiantes</small><strong>Practicar con un caso</strong><span>Cambia un dato de un ejemplo ficticio y observa qué pasa con su nivel de riesgo.</span></a>
+        </nav>
+        <header class="resumen-grupo"><h2>Resumen del grupo de primer año</h2><a href="estudiantes.html">Consultar las fichas de estudiantes</a>
+          <p class="t-pulso" id="t-pulso" aria-live="polite"><i aria-hidden="true"></i><span>Leyendo la base de datos…</span></p>
+        </header>
         <div class="bento tablero">
-          <section class="celda celda-tinta c5 f2 t-hero">
-            <span class="rotulo">Alerta temprana de deserción</span>
-            <h1>Lee la base de estudiantes y avisa a quién hay que ayudar antes de que se vaya.</h1>
-            <p>Revisa cada registro, le da un nivel de riesgo y dice por qué y en qué ayudarle. Sin planillas y sin
-              revisión a mano.</p>
-            <p class="t-pulso" id="t-pulso" aria-live="polite"><i aria-hidden="true"></i><span>Leyendo la base de datos…</span></p>
-            <a class="boton t-principal" href="estudiantes.html">Ver a los estudiantes</a>
-          </section>
           <section class="celda c4 t-alto" aria-labelledby="t-alto-rotulo">
-            <span class="rotulo" id="t-alto-rotulo">En riesgo alto hoy</span>
+            <span class="rotulo" id="t-alto-rotulo">Estudiantes con riesgo alto</span>
             <div class="t-alto-fila"><b class="cifra-grande" id="t-alto">–</b><p id="t-alto-sub">de los estudiantes calificados</p></div>
             <div id="t-niveles" class="t-niveles" role="img" aria-label="Reparto de los estudiantes por nivel de riesgo"></div>
             <ul id="t-leyenda" class="t-leyenda"></ul>
           </section>
-          <a class="celda c3 t-enlace t-nota" href="modelo.html">
-            <span class="rotulo">Nota del modelo</span>
-            <div id="t-notas" class="t-notas"><p>Cargando…</p></div>
-            <span class="t-ir">Cómo le va al modelo</span>
-          </a>
-          <section class="celda c7 t-programas" aria-labelledby="t-prog-rotulo">
+          <section class="celda c8 t-programas" aria-labelledby="t-prog-rotulo">
             <div class="t-programas-cabeza"><span class="rotulo" id="t-prog-rotulo">Dónde se concentra el riesgo, por titulación</span>
               <ul class="t-leyenda t-leyenda-corta" aria-hidden="true"><li><i class="seg-alto"></i>alto</li><li><i class="seg-medio"></i>medio</li><li><i class="seg-bajo"></i>bajo</li></ul></div>
+            <label class="orden-programas">Ordenar titulaciones
+              <select id="orden-programas"><option value="proporcion">Por porcentaje de riesgo alto</option><option value="volumen">Por número de casos altos</option></select>
+            </label>
             <div id="t-programas" class="t-barras"><p>Cargando…</p></div>
           </section>
-          <a class="celda c4 t-enlace" href="evaluar.html">
-            <span class="rotulo">Probar un caso</span>
-            <p>Llene los 12 datos de un estudiante y vea su ficha, paso a paso por el contrato.</p>
-            <span class="t-ir">Abrir la planilla</span>
+          <a class="celda c4 t-enlace t-nota" href="modelo.html">
+            <span class="rotulo">Calidad de las predicciones</span>
+            <div id="t-notas" class="t-notas"><p>Cargando…</p></div>
+            <span class="t-ir">Cómo le va al modelo</span>
           </a>
           <a class="celda c4 t-enlace" href="proceso.html">
             <span class="rotulo">Cómo se hizo</span>
@@ -70,7 +73,7 @@
             <span class="t-ir">Ver los pasos</span>
           </a>
           <section class="celda c4 t-avisos-celda" aria-labelledby="t-avisos-rotulo">
-            <span class="rotulo" id="t-avisos-rotulo">Lo que el sistema resolvió solo</span>
+            <span class="rotulo" id="t-avisos-rotulo">Registros que necesitan revisión</span>
             <ul id="t-avisos" class="t-avisos"><li>Cargando…</li></ul>
           </section>
           <a class="celda t-enlace t-bandeja" href="bienestar.html">

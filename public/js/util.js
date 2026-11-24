@@ -262,3 +262,13 @@
 
   window.SAT = Object.assign(window.SAT || {}, { $, esc, pct, num, miles, json, NOMBRES, nombre, FUENTES, fuente, ACCIONES, MOTIVOS, mostrarGlobo, ocultarGlobo, conGlobo, s, lienzo, escala, marcasBonitas, figura, leyenda, grafLineas, grafBarras, reducido, alVerUnaVez, aparecer, secuencia });
 })();
+
+if (["localhost", "127.0.0.1"].includes(location.hostname)) {
+  const navegacion = document.querySelector(".barra nav");
+  if (navegacion) {
+    const enlace = document.createElement("a");
+    enlace.href = "/acceso.html";
+    enlace.textContent = "Mi cuenta";
+    navegacion.append(enlace);
+  }
+}

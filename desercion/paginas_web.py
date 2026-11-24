@@ -59,20 +59,19 @@ QUE_PORQUE = {
 FAVICON = ("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' "
            "rx='6' fill='%232350a8'/%3E%3Ccircle cx='16' cy='9' r='3.4' fill='%23e05a4f'/%3E%3Ccircle cx='16' cy='16' r='3.4' "
            "fill='%23f2b23a'/%3E%3Ccircle cx='16' cy='23' r='3.4' fill='%234fb57a'/%3E%3C/svg%3E")
-FUENTES = ("https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400"
-           "&family=Literata:ital,opsz,wght@0,7..72,400..800;1,7..72,400..600&display=swap")
+FUENTES = "https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap"
 SCRIPTS = ["util", "recorrido", "evaluador", "aprendizaje", "proceso", "reporte"]  # comunes; "principal" va al final
 
 
 def _pagina(archivo, titulo, descripcion, pagina, seccion, cuerpo, estilos=(), scripts=()):
     # Cuatro secciones (ley de Hick). El reporte y las pruebas se abren desde «Cómo se hizo».
-    nav = [("estudiantes.html", "Estudiantes", "estudiantes"), ("modelo.html", "Modelo", "modelo"),
+    nav = [("index.html", "Inicio", "inicio"), ("estudiantes.html", "Estudiantes", "estudiantes"), ("modelo.html", "Modelo y validación", "modelo"),
            ("evaluar.html", "Probar un caso", "evaluar"), ("proceso.html", "Cómo se hizo", "proceso")]
     seccion = {"reporte": "proceso", "pruebas": "proceso"}.get(seccion, seccion)
     enlaces = "\n        ".join(
         f'<a href="{h}"{" aria-current=\"page\"" if seccion == s else ""}>{t}</a>' for h, t, s in nav)
     scripts = "\n  ".join(f'<script src="js/{n}.js" defer></script>' for n in [*SCRIPTS, *scripts, "principal"])
-    hojas = "".join(f'\n  <link rel="stylesheet" href="{h}">' for h in ["estilos-pasos.css", *estilos])
+    hojas = "".join(f'\n  <link rel="stylesheet" href="{h}">' for h in ["estilos-pasos.css", *estilos, "cuaderno.css"])
     return f"""<!doctype html>
 <html lang="es">
 <head>
@@ -83,7 +82,7 @@ def _pagina(archivo, titulo, descripcion, pagina, seccion, cuerpo, estilos=(), s
   <link rel="icon" href="{FAVICON}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="{FUENTES}">
+  <link rel="stylesheet" href="{escape(FUENTES)}">
   <link rel="stylesheet" href="estilos.css">{hojas}
 </head>
 <body data-pagina="{pagina}">
@@ -93,7 +92,7 @@ def _pagina(archivo, titulo, descripcion, pagina, seccion, cuerpo, estilos=(), s
     <div class="barra-interior">
       <a class="nombre-sitio" href="index.html">
         <svg class="semaforo-logo" viewBox="0 0 12 30" aria-hidden="true"><rect width="12" height="30" rx="6" fill="currentColor"/><circle cx="6" cy="7" r="3" fill="var(--alto)"/><circle cx="6" cy="15" r="3" fill="var(--medio)"/><circle cx="6" cy="23" r="3" fill="var(--bajo)"/></svg>
-        Alerta temprana
+        <span>Alerta Temprana<small>Cuaderno Analítico</small></span>
       </a>
       <nav aria-label="Secciones">
         {enlaces}
@@ -141,19 +140,19 @@ def evaluar():
     cuerpo = """    <section class="seccion seccion-primera">
       <div class="envoltura">
         <header class="seccion-encabezado">
-          <h1>Probar un caso</h1>
-          <p>Mueva cualquier dato y mire cómo responde la ficha. Empieza con un estudiante de ejemplo ya calificado.</p>
+          <p class="rotulo">Práctica con datos ficticios</p>
+          <h1>¿Qué cambia el nivel de riesgo?</h1>
+          <p>Elige un caso y anota su nivel de riesgo. Después cambia solo la asistencia o el promedio y compara el resultado en la ficha.</p>
         </header>
         <div class="casos-rapidos" role="group" aria-label="Empezar con un caso">
-          <span class="rotulo">Empezar con</span>
-          <button type="button" class="chip-caso" data-caso="R01">un caso tranquilo</button>
-          <button type="button" class="chip-caso" data-caso="ejemplo" aria-pressed="true">uno intermedio</button>
-          <button type="button" class="chip-caso" data-caso="R03">uno crítico</button>
-          <button type="button" class="chip-caso chip-vacio" id="btn-limpiar">la planilla en blanco</button>
+          <span class="rotulo">Elige un ejemplo</span>
+          <button type="button" class="chip-caso" data-caso="R01">Caso tranquilo</button>
+          <button type="button" class="chip-caso" data-caso="ejemplo" aria-pressed="true">Caso intermedio</button>
+          <button type="button" class="chip-caso" data-caso="R03">Caso crítico</button>
+          <button type="button" class="chip-caso chip-vacio" id="btn-limpiar">Empezar en blanco</button>
         </div>
         <div class="evaluador">
           <form id="planilla" class="planilla" autocomplete="off" novalidate>
-            <div id="campos" class="campos"><p class="nota">Cargando la planilla…</p></div>
             <fieldset class="selector-modo">
               <legend class="rotulo">Quién califica</legend>
               <div class="segmentado" role="radiogroup" aria-label="Modo del sistema">
@@ -162,10 +161,11 @@ def evaluar():
                 <label><input type="radio" name="modo" value="reglas" id="modo-reglas"><span>Reglas del contrato</span></label>
               </div>
             </fieldset>
+            <div id="campos" class="campos"><p class="nota">Cargando la planilla…</p></div>
           </form>
           <article class="ficha" aria-labelledby="ficha-titulo" aria-live="polite">
             <header class="ficha-cabecera">
-              <h2 id="ficha-titulo">Ficha de seguimiento</h2>
+              <h2 id="ficha-titulo">Resultado del ejemplo</h2>
               <dl class="ficha-meta">
                 <div><dt>Estudiante</dt><dd id="ficha-id">sin identificar</dd></div>
                 <div><dt>Calificó</dt><dd id="ficha-modo">regresión logística</dd></div>
@@ -175,7 +175,7 @@ def evaluar():
             <p id="ficha-resumen" class="ficha-resumen">Consultando el sistema…</p>
             <div id="ficha-detalle" class="ficha-detalle" hidden>
               <section class="ficha-bloque"><h3>Puntaje de riesgo</h3><div id="regla-puntaje"></div></section>
-              <section class="ficha-bloque"><h3>Qué empuja el puntaje</h3><div id="influencia" class="influencia"></div><p class="nota" id="nota-influencia"></p></section>
+              <section class="ficha-bloque"><h3>Factores con mayor impacto</h3><div id="influencia" class="influencia"></div><p class="nota" id="nota-influencia"></p></section>
               <details class="ficha-bloque ficha-plegable" id="bloque-sigmoide" hidden><summary>De puntos a probabilidad</summary><div id="sigmoide"></div></details>
             </div>
             <details class="ficha-bloque ficha-plegable" id="bloque-recorrido"><summary>Recorrido por el contrato</summary><div id="recorrido" class="recorrido"></div></details>
@@ -241,13 +241,15 @@ def paso(i):
       <div class="envoltura proceso-rejilla">
         <nav class="indice" aria-label="Pasos del proceso">
           <a class="indice-volver" href="proceso.html">Cómo se hizo</a>
+          <h2 class="plan-titulo">Plan de lecciones</h2>
           <ol class="lista-pasos">
 {_lista_pasos(actual=clave)}
           </ol>
         </nav>
         <article class="paso" id="paso-{clave}" data-paso="{clave}">
           <header class="paso-cabecera">
-            <p class="nota">Paso {i + 1} de {len(PASOS)}</p>
+            <label class="rotulo" for="avance">Lección {i + 1} de {len(PASOS)}</label>
+            <progress id="avance" value="{i + 1}" max="{len(PASOS)}"></progress>
             <h1>{escape(titulo)}</h1>
             <p class="entrada">{escape(desc)}</p>
           </header>

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Acceso · Cuaderno Analítico</title>
+  <link rel="stylesheet" href="/acceso.css">
+  <script defer src="/js/acceso.js"></script>
+</head>
+<body>
+  <header><div class="barra"><span class="marca" aria-hidden="true">AT</span><strong>Alerta Temprana</strong><span class="submarca">Cuaderno Analítico</span><a class="ayuda" href="#guia">Guía de acceso</a></div></header>
+  <main>
+    <section class="contexto" aria-labelledby="portada">
+      <p class="rotulo">Tutoría y orientación académica</p>
+      <h1 id="portada">Alerta temprana de deserción</h1>
+      <p>Un espacio para entender qué señales pueden indicar que un estudiante necesita apoyo durante el semestre.</p>
+      <aside><h2>¿Qué puedes hacer aquí?</h2>
+        <h3>Si eres profesor</h3><p>Envía a Bienestar una observación sobre un estudiante o consulta las fichas del grupo de primer año.</p>
+        <h3>Si eres estudiante</h3><p>Prueba un caso ficticio y observa cómo la asistencia o el promedio influyen en su resultado.</p>
+      </aside>
+      <p class="fuente">Fuente de la cohorte<br><strong>Universitat Politècnica de València</strong></p>
+    </section>
+    <section class="acceso" aria-labelledby="titulo">
+      <p class="rotulo">Cuaderno Analítico</p>
+      <h2 id="titulo">Iniciar sesión</h2>
+      <form id="formulario">
+        <label id="fila-nombre" hidden>Nombre<input id="nombre" autocomplete="name" maxlength="100"></label>
+        <label>Correo electrónico<input id="correo" type="email" placeholder="nombre@ejemplo.com" autocomplete="username" maxlength="254" required></label>
+        <label for="clave">Contraseña</label>
+        <div class="secreto"><input id="clave" type="password" autocomplete="current-password" maxlength="128" required><button type="button" id="mostrar" aria-controls="clave" aria-label="Mostrar contraseña">Mostrar</button></div>
+        <button class="principal" id="confirmar">Entrar al cuaderno</button>
+      </form>
+      <button type="button" id="alternar">Crear una cuenta</button>
+      <section id="cuenta" hidden><p id="perfil"></p><a href="/">Ir al tablero</a> <button id="salir">Cerrar sesión</button></section>
+      <p role="status" id="mensaje"></p>
+      <details id="guia"><summary>Guía de acceso</summary><p>Entra con el correo y la contraseña de tu cuenta local. Si es tu primera visita, selecciona «Crear una cuenta» y elige una contraseña de al menos ocho caracteres.</p></details>
+    </section>
+  </main>
+  <footer><strong>Alerta Temprana de Deserción</strong><span>Prototipo académico · Acceso local</span></footer>
+</body>
+</html>

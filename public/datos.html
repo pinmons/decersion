@@ -8,9 +8,10 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%232350a8'/%3E%3Ccircle cx='16' cy='9' r='3.4' fill='%23e05a4f'/%3E%3Ccircle cx='16' cy='16' r='3.4' fill='%23f2b23a'/%3E%3Ccircle cx='16' cy='23' r='3.4' fill='%234fb57a'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Literata:ital,opsz,wght@0,7..72,400..800;1,7..72,400..600&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&amp;display=swap">
   <link rel="stylesheet" href="estilos.css">
   <link rel="stylesheet" href="estilos-pasos.css">
+  <link rel="stylesheet" href="cuaderno.css">
 </head>
 <body data-pagina="paso-datos">
   <!-- Generado por python -m desercion.paginas_web: edite la plantilla, no este archivo. -->
@@ -19,11 +20,12 @@
     <div class="barra-interior">
       <a class="nombre-sitio" href="index.html">
         <svg class="semaforo-logo" viewBox="0 0 12 30" aria-hidden="true"><rect width="12" height="30" rx="6" fill="currentColor"/><circle cx="6" cy="7" r="3" fill="var(--alto)"/><circle cx="6" cy="15" r="3" fill="var(--medio)"/><circle cx="6" cy="23" r="3" fill="var(--bajo)"/></svg>
-        Alerta temprana
+        <span>Alerta Temprana<small>Cuaderno Analítico</small></span>
       </a>
       <nav aria-label="Secciones">
+        <a href="index.html">Inicio</a>
         <a href="estudiantes.html">Estudiantes</a>
-        <a href="modelo.html">Modelo</a>
+        <a href="modelo.html">Modelo y validación</a>
         <a href="evaluar.html">Probar un caso</a>
         <a href="proceso.html" aria-current="page">Cómo se hizo</a>
       </nav>
@@ -35,6 +37,7 @@
       <div class="envoltura proceso-rejilla">
         <nav class="indice" aria-label="Pasos del proceso">
           <a class="indice-volver" href="proceso.html">Cómo se hizo</a>
+          <h2 class="plan-titulo">Plan de lecciones</h2>
           <ol class="lista-pasos">
 <li><a href="contrato.html"><b class="paso-n">1</b><span class="paso-texto"><strong>El contrato</strong></span></a></li>
 <li><a href="datos.html" aria-current="page"><b class="paso-n">2</b><span class="paso-texto"><strong>Los datos</strong></span></a></li>
@@ -49,7 +52,8 @@
         </nav>
         <article class="paso" id="paso-datos" data-paso="datos">
           <header class="paso-cabecera">
-            <p class="nota">Paso 2 de 9</p>
+            <label class="rotulo" for="avance">Lección 2 de 9</label>
+            <progress id="avance" value="2" max="9"></progress>
             <h1>Los datos</h1>
             <p class="entrada">Cómo se simularon 20 000 estudiantes y qué registros descartó la validación.</p>
           </header>
